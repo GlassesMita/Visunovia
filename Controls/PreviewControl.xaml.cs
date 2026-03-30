@@ -37,12 +37,23 @@ public partial class PreviewControl : UserControl
     {
         _project = project;
         _engine = new VNEngine();
+        _isPreviewEnded = false;
+        _isWaitingForChoice = false;
+        _isFullscreen = false;
+        _currentDialogueIndex = startDialogueIndex - 1;
+
+        BgmPlayer?.Stop();
+        BgmPlayer.Source = null;
+        BackgroundImage.Source = null;
+        CharacterImage.Source = null;
+        CharacterImage.Visibility = Visibility.Collapsed;
+        DialogueBox.Visibility = Visibility.Collapsed;
+        ChoicesPanel.Visibility = Visibility.Collapsed;
 
         if (project.Scenes != null && sceneIndex < project.Scenes.Count)
         {
             var scene = project.Scenes[sceneIndex];
             _dialogues = scene.Dialogues ?? new List<VNDialogue>();
-            _currentDialogueIndex = startDialogueIndex - 1;
 
             LoadBackground(scene.Background);
             Advance();
@@ -221,11 +232,13 @@ public partial class PreviewControl : UserControl
                         }
                     }
                 }
+                CharacterImage.Visibility = Visibility.Visible;
                 Advance();
                 break;
 
             case VNEventType.HideCharacter:
                 LoadCharacter("");
+                CharacterImage.Visibility = Visibility.Collapsed;
                 Advance();
                 break;
 
@@ -312,6 +325,12 @@ public partial class PreviewControl : UserControl
 
     private void OnCloseClicked(object sender, RoutedEventArgs e)
     {
+        BgmPlayer?.Stop();
+        BgmPlayer.Source = null;
+        CharacterImage.Source = null;
+        CharacterImage.Visibility = Visibility.Collapsed;
+        _isPreviewEnded = false;
+        _currentDialogueIndex = -1;
         PreviewClosed?.Invoke(this, EventArgs.Empty);
     }
 

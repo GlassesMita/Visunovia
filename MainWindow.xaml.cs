@@ -1788,6 +1788,12 @@ public partial class MainWindow : Window
     {
         if (_selectedDialogueIndex < 0) return;
 
+        if (_editor.HasUnsavedChanges)
+        {
+            MessageBox.Show("请先保存项目再进行预览。", "未保存", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         PreviewOverlay.Visibility = Visibility.Visible;
         var projectDir = Path.GetDirectoryName(_editor.CurrentProjectPath) ?? "";
         App.UpdateWindowTitle(_editor.CurrentProject?.Metadata.Title ?? "", projectDir, true);
