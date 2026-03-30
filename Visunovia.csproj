@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0-windows</TargetFramework>
+		<RootNamespace>Visunovia</RootNamespace>
+		<UseWPF>true</UseWPF>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+
+		<ApplicationTitle>Visunovia</ApplicationTitle>
+		<ApplicationId>com.visunovia.app</ApplicationId>
+		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+		<ApplicationVersion>1</ApplicationVersion>
+
+		<StartupObject>Visunovia.App</StartupObject>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="YamlDotNet" Version="16.3.0" />
+	</ItemGroup>
+
+</Project>

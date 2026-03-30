@@ -1,0 +1,51 @@
+{
+  "name": "visunovia-player-nw",
+  "version": "1.0.0",
+  "description": "Visunovia Visual Novel Player based on NW.js",
+  "main": "node-main.js",
+  "scripts": {
+    "start": "nw .",
+    "dev": "nw . --enable-logging",
+    "pack": "nwbuild -p win64 .",
+    "build": "nwbuild -p win64 -o ../Editor/Player ."
+  },
+  "keywords": [
+    "visual-novel",
+    "player",
+    "nwjs"
+  ],
+  "author": "Visunovia",
+  "license": "MIT",
+  "devDependencies": {
+    "nwjs-builder": "^1.0.0"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.10"
+  },
+  "nwjs-builder": {
+    "targets": [
+      "win64"
+    ],
+    "outputDir": "../Editor/Player",
+    "cacheDir": "./cache",
+    "manifest": {
+      "name": "Visunovia Player",
+      "description": "Visunovia Visual Novel Player",
+      "version": "1.0.0",
+      "window": {
+        "title": "Visunovia Player",
+        "width": 1280,
+        "height": 720,
+        "min_width": 960,
+        "min_height": 540,
+        "resizable": true,
+        "fullscreen": false,
+        "show_in_taskbar": true,
+        "show": true
+      },
+      "webkit": {
+        "plugin": true
+      }
+    }
+  }
+}

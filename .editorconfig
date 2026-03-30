@@ -1,0 +1,66 @@
+# 顶层 EditorConfig 文件
+root = true
+
+# 所有文件通用设置
+[*]
+# 使用 UTF-8 编码
+charset = utf-8
+# 使用 LF 换行符
+end_of_line = lf
+# 文件末尾插入空行
+insert_final_newline = true
+# 去除行尾空格
+trim_trailing_whitespace = true
+
+# JavaScript/TypeScript 文件设置
+[*.{js,ts,jsx,tsx,mjs,cjs}]
+# 使用空格缩进
+indent_style = space
+# 缩进大小为 2 个空格
+indent_size = 2
+# 最大行长度
+max_line_length = 100
+
+# JSON 文件设置
+[*.json]
+indent_style = space
+indent_size = 2
+
+# Markdown 文件设置
+[*.md]
+# Markdown 中保留行尾空格（用于换行）
+trim_trailing_whitespace = false
+indent_style = space
+indent_size = 2
+
+# YAML 文件设置
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# CSS/SCSS/Less 文件设置
+[*.{css,scss,sass,less}]
+indent_style = space
+indent_size = 2
+
+# HTML 文件设置
+[*.{html,htm}]
+indent_style = space
+indent_size = 2
+
+# 配置文件设置
+[*.{ini,toml,conf}]
+indent_style = space
+indent_size = 2
+
+# Shell 脚本设置
+[*.sh]
+indent_style = space
+indent_size = 2
+# 使用 LF 换行符（Unix 标准）
+end_of_line = lf
+
+# Windows 批处理文件设置
+[*.{cmd,bat}]
+# Windows 批处理文件使用 CRLF
+end_of_line = crlf

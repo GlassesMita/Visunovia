@@ -1,0 +1,19 @@
+{
+  "name": "visunovia-player",
+  "version": "1.0.0",
+  "description": "Visunovia Visual Novel Player",
+  "main": "node-main.js",
+  "node-main": "node-main.js",
+  "window": {
+    "title": "Visunovia Player",
+    "width": 1280,
+    "height": 720,
+    "min_width": 960,
+    "min_height": 540,
+    "resizable": true,
+    "frame": true,
+    "show_in_taskbar": true,
+    "show": true
+  },
+  "chromium-args": "--disable-web-security"
+}

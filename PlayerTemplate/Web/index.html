@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visunovia Player</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <div id="loading" class="loading-screen">
+            <div class="loading-content">
+                <div class="loading-title">Visunovia</div>
+                <div class="loading-text">正在加载...</div>
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+
+        <div id="main-container" class="hidden">
+            <div id="background-layer" class="layer">
+                <img id="background-image" src="" alt="">
+            </div>
+
+            <div id="sprite-layer" class="layer">
+            </div>
+
+            <div id="ui-layer">
+                <div id="dialogue-box" class="hidden">
+                    <div id="speaker-name"></div>
+                    <div id="dialogue-text"></div>
+                    <div id="continue-indicator">▼</div>
+                </div>
+
+                <div id="choice-panel" class="hidden">
+                    <div id="choice-buttons"></div>
+                </div>
+
+                <div id="end-screen" class="hidden">
+                    <div class="end-content">
+                        <div class="end-text">[播放结束]</div>
+                        <button id="close-btn" class="btn">关闭</button>
+                        <button id="replay-btn" class="btn">重新播放</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="error-screen" class="hidden">
+            <div class="error-content">
+                <div class="error-icon">!</div>
+                <div class="error-text" id="error-message"></div>
+                <button id="retry-btn" class="btn">重新选择项目</button>
+            </div>
+        </div>
+
+        <div id="select-screen">
+            <div class="select-content">
+                <div class="select-title">Visunovia Player</div>
+                <div class="select-subtitle">请选择项目文件</div>
+                <button id="open-project-btn" class="btn btn-large">打开项目</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
