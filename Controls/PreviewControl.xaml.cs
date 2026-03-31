@@ -214,10 +214,13 @@ public partial class PreviewControl : UserControl
                 break;
 
             case VNEventType.ShowCharacter:
-                var charId = dialogue.Event.Parameters.TryGetValue("CharacterId", out var cid) == true ? cid?.ToString() ?? "" : "";
-                var expression = dialogue.Event.Parameters.TryGetValue("Expression", out var expr) == true ? expr?.ToString() ?? "default" : "default";
-                if (!string.IsNullOrEmpty(charId) && !string.IsNullOrEmpty(projectRoot))
+                var charPath = dialogue.Event.Parameters.TryGetValue("CharacterPath", out var path) ? path?.ToString() ?? "" : "";
+                // var charId = dialogue.Event.Parameters.TryGetValue("CharacterId", out var cid) == true ? cid?.ToString() ?? "" : "";
+                // var expression = dialogue.Event.Parameters.TryGetValue("Expression", out var expr) == true ? expr?.ToString() ?? "default" : "default";
+                if (!string.IsNullOrEmpty(charPath) && !string.IsNullOrEmpty(projectRoot))
                 {
+                    LoadCharacter(charPath);
+                    /*
                     var fullPath = Path.Combine(projectRoot, "Assets", "Characters", $"{charId}_{expression}.png");
                     if (File.Exists(fullPath))
                     {
@@ -231,6 +234,7 @@ public partial class PreviewControl : UserControl
                             LoadCharacter(charId);
                         }
                     }
+                    */
                 }
                 CharacterImage.Visibility = Visibility.Visible;
                 Advance();
