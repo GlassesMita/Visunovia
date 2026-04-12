@@ -599,6 +599,7 @@ public partial class MainWindow : Window
         typeComboBox.Items.Add("PlaySound");
         typeComboBox.Items.Add("ChangeBackground");
         typeComboBox.Items.Add("ChangeBgm");
+        typeComboBox.Items.Add("BgmStop");
         typeComboBox.Items.Add("ShowCharacter");
         typeComboBox.Items.Add("HideCharacter");
         typeComboBox.Items.Add("Pause");

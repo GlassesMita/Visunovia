@@ -38,6 +38,7 @@ public class PlayerEngine
     public event Action? DialogueAdvanced;
     public event Action? SceneEnded;
     public event Action<string>? BgmChanged;
+    public event Action? BgmStopped;
     public event Action<List<VNSprite>>? SpritesChanged;
 
     public ResourceLoader Resources => _resourceLoader;
@@ -311,6 +312,12 @@ public class PlayerEngine
                 {
                     BgmChanged?.Invoke(bgmPath);
                 }
+                _currentDialogueIndex++;
+                Advance();
+                break;
+
+            case VNEventType.BgmStop:
+                BgmStopped?.Invoke();
                 _currentDialogueIndex++;
                 Advance();
                 break;

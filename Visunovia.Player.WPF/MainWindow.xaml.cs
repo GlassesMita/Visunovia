@@ -30,6 +30,7 @@ public partial class MainWindow : Window
         _engine.BackgroundChanged += OnBackgroundChanged;
         _engine.ChoicesChanged += OnChoicesChanged;
         _engine.BgmChanged += OnBgmChanged;
+        _engine.BgmStopped += OnBgmStopped;
         _engine.SceneEnded += OnSceneEnded;
         _engine.SpritesChanged += OnSpritesChanged;
 
@@ -190,6 +191,8 @@ public partial class MainWindow : Window
                     var tempPath = Path.Combine(Path.GetTempPath(), $"visunovia_bgm_{Guid.NewGuid()}.tmp");
                     File.WriteAllBytes(tempPath, binary);
                     BgmPlayer.Source = new Uri(tempPath);
+                    BgmPlayer.MediaEnded -= OnBgmMediaEnded;
+                    BgmPlayer.MediaEnded += OnBgmMediaEnded;
                     BgmPlayer.Play();
                 }
             }
@@ -198,6 +201,18 @@ public partial class MainWindow : Window
         {
             System.Diagnostics.Debug.WriteLine($"Failed to play BGM: {ex.Message}");
         }
+    }
+
+    private void OnBgmStopped()
+    {
+        BgmPlayer.Stop();
+        BgmPlayer.Source = null;
+    }
+
+    private void OnBgmMediaEnded(object sender, System.Windows.RoutedEventArgs e)
+    {
+        BgmPlayer.Position = TimeSpan.Zero;
+        BgmPlayer.Play();
     }
 
     private void OnSpritesChanged(System.Collections.Generic.List<VNSprite> sprites)

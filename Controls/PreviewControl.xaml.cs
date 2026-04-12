@@ -207,9 +207,17 @@ public partial class PreviewControl : UserControl
                     {
                         BgmPlayer.Source = new Uri(fullPath);
                         BgmPlayer.Volume = 0.5;
+                        BgmPlayer.MediaEnded -= OnBgmMediaEnded;
+                        BgmPlayer.MediaEnded += OnBgmMediaEnded;
                         BgmPlayer.Play();
                     }
                 }
+                Advance();
+                break;
+
+            case VNEventType.BgmStop:
+                BgmPlayer.Stop();
+                BgmPlayer.Source = null;
                 Advance();
                 break;
 
@@ -336,6 +344,12 @@ public partial class PreviewControl : UserControl
         _isPreviewEnded = false;
         _currentDialogueIndex = -1;
         PreviewClosed?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void OnBgmMediaEnded(object sender, System.Windows.RoutedEventArgs e)
+    {
+        BgmPlayer.Position = TimeSpan.Zero;
+        BgmPlayer.Play();
     }
 
     private void OnFullscreenClicked(object sender, RoutedEventArgs e)

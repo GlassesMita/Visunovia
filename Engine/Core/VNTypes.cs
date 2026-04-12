@@ -105,6 +105,7 @@ public enum VNEventType
     PlaySound,
     ChangeBackground,
     ChangeBgm,
+    BgmStop,
     ShowCharacter,
     HideCharacter,
     Pause,
