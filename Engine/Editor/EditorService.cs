@@ -4,6 +4,8 @@ using System.IO;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using Visunovia.Engine.Core;
+using Visunovia.Editor.Security;
+using Visunovia.Engine.Plugin;
 
 namespace Visunovia.Engine.Editor;
 
@@ -12,6 +14,7 @@ public class EditorService
     private readonly ISerializer _yamlSerializer;
     private readonly IDeserializer _yamlDeserializer;
     private readonly UndoRedoManager _undoRedoManager;
+    private readonly PluginManager _pluginManager;
 
     public VNProject? CurrentProject { get; private set; }
     public string? CurrentProjectPath { get; private set; }
@@ -20,6 +23,7 @@ public class EditorService
     public UndoRedoManager UndoRedo => _undoRedoManager;
     public bool CanUndo => _undoRedoManager.CanUndo;
     public bool CanRedo => _undoRedoManager.CanRedo;
+    public PluginManager Plugins => _pluginManager;
 
     public event Action? ProjectChanged;
     public event Action<string>? ErrorOccurred;
@@ -37,6 +41,15 @@ public class EditorService
 
         _undoRedoManager = new UndoRedoManager();
         _undoRedoManager.HistoryChanged += () => ProjectChanged?.Invoke();
+
+        _pluginManager = new PluginManager();
+        LoadPlugins();
+    }
+
+    private void LoadPlugins()
+    {
+        var pluginsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
+        _pluginManager.LoadPlugins(pluginsDir);
     }
 
     public void NewProject(string name, string path)
@@ -731,22 +744,17 @@ public class PackagingService
             var tempDir = Path.Combine(Path.GetTempPath(), $"Visunovia_Package_{Guid.NewGuid():N}");
             Directory.CreateDirectory(tempDir);
 
-            StatusChanged?.Invoke("正在复制项目文件...");
-            progress?.Report(10);
-            await CopyProjectFilesAsync(projectRoot, tempDir);
-
-            StatusChanged?.Invoke("正在创建 ZIP 包...");
-            progress?.Report(50);
-            var tempZipPath = Path.Combine(tempDir, "Game.zip");
-            await CreateZipArchiveAsync(tempDir, tempZipPath);
-
-            StatusChanged?.Invoke("正在加密资源包...");
-            progress?.Report(70);
             var outputDir = Path.Combine(_outputPath, _editor.CurrentProject.Metadata.Title);
             Directory.CreateDirectory(outputDir);
             var lorePath = Path.Combine(outputDir, "Game.lore");
 
-            Visunovia.Editor.Security.SimpleCryptoHelper.EncryptPackage(tempZipPath, lorePath, rawKeyString);
+            StatusChanged?.Invoke("正在复制项目文件...");
+            progress?.Report(10);
+            await CopyProjectFilesAsync(projectRoot, tempDir);
+
+            StatusChanged?.Invoke("正在创建并加密资源包...");
+            progress?.Report(50);
+            await CreateZipArchiveAsync(tempDir, lorePath, rawKeyString);
 
             StatusChanged?.Invoke("正在准备播放器...");
             progress?.Report(85);
@@ -788,16 +796,27 @@ public class PackagingService
         });
     }
 
-    private async Task CreateZipArchiveAsync(string sourceDir, string destZipPath)
+    private async Task CreateZipArchiveAsync(string sourceDir, string destZipPath, string password)
     {
         await Task.Run(() =>
         {
-            if (File.Exists(destZipPath))
+            using var memoryStream = new MemoryStream();
+            using (var archive = new System.IO.Compression.ZipArchive(memoryStream, System.IO.Compression.ZipArchiveMode.Create, false))
             {
-                File.Delete(destZipPath);
+                var files = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
+                foreach (var file in files)
+                {
+                    var relativePath = Path.GetRelativePath(sourceDir, file);
+                    var entry = archive.CreateEntry(relativePath, System.IO.Compression.CompressionLevel.Optimal);
+                    using var entryStream = entry.Open();
+                    using var fileStream = File.OpenRead(file);
+                    fileStream.CopyTo(entryStream);
+                }
             }
 
-            System.IO.Compression.ZipFile.CreateFromDirectory(sourceDir, destZipPath, System.IO.Compression.CompressionLevel.Optimal, false);
+            byte[] zipData = memoryStream.ToArray();
+            byte[] encryptedData = Visunovia.Editor.Security.SimpleCryptoHelper.XorEncrypt(zipData, password);
+            File.WriteAllBytes(destZipPath, encryptedData);
         });
     }
 
@@ -807,19 +826,117 @@ public class PackagingService
         {
             var obfuscatedKey = Visunovia.Editor.Security.SimpleCryptoHelper.ObfuscateKeyString(rawKeyString);
 
-            if (Directory.Exists(_playerTemplatePath))
+            // 确定 Player 模板目录路径
+            var currentExePath = Environment.ProcessPath;
+            var playerTemplateDir = "";
+            
+            // 优先从当前运行目录查找
+            if (!string.IsNullOrEmpty(currentExePath) && File.Exists(currentExePath))
             {
-                var playerDir = Path.Combine(outputDir, "Player");
-                CopyDirectoryRecursive(_playerTemplatePath, playerDir);
-
-                var cryptoFile = Path.Combine(playerDir, "Security", "simple-crypto.js");
-                if (File.Exists(cryptoFile))
+                var sourceDir = Path.GetDirectoryName(currentExePath);
+                if (!string.IsNullOrEmpty(sourceDir))
                 {
-                    var content = File.ReadAllText(cryptoFile);
-                    content = content.Replace("PLACEHOLDER", obfuscatedKey);
-                    File.WriteAllText(cryptoFile, content);
+                    playerTemplateDir = Path.Combine(sourceDir, "Visunovia.Player.NW");
                 }
             }
+            
+            // 如果在运行目录找不到，回退到项目源码目录
+            if (string.IsNullOrEmpty(playerTemplateDir) || !Directory.Exists(playerTemplateDir))
+            {
+                playerTemplateDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Visunovia.Player.NW");
+            }
+            
+            // 如果还找不到，尝试从项目根目录查找
+            if (!Directory.Exists(playerTemplateDir))
+            {
+                playerTemplateDir = @"e:\Visunovia\Visunovia.Player.NW";
+            }
+
+            if (!Directory.Exists(playerTemplateDir))
+            {
+                throw new DirectoryNotFoundException($"无法找到 Player 模板目录: {playerTemplateDir}");
+            }
+
+            // 直接将 Player 模板内容复制到输出目录根目录
+            CopyDirectoryRecursive(playerTemplateDir, outputDir);
+
+            // 注入密码到 simple-crypto.js
+            var cryptoJsPath = Path.Combine(outputDir, "Security", "simple-crypto.js");
+            if (File.Exists(cryptoJsPath))
+            {
+                var content = File.ReadAllText(cryptoJsPath);
+                content = content.Replace("PLACEHOLDER", obfuscatedKey);
+                File.WriteAllText(cryptoJsPath, content);
+            }
+
+            // 创建启动脚本
+            var startScriptPath = Path.Combine(outputDir, "启动 Player.bat");
+            var startScriptContent = @"@echo off
+chcp 65001 >nul
+echo ========================================
+echo Visunovia Player
+echo ========================================
+echo.
+echo 正在启动 Player...
+echo.
+
+REM 检查是否已安装 node_modules
+if not exist ""node_modules"" (
+    echo 首次运行，正在安装依赖...
+    call npm install
+    if errorlevel 1 (
+        echo.
+        echo 依赖安装失败！请确保已安装 Node.js
+        echo 下载地址: https://nodejs.org/
+        echo.
+        pause
+        exit /b 1
+    )
+    echo.
+)
+
+REM 检查是否已安装 nw
+where nw >nul 2>nul
+if errorlevel 1 (
+    echo NW.js 未安装或未配置 PATH
+    echo 尝试使用 npx nw...
+    echo.
+    npx nw .
+) else (
+    nw .
+)
+
+if errorlevel 1 (
+    echo.
+    echo Player 启动失败！
+    echo.
+    pause
+)
+";
+            File.WriteAllText(startScriptPath, startScriptContent, System.Text.Encoding.UTF8);
+
+            // 创建说明文件
+            var readmePath = Path.Combine(outputDir, "使用说明.txt");
+            var readmeContent = @"Visunovia Player 使用说明
+================================
+
+运行方式：
+1. 双击 ""启动 Player.bat"" 即可启动 Player
+2. 或在命令行中运行：npm start
+
+系统要求：
+- Node.js (推荐 v16 或更高版本)
+- 下载地址: https://nodejs.org/
+
+首次运行：
+- 首次运行会自动安装 npm 依赖
+- 请确保网络连接正常
+
+注意：
+- Game.lore 文件必须与本程序在同一目录下
+- 密码已预先配置，无需手动输入
+";
+            File.WriteAllText(readmePath, readmeContent, System.Text.Encoding.UTF8);
         });
     }
 

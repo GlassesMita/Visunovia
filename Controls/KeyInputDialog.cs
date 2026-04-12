@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using Visunovia.Engine.Localization;
 
 namespace Visunovia.Controls;
 
@@ -9,7 +10,7 @@ public class KeyInputDialog
     public string? Result { get; private set; }
     public bool Confirmed { get; private set; }
 
-    public Task<string?> ShowAsync(string title = "输入密钥", string message = "请输入打包密钥：")
+    public Task<string?> ShowAsync(string titleKey = "Dialog_EnterKey", string messageKey = "Dialog_EnterPackageKey")
     {
         Result = null;
         Confirmed = false;
@@ -18,11 +19,12 @@ public class KeyInputDialog
 
         Application.Current.Dispatcher.Invoke(() =>
         {
+            var loc = LocalizationService.Instance;
             var dialog = new Window
             {
-                Title = title,
-                Width = 400,
-                Height = 180,
+                Title = loc.GetString(titleKey),
+                Width = 500,
+                Height = 220,
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 ResizeMode = ResizeMode.NoResize,
                 Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2D2D2D"))
@@ -32,17 +34,17 @@ public class KeyInputDialog
 
             var label = new System.Windows.Controls.TextBlock
             {
-                Text = message,
+                Text = loc.GetString(messageKey),
                 Foreground = System.Windows.Media.Brushes.White,
-                FontSize = 14,
-                Margin = new Thickness(0, 0, 0, 10)
+                FontSize = 16,
+                Margin = new Thickness(0, 0, 0, 15)
             };
             System.Windows.Controls.Grid.SetRow(label, 0);
 
-            var textBox = new System.Windows.Controls.PasswordBox
+            var textBox = new System.Windows.Controls.TextBox
             {
-                FontSize = 14,
-                Margin = new Thickness(0, 0, 0, 10)
+                FontSize = 16,
+                Margin = new Thickness(0, 0, 0, 15)
             };
             System.Windows.Controls.Grid.SetRow(textBox, 1);
 
@@ -55,9 +57,9 @@ public class KeyInputDialog
 
             var okButton = new System.Windows.Controls.Button
             {
-                Content = "确认",
-                Width = 80,
-                Height = 30,
+                Content = loc.GetString("Dialog_Confirm"),
+                Width = 100,
+                Height = 36,
                 Margin = new Thickness(0, 0, 10, 0),
                 Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#3B82F6")),
                 Foreground = System.Windows.Media.Brushes.White,
@@ -66,9 +68,9 @@ public class KeyInputDialog
 
             var cancelButton = new System.Windows.Controls.Button
             {
-                Content = "取消",
-                Width = 80,
-                Height = 30,
+                Content = loc.GetString("Dialog_Cancel"),
+                Width = 100,
+                Height = 36,
                 Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#6B7280")),
                 Foreground = System.Windows.Media.Brushes.White,
                 BorderThickness = new Thickness(0)
@@ -76,13 +78,13 @@ public class KeyInputDialog
 
             okButton.Click += (s, e) =>
             {
-                if (string.IsNullOrWhiteSpace(textBox.Password))
+                if (string.IsNullOrWhiteSpace(textBox.Text))
                 {
-                    MessageBox.Show(dialog, "密钥不能为空", "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(dialog, loc.GetString("Dialog_KeyCannotBeEmpty"), loc.GetString("Dialog_Error"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
                 Confirmed = true;
-                Result = textBox.Password;
+                Result = textBox.Text;
                 dialog.Close();
             };
 

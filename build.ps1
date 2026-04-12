@@ -1,7 +1,7 @@
 param([switch]$EditorOnly, [switch]$PlayerOnly)
 $ErrorActionPreference = "Stop"
-$SolutionDir = Split-Path -Parent $PSScriptRoot
-$EditorPath = Join-Path $SolutionDir "Visunovia"
+$SolutionDir = $PSScriptRoot
+$EditorPath = $SolutionDir
 $PlayerNWPath = Join-Path $SolutionDir "Visunovia.Player.NW"
 $PlayerOutput = Join-Path $SolutionDir "Editor\Player"
 $Arch = "win-x64"
@@ -36,81 +36,53 @@ function Build-NWPlayer {
         return $false
     }
 
-    $nodeModules = Join-Path $PlayerNWPath "node_modules"
-    if (-not (Test-Path $nodeModules)) {
-        Write-Host "正在安装 npm 依赖..." -ForegroundColor Yellow
-        Push-Location $PlayerNWPath
+    Write-Host "正在安装 npm 依赖..." -ForegroundColor Yellow
+    Push-Location $PlayerNWPath
+    try {
         npm install
         if ($LASTEXITCODE -ne 0) {
             Write-Host "npm 依赖安装失败" -ForegroundColor Red
             Pop-Location
             return $false
         }
-        Pop-Location
-    }
-
-    if (-not (Get-Command nw -ErrorAction SilentlyContinue)) {
-        Write-Host "警告: nwjs-builder 未安装或未配置 PATH" -ForegroundColor Yellow
-        Write-Host "尝试使用 npx 调用..." -ForegroundColor Yellow
-        $nwbuildCmd = "npx nwbuild"
-    } else {
-        $nwbuildCmd = "nwbuild"
-    }
-
-    $tempBuildDir = Join-Path $SolutionDir "temp_nw_build"
-    $webSource = Join-Path $PlayerNWPath "Web"
-    $vfsSource = Join-Path $PlayerNWPath "VFS"
-    $mainJs = Join-Path $PlayerNWPath "node-main.js"
-    $preloadJs = Join-Path $PlayerNWPath "preload.js"
-    $packageJson = Join-Path $PlayerNWPath "package.json"
-
-    if (Test-Path $tempBuildDir) {
-        Remove-Item -Recurse -Force $tempBuildDir
-    }
-    New-Item -ItemType Directory -Path $tempBuildDir | Out-Null
-    New-Item -ItemType Directory -Path (Join-Path $tempBuildDir "Web") | Out-Null
-    New-Item -ItemType Directory -Path (Join-Path $tempBuildDir "VFS") | Out-Null
-
-    Copy-Item $webSource -Destination (Join-Path $tempBuildDir "Web") -Recurse
-    Copy-Item $vfsSource -Destination (Join-Path $tempBuildDir "VFS") -Recurse
-    Copy-Item $mainJs -Destination $tempBuildDir
-    Copy-Item $preloadJs -Destination $tempBuildDir
-    Copy-Item $packageJson -Destination $tempBuildDir
-
-    $tempPackageJson = Join-Path $tempBuildDir "package.json"
-    $tempPackage = Get-Content $tempPackageJson | ConvertFrom-Json
-    $tempPackage.main = "node-main.js"
-    $tempPackage | ConvertTo-Json -Depth 10 | Set-Content $tempPackageJson
-
-    Write-Host "正在打包 NW.js 应用..." -ForegroundColor Yellow
-    Push-Location $tempBuildDir
-    try {
-        $outputDirArg = "-o `"$PlayerOutput`""
-        $nwArgs = "-p win64 $outputDirArg ."
-
-        if ($nwbuildCmd -eq "npx nwbuild") {
-            $nwArgs = "nwbuild -p win64 -o `"$PlayerOutput`" ."
-        }
-
-        Write-Host "执行: $nwbuildCmd $nwArgs" -ForegroundColor Gray
-        Invoke-Expression "$nwbuildCmd $nwArgs"
-
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "NW.js 打包失败" -ForegroundColor Red
-            Pop-Location
-            return $false
-        }
     } catch {
-        Write-Host "打包过程中出错: $_" -ForegroundColor Red
+        Write-Host "npm 安装出错: $_" -ForegroundColor Red
         Pop-Location
         return $false
     }
     Pop-Location
 
-    Remove-Item -Recurse -Force $tempBuildDir
+    Write-Host "正在使用 nw-builder 打包 NW.js 应用..." -ForegroundColor Yellow
+    $env:PLATFORM = "win64"
+    $env:OUTPUT_DIR = $PlayerOutput
+    
+    try {
+        Push-Location $PlayerNWPath
+        node build.js
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "NW.js 打包失败" -ForegroundColor Red
+            Pop-Location
+            return $false
+        }
+        Pop-Location
+    } catch {
+        Write-Host "打包过程中出错: $_" -ForegroundColor Red
+        Pop-Location
+        return $false
+    }
 
-    Write-Host "播放器编译成功: $PlayerOutput" -ForegroundColor Green
-    return $true
+    if (Test-Path (Join-Path $PlayerOutput "nw.exe")) {
+        Write-Host "播放器编译成功: $PlayerOutput" -ForegroundColor Green
+        return $true
+    } elseif (Test-Path (Join-Path $PlayerOutput "Visunovia.Player.NW.exe")) {
+        Write-Host "播放器编译成功: $PlayerOutput" -ForegroundColor Green
+        return $true
+    } else {
+        Write-Host "警告: 未在输出目录找到 nw.exe 或 *.exe" -ForegroundColor Yellow
+        Write-Host "输出目录: $PlayerOutput" -ForegroundColor Yellow
+        Get-ChildItem $PlayerOutput -Recurse -File | Select-Object -First 10 FullName
+        return $true
+    }
 }
 
 function Main {

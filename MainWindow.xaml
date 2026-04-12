@@ -29,7 +29,6 @@
             <RowDefinition Height="40"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="28"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Menu Grid.Row="0" Background="#1A1A1A">
@@ -44,6 +43,9 @@
             <MenuItem Header="编辑" Foreground="White">
                 <MenuItem Header="撤销 (Ctrl+Z)" Click="OnUndoClicked"/>
                 <MenuItem Header="重做 (Ctrl+Y)" Click="OnRedoClicked"/>
+            </MenuItem>
+            <MenuItem Header="设置" Foreground="White">
+                <MenuItem Header="引擎设置..." Click="OnSettingsClicked"/>
             </MenuItem>
         </Menu>
 
@@ -71,6 +73,7 @@
                 <Button x:Name="StopPreviewBtn" Content="停止" Style="{StaticResource ToolbarButton}" Click="OnStopPreviewClicked" Visibility="Collapsed"/>
                 <Button x:Name="PackageProjectBtn" Content="打包" Background="#10B981" Foreground="White" Click="OnPackageProjectClicked"/>
                 <Button Content="从选中预览" Background="#8057D4" Foreground="White" Click="OnPreviewFromSelectedClicked"/>
+                <Button Content="设置" Style="{StaticResource ToolbarButton}" Click="OnSettingsClicked"/>
             </StackPanel>
         </Grid>
 
@@ -211,9 +214,9 @@
             <TextBlock x:Name="SaveStatusLabel" Grid.Column="1" Text="" FontSize="11" Foreground="#999999" Margin="0,0,12,0" VerticalAlignment="Center"/>
         </Grid>
 
-        <controls:DebugPanel x:Name="DebugConsoleControl" Grid.Row="3" Visibility="Collapsed"/>
+        <controls:DebugPanel x:Name="DebugConsoleControl" Grid.Row="1" Visibility="Collapsed" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,10"/>
 
-        <Grid x:Name="PreviewOverlay" Grid.RowSpan="4" Background="#F0000000" Visibility="Collapsed">
+        <Grid x:Name="PreviewOverlay" Grid.RowSpan="3" Background="#F0000000" Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>

@@ -603,6 +603,8 @@ public partial class MainWindow : Window
         typeComboBox.Items.Add("HideCharacter");
         typeComboBox.Items.Add("Pause");
         typeComboBox.Items.Add("Custom");
+        typeComboBox.Items.Add("InvokePlugin");
+        typeComboBox.Items.Add("InvokeCode");
         typeComboBox.Text = dialogue.Event.EventType.ToString();
         typeComboBox.DropDownClosed += (s, e) =>
         {
@@ -926,6 +928,154 @@ public partial class MainWindow : Window
                         MarkDialogueModified();
                     };
                     panel.Children.Add(customBox);
+                }
+                break;
+
+            case VNEventType.InvokePlugin:
+                {
+                    var assemblyComboBox = new System.Windows.Controls.ComboBox
+                    {
+                        Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                        Foreground = System.Windows.Media.Brushes.Black,
+                        BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                        Padding = new Thickness(8, 6, 8, 6),
+                        FontSize = 13
+                    };
+                    var classComboBox = new System.Windows.Controls.ComboBox
+                    {
+                        Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                        Foreground = System.Windows.Media.Brushes.Black,
+                        BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                        Padding = new Thickness(8, 6, 8, 6),
+                        FontSize = 13
+                    };
+                    var methodComboBox = new System.Windows.Controls.ComboBox
+                    {
+                        Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                        Foreground = System.Windows.Media.Brushes.Black,
+                        BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                        Padding = new Thickness(8, 6, 8, 6),
+                        FontSize = 13
+                    };
+
+                    var assemblyLabel = new TextBlock
+                    {
+                        Text = "程序集",
+                        Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                        FontSize = 11,
+                        Margin = new Thickness(0, 0, 0, 4)
+                    };
+                    panel.Children.Add(assemblyLabel);
+                    panel.Children.Add(assemblyComboBox);
+
+                    var classLabel = new TextBlock
+                    {
+                        Text = "类",
+                        Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                        FontSize = 11,
+                        Margin = new Thickness(0, 8, 0, 4)
+                    };
+                    panel.Children.Add(classLabel);
+                    panel.Children.Add(classComboBox);
+
+                    var methodLabel = new TextBlock
+                    {
+                        Text = "方法",
+                        Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                        FontSize = 11,
+                        Margin = new Thickness(0, 8, 0, 4)
+                    };
+                    panel.Children.Add(methodLabel);
+                    panel.Children.Add(methodComboBox);
+
+                    var pluginAssembly = dialogue.Event?.Parameters.TryGetValue("PluginAssembly", out var pa) == true ? pa?.ToString() ?? "" : "";
+                    foreach (var asm in _editor.Plugins.Assemblies)
+                    {
+                        assemblyComboBox.Items.Add(asm.Name);
+                    }
+                    assemblyComboBox.Text = pluginAssembly;
+
+                    var pluginClass = dialogue.Event?.Parameters.TryGetValue("PluginClass", out var pc) == true ? pc?.ToString() ?? "" : "";
+                    classComboBox.Text = pluginClass;
+
+                    var pluginMethod = dialogue.Event?.Parameters.TryGetValue("PluginMethod", out var pm) == true ? pm?.ToString() ?? "" : "";
+                    methodComboBox.Text = pluginMethod;
+
+                    assemblyComboBox.DropDownClosed += (s, e) =>
+                    {
+                        dialogue.Event!.Parameters["PluginAssembly"] = assemblyComboBox.Text;
+                        dialogue.Event!.Parameters["PluginClass"] = "";
+                        dialogue.Event!.Parameters["PluginMethod"] = "";
+                        classComboBox.Items.Clear();
+                        methodComboBox.Items.Clear();
+                        var types = _editor.Plugins.GetTypes(assemblyComboBox.Text);
+                        foreach (var t in types)
+                        {
+                            classComboBox.Items.Add(t.FullName);
+                        }
+                        classComboBox.Text = "";
+                        methodComboBox.Text = "";
+                        MarkDialogueModified();
+                    };
+
+                    classComboBox.DropDownClosed += (s, e) =>
+                    {
+                        dialogue.Event!.Parameters["PluginClass"] = classComboBox.Text;
+                        dialogue.Event!.Parameters["PluginMethod"] = "";
+                        methodComboBox.Items.Clear();
+                        var types = _editor.Plugins.GetTypes(assemblyComboBox.Text);
+                        var selectedType = types.FirstOrDefault(t => t.FullName == classComboBox.Text);
+                        if (selectedType != null)
+                        {
+                            var methods = _editor.Plugins.GetMethods(assemblyComboBox.Text, classComboBox.Text);
+                            foreach (var m in methods)
+                            {
+                                methodComboBox.Items.Add(m.Name);
+                            }
+                        }
+                        methodComboBox.Text = "";
+                        MarkDialogueModified();
+                    };
+
+                    methodComboBox.DropDownClosed += (s, e) =>
+                    {
+                        dialogue.Event!.Parameters["PluginMethod"] = methodComboBox.Text;
+                        MarkDialogueModified();
+                    };
+                }
+                break;
+
+            case VNEventType.InvokeCode:
+                {
+                    var codeLabel = new TextBlock
+                    {
+                        Text = "C# 代码",
+                        Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                        FontSize = 11,
+                        Margin = new Thickness(0, 0, 0, 4)
+                    };
+                    panel.Children.Add(codeLabel);
+
+                    var codeBox = new System.Windows.Controls.TextBox
+                    {
+                        Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                        Foreground = System.Windows.Media.Brushes.White,
+                        BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                        Padding = new Thickness(8, 6, 8, 6),
+                        FontSize = 12,
+                        AcceptsReturn = true,
+                        TextWrapping = TextWrapping.Wrap,
+                        MinHeight = 150,
+                        VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto
+                    };
+                    var code = dialogue.Event?.Parameters.TryGetValue("Code", out var c) == true ? c?.ToString() ?? "" : "";
+                    codeBox.Text = code;
+                    codeBox.TextChanged += (s, e) =>
+                    {
+                        dialogue.Event!.Parameters["Code"] = codeBox.Text;
+                        MarkDialogueModified();
+                    };
+                    panel.Children.Add(codeBox);
                 }
                 break;
         }
@@ -1764,6 +1914,15 @@ public partial class MainWindow : Window
     private void OnRedoClicked(object sender, RoutedEventArgs e)
     {
         _editor.Redo();
+    }
+
+    private void OnSettingsClicked(object sender, RoutedEventArgs e)
+    {
+        var settingsWindow = new SettingsWindow
+        {
+            Owner = this
+        };
+        settingsWindow.ShowDialog();
     }
 
     private void OnRunProjectClicked(object sender, RoutedEventArgs e)

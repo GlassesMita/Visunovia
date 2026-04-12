@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Language_Name" xml:space="preserve">
+    <value>English (US)</value>
+  </data>
+  <data name="UI_Ready" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="UI_UnnamedProject" xml:space="preserve">
+    <value>Unnamed Project</value>
+  </data>
+  <data name="UI_Resources" xml:space="preserve">
+    <value>Resources</value>
+  </data>
+  <data name="UI_PropertyPanel" xml:space="preserve">
+    <value>Property Panel</value>
+  </data>
+  <data name="UI_DialogueList" xml:space="preserve">
+    <value>Dialogue List</value>
+  </data>
+  <data name="UI_Assets" xml:space="preserve">
+    <value>Assets</value>
+  </data>
+  <data name="UI_Fonts" xml:space="preserve">
+    <value>Fonts</value>
+  </data>
+  <data name="UI_Others" xml:space="preserve">
+    <value>Others</value>
+  </data>
+  <data name="UI_Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="UI_AddScene" xml:space="preserve">
+    <value>+ Add Scene</value>
+  </data>
+  <data name="UI_AddDialogue" xml:space="preserve">
+    <value>+ Add Dialogue</value>
+  </data>
+  <data name="UI_AddBranch" xml:space="preserve">
+    <value>+ Add Branch</value>
+  </data>
+  <data name="UI_AddEvent" xml:space="preserve">
+    <value>+ Add Event</value>
+  </data>
+  <data name="UI_CopyDialogue" xml:space="preserve">
+    <value>Copy Dialogue</value>
+  </data>
+  <data name="UI_DeleteDialogue" xml:space="preserve">
+    <value>Delete Dialogue</value>
+  </data>
+  <data name="UI_MoveUp" xml:space="preserve">
+    <value>Move Up</value>
+  </data>
+  <data name="UI_MoveDown" xml:space="preserve">
+    <value>Move Down</value>
+  </data>
+  <data name="Menu_File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Menu_NewProject" xml:space="preserve">
+    <value>New Project (Ctrl+N)</value>
+  </data>
+  <data name="Menu_QuickNewProject" xml:space="preserve">
+    <value>Quick New Project (Ctrl+Shift+N)</value>
+  </data>
+  <data name="Menu_OpenProject" xml:space="preserve">
+    <value>Open Project (Ctrl+O)</value>
+  </data>
+  <data name="Menu_SaveProject" xml:space="preserve">
+    <value>Save Project (Ctrl+S)</value>
+  </data>
+  <data name="Menu_PackageProject" xml:space="preserve">
+    <value>Package Project (Ctrl+B)</value>
+  </data>
+  <data name="Menu_Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Menu_Undo" xml:space="preserve">
+    <value>Undo (Ctrl+Z)</value>
+  </data>
+  <data name="Menu_Redo" xml:space="preserve">
+    <value>Redo (Ctrl+Y)</value>
+  </data>
+  <data name="Menu_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Menu_EngineSettings" xml:space="preserve">
+    <value>Engine Settings...</value>
+  </data>
+  <data name="Toolbar_Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="Toolbar_Redo" xml:space="preserve">
+    <value>Redo</value>
+  </data>
+  <data name="Toolbar_New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="Toolbar_QuickCreate" xml:space="preserve">
+    <value>Quick Create</value>
+  </data>
+  <data name="Toolbar_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Toolbar_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Toolbar_Run" xml:space="preserve">
+    <value>Run</value>
+  </data>
+  <data name="Toolbar_Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="Toolbar_Package" xml:space="preserve">
+    <value>Package</value>
+  </data>
+  <data name="Toolbar_PreviewFromSelected" xml:space="preserve">
+    <value>From Selected Preview</value>
+  </data>
+  <data name="Toolbar_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Status_Ready" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="Status_ProjectSaved" xml:space="preserve">
+    <value>Project saved</value>
+  </data>
+  <data name="Status_Saved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="Status_SaveFailed" xml:space="preserve">
+    <value>Save failed</value>
+  </data>
+  <data name="Status_UnsavedChanges" xml:space="preserve">
+    <value>Unsaved Changes</value>
+  </data>
+  <data name="Status_NoProjectToPackage" xml:space="preserve">
+    <value>No project to package</value>
+  </data>
+  <data name="Status_PackageCancelled" xml:space="preserve">
+    <value>Package cancelled</value>
+  </data>
+  <data name="Status_PackagingProject" xml:space="preserve">
+    <value>Packaging project...</value>
+  </data>
+  <data name="Status_PackageFailed_MissingPlayer" xml:space="preserve">
+    <value>Package failed: Missing NW.js player</value>
+  </data>
+  <data name="Status_PackageComplete" xml:space="preserve">
+    <value>Package complete</value>
+  </data>
+  <data name="Status_PackageFailed" xml:space="preserve">
+    <value>Package failed</value>
+  </data>
+  <data name="Status_PleaseSaveFirst" xml:space="preserve">
+    <value>Please save the project first before previewing.</value>
+  </data>
+  <data name="Status_NotSaved" xml:space="preserve">
+    <value>Not Saved</value>
+  </data>
+  <data name="Status_NewProjectDialogTitle" xml:space="preserve">
+    <value>New Project</value>
+  </data>
+  <data name="Status_OpenProjectDialogTitle" xml:space="preserve">
+    <value>Open Project</value>
+  </data>
+  <data name="Status_SaveProjectDialogTitle" xml:space="preserve">
+    <value>Save Project</value>
+  </data>
+  <data name="Status_SelectRecentProject" xml:space="preserve">
+    <value>Select Recent Project</value>
+  </data>
+  <data name="Status_OpenProjectButton" xml:space="preserve">
+    <value>Open Project</value>
+  </data>
+  <data name="Status_CurrentProjectHasUnsavedChanges" xml:space="preserve">
+    <value>Current project has unsaved changes, save first?</value>
+  </data>
+  <data name="Status_Preparing" xml:space="preserve">
+    <value>Preparing...</value>
+  </data>
+  <data name="Status_CopyingFiles" xml:space="preserve">
+    <value>Copying project files...</value>
+  </data>
+  <data name="Status_CreatingZip" xml:space="preserve">
+    <value>Creating ZIP package...</value>
+  </data>
+  <data name="Status_Encrypting" xml:space="preserve">
+    <value>Encrypting resource package...</value>
+  </data>
+  <data name="Status_PreparingPlayer" xml:space="preserve">
+    <value>Preparing player...</value>
+  </data>
+  <data name="Dialog_EnterKey" xml:space="preserve">
+    <value>Enter Key</value>
+  </data>
+  <data name="Dialog_EnterPackageKey" xml:space="preserve">
+    <value>Please enter the key for encrypting the game package:</value>
+  </data>
+  <data name="Dialog_KeyCannotBeEmpty" xml:space="preserve">
+    <value>Key cannot be empty</value>
+  </data>
+  <data name="Dialog_Confirm" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="Dialog_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Dialog_OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Dialog_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Dialog_Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="Dialog_Information" xml:space="preserve">
+    <value>Information</value>
+  </data>
+  <data name="Dialog_PackageCompleteMessage" xml:space="preserve">
+    <value>Game has been packaged to: {0}</value>
+  </data>
+  <data name="Dialog_PackageCompleteTitle" xml:space="preserve">
+    <value>Package complete</value>
+  </data>
+  <data name="EventTypes_JumpScene" xml:space="preserve">
+    <value>JumpScene</value>
+  </data>
+  <data name="EventTypes_SetVariable" xml:space="preserve">
+    <value>SetVariable</value>
+  </data>
+  <data name="EventTypes_PlaySound" xml:space="preserve">
+    <value>PlaySound</value>
+  </data>
+  <data name="EventTypes_ChangeBackground" xml:space="preserve">
+    <value>ChangeBackground</value>
+  </data>
+  <data name="EventTypes_ChangeBgm" xml:space="preserve">
+    <value>ChangeBgm</value>
+  </data>
+  <data name="EventTypes_ShowCharacter" xml:space="preserve">
+    <value>ShowCharacter</value>
+  </data>
+  <data name="EventTypes_HideCharacter" xml:space="preserve">
+    <value>HideCharacter</value>
+  </data>
+  <data name="EventTypes_Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="EventTypes_WaitSeconds" xml:space="preserve">
+    <value>WaitSeconds</value>
+  </data>
+  <data name="EventTypes_Custom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="DialogueTypes_Dialogue" xml:space="preserve">
+    <value>Dialogue</value>
+  </data>
+  <data name="DialogueTypes_Branch" xml:space="preserve">
+    <value>Branch</value>
+  </data>
+  <data name="DialogueTypes_Event" xml:space="preserve">
+    <value>Event</value>
+  </data>
+</root>

@@ -109,7 +109,9 @@ public enum VNEventType
     HideCharacter,
     Pause,
     WaitSeconds,
-    Custom
+    Custom,
+    InvokePlugin,
+    InvokeCode
 }
 
 public enum VNTransitionEffect

@@ -1,56 +1,44 @@
-const crypto = require('crypto');
-
-const SALT = 'Visunovia_LoR_2024_Simple';
-const ITERATIONS = 100000;
-const KEY_LENGTH = 32;
-const IV_LENGTH = 16;
-const XOR_KEY = 0x4E;
-
 const OBFUSCATED_KEY_STRING = 'PLACEHOLDER';
 
 function restoreRawKeyString() {
-    const obfuscatedBytes = Buffer.from(OBFUSCATED_KEY_STRING, 'base64');
-    const base64Bytes = Buffer.alloc(obfuscatedBytes.length);
-    for (let i = 0; i < obfuscatedBytes.length; i++) {
-        base64Bytes[i] = obfuscatedBytes[i] ^ XOR_KEY;
+    return OBFUSCATED_KEY_STRING;
+}
+
+function xorEncrypt(data, password) {
+    const passwordBytes = Buffer.from(password, 'utf8');
+    const result = Buffer.alloc(data.length);
+    for (let i = 0; i < data.length; i++) {
+        result[i] = data[i] ^ passwordBytes[i % passwordBytes.length];
     }
-    const base64String = base64Bytes.toString('utf8');
-    return Buffer.from(base64String, 'base64').toString('utf8');
+    return result;
 }
 
-function deriveAesKey(rawKeyString) {
-    const keyBytes = Buffer.from(rawKeyString, 'utf8');
-    const saltBytes = Buffer.from(SALT, 'utf8');
-    return crypto.pbkdf2Sync(keyBytes, saltBytes, ITERATIONS, KEY_LENGTH, 'sha256');
+function xorDecrypt(encryptedData, password) {
+    return xorEncrypt(encryptedData, password);
 }
 
-function decryptPackage(lorpkgPath) {
-    const rawKeyString = restoreRawKeyString();
-    const key = deriveAesKey(rawKeyString);
-
-    const input = require('fs').readFileSync(lorpkgPath);
-    const iv = input.slice(0, IV_LENGTH);
-    const encrypted = input.slice(IV_LENGTH);
-
-    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-    return Buffer.concat([decipher.update(encrypted), decipher.final()]);
+function decryptPackage(lorpkgPath, password) {
+    const fs = require('fs');
+    const encryptedData = fs.readFileSync(lorpkgPath);
+    return xorDecrypt(encryptedData, password);
 }
 
-function decryptBytes(encryptedData) {
-    const rawKeyString = restoreRawKeyString();
-    const key = deriveAesKey(rawKeyString);
+function decryptBytes(encryptedData, password) {
+    return xorDecrypt(encryptedData, password);
+}
 
-    const iv = encryptedData.slice(0, IV_LENGTH);
-    const encrypted = encryptedData.slice(IV_LENGTH);
-
-    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-    return Buffer.concat([decipher.update(encrypted), decipher.final()]);
+function decryptArrayBuffer(arrayBuffer, password) {
+    const encryptedData = Buffer.from(arrayBuffer);
+    const decrypted = xorDecrypt(encryptedData, password);
+    return decrypted.buffer.slice(decrypted.byteOffset, decrypted.byteOffset + decrypted.byteLength);
 }
 
 module.exports = {
     decryptPackage,
     decryptBytes,
+    decryptArrayBuffer,
     restoreRawKeyString,
-    deriveAesKey,
+    xorEncrypt,
+    xorDecrypt,
     OBFUSCATED_KEY_STRING
 };
