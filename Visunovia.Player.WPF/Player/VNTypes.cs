@@ -23,7 +23,37 @@ public enum VNEventType
     WaitSeconds,
     Custom,
     InvokePlugin,
-    InvokeCode
+    InvokeCode,
+    WindowEffect
+}
+
+public enum VNWindowEffectType
+{
+    None,
+    Shake,
+    Pulse,
+    MoveTo,
+    BorderFlash
+}
+
+public class VNWindowEffectParameters
+{
+    public VNWindowEffectType EffectType { get; set; } = VNWindowEffectType.None;
+
+    public int ShakeAmplitude { get; set; } = 15;
+    public int ShakeDurationMs { get; set; } = 1000;
+
+    public float PulseScaleMin { get; set; } = 0.8f;
+    public float PulseScaleMax { get; set; } = 1.2f;
+    public float PulseFrequency { get; set; } = 1f;
+    public int PulseDurationMs { get; set; } = 2000;
+
+    public int MoveToX { get; set; } = 0;
+    public int MoveToY { get; set; } = 0;
+
+    public string BorderFlashColor { get; set; } = "#FF0000";
+    public int BorderFlashCount { get; set; } = 3;
+    public int BorderFlashIntervalMs { get; set; } = 200;
 }
 
 public enum VNTransitionEffect
@@ -102,6 +132,7 @@ public class VNEvent
             "WaitSeconds" => VNEventType.WaitSeconds,
             "InvokePlugin" => VNEventType.InvokePlugin,
             "InvokeCode" => VNEventType.InvokeCode,
+            "WindowEffect" => VNEventType.WindowEffect,
             _ => VNEventType.Custom
         };
     }

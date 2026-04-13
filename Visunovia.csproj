@@ -7,6 +7,7 @@
 		<UseWPF>true</UseWPF>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<DefaultItemExcludes>$(DefaultItemExcludes);Visunovia.Player.WPF\**</DefaultItemExcludes>
 
 		<ApplicationTitle>Visunovia</ApplicationTitle>
 		<ApplicationId>com.visunovia.app</ApplicationId>

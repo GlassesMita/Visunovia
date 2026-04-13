@@ -606,6 +606,7 @@ public partial class MainWindow : Window
         typeComboBox.Items.Add("Custom");
         typeComboBox.Items.Add("InvokePlugin");
         typeComboBox.Items.Add("InvokeCode");
+        typeComboBox.Items.Add("WindowEffect");
         typeComboBox.Text = dialogue.Event.EventType.ToString();
         typeComboBox.DropDownClosed += (s, e) =>
         {
@@ -1077,6 +1078,337 @@ public partial class MainWindow : Window
                         MarkDialogueModified();
                     };
                     panel.Children.Add(codeBox);
+                }
+                break;
+
+            case VNEventType.WindowEffect:
+                {
+                    var effectTypeLabel = new TextBlock
+                    {
+                        Text = "窗口效果类型",
+                        Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                        FontSize = 11,
+                        Margin = new Thickness(0, 0, 0, 4)
+                    };
+                    panel.Children.Add(effectTypeLabel);
+
+                    var effectTypeComboBox = new System.Windows.Controls.ComboBox
+                    {
+                        Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                        Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                        BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                        Padding = new Thickness(8, 6, 8, 6),
+                        FontSize = 13
+                    };
+                    effectTypeComboBox.Items.Add("None");
+                    effectTypeComboBox.Items.Add("Shake");
+                    effectTypeComboBox.Items.Add("Pulse");
+                    effectTypeComboBox.Items.Add("MoveTo");
+                    effectTypeComboBox.Items.Add("BorderFlash");
+                    var effectTypeValue = dialogue.Event?.Parameters.TryGetValue("EffectType", out var et) == true ? et?.ToString() ?? "None" : "None";
+                    effectTypeComboBox.Text = effectTypeValue;
+                    effectTypeComboBox.DropDownClosed += (s, e) =>
+                    {
+                        dialogue.Event!.Parameters["EffectType"] = effectTypeComboBox.Text;
+                        MarkDialogueModified();
+                        UpdatePropertyPanel();
+                    };
+                    panel.Children.Add(effectTypeComboBox);
+
+                    if (effectTypeComboBox.Text == "Shake")
+                    {
+                        var shakeAmplitudeLabel = new TextBlock
+                        {
+                            Text = "晃动幅度（像素）",
+                            Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                            FontSize = 11,
+                            Margin = new Thickness(0, 8, 0, 4)
+                        };
+                        panel.Children.Add(shakeAmplitudeLabel);
+
+                        var shakeAmplitudeBox = new TextBox
+                        {
+                            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                            Foreground = System.Windows.Media.Brushes.White,
+                            BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                            Padding = new Thickness(8, 6, 8, 6),
+                            FontSize = 13
+                        };
+                        var shakeAmplitudeValue = dialogue.Event?.Parameters.TryGetValue("ShakeAmplitude", out var sa) == true ? sa?.ToString() ?? "15" : "15";
+                        shakeAmplitudeBox.Text = shakeAmplitudeValue;
+                        shakeAmplitudeBox.TextChanged += (s, e) =>
+                        {
+                            dialogue.Event!.Parameters["ShakeAmplitude"] = shakeAmplitudeBox.Text;
+                            MarkDialogueModified();
+                        };
+                        panel.Children.Add(shakeAmplitudeBox);
+
+                        var shakeDurationLabel = new TextBlock
+                        {
+                            Text = "晃动持续时间（毫秒）",
+                            Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                            FontSize = 11,
+                            Margin = new Thickness(0, 8, 0, 4)
+                        };
+                        panel.Children.Add(shakeDurationLabel);
+
+                        var shakeDurationBox = new TextBox
+                        {
+                            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                            Foreground = System.Windows.Media.Brushes.White,
+                            BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                            Padding = new Thickness(8, 6, 8, 6),
+                            FontSize = 13
+                        };
+                        var shakeDurationValue = dialogue.Event?.Parameters.TryGetValue("ShakeDurationMs", out var sd) == true ? sd?.ToString() ?? "1000" : "1000";
+                        shakeDurationBox.Text = shakeDurationValue;
+                        shakeDurationBox.TextChanged += (s, e) =>
+                        {
+                            dialogue.Event!.Parameters["ShakeDurationMs"] = shakeDurationBox.Text;
+                            MarkDialogueModified();
+                        };
+                        panel.Children.Add(shakeDurationBox);
+                    }
+                    else if (effectTypeComboBox.Text == "Pulse")
+                    {
+                        var pulseScaleMinLabel = new TextBlock
+                        {
+                            Text = "最小缩放比例",
+                            Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                            FontSize = 11,
+                            Margin = new Thickness(0, 8, 0, 4)
+                        };
+                        panel.Children.Add(pulseScaleMinLabel);
+
+                        var pulseScaleMinBox = new TextBox
+                        {
+                            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                            Foreground = System.Windows.Media.Brushes.White,
+                            BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                            Padding = new Thickness(8, 6, 8, 6),
+                            FontSize = 13
+                        };
+                        var pulseScaleMinValue = dialogue.Event?.Parameters.TryGetValue("PulseScaleMin", out var psmin) == true ? psmin?.ToString() ?? "0.8" : "0.8";
+                        pulseScaleMinBox.Text = pulseScaleMinValue;
+                        pulseScaleMinBox.TextChanged += (s, e) =>
+                        {
+                            dialogue.Event!.Parameters["PulseScaleMin"] = pulseScaleMinBox.Text;
+                            MarkDialogueModified();
+                        };
+                        panel.Children.Add(pulseScaleMinBox);
+
+                        var pulseScaleMaxLabel = new TextBlock
+                        {
+                            Text = "最大缩放比例",
+                            Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                            FontSize = 11,
+                            Margin = new Thickness(0, 8, 0, 4)
+                        };
+                        panel.Children.Add(pulseScaleMaxLabel);
+
+                        var pulseScaleMaxBox = new TextBox
+                        {
+                            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                            Foreground = System.Windows.Media.Brushes.White,
+                            BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                            Padding = new Thickness(8, 6, 8, 6),
+                            FontSize = 13
+                        };
+                        var pulseScaleMaxValue = dialogue.Event?.Parameters.TryGetValue("PulseScaleMax", out var psmax) == true ? psmax?.ToString() ?? "1.2" : "1.2";
+                        pulseScaleMaxBox.Text = pulseScaleMaxValue;
+                        pulseScaleMaxBox.TextChanged += (s, e) =>
+                        {
+                            dialogue.Event!.Parameters["PulseScaleMax"] = pulseScaleMaxBox.Text;
+                            MarkDialogueModified();
+                        };
+                        panel.Children.Add(pulseScaleMaxBox);
+
+                        var pulseFrequencyLabel = new TextBlock
+                        {
+                            Text = "脉冲频率",
+                            Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                            FontSize = 11,
+                            Margin = new Thickness(0, 8, 0, 4)
+                        };
+                        panel.Children.Add(pulseFrequencyLabel);
+
+                        var pulseFrequencyBox = new TextBox
+                        {
+                            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                            Foreground = System.Windows.Media.Brushes.White,
+                            BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                            Padding = new Thickness(8, 6, 8, 6),
+                            FontSize = 13
+                        };
+                        var pulseFrequencyValue = dialogue.Event?.Parameters.TryGetValue("PulseFrequency", out var pf) == true ? pf?.ToString() ?? "1" : "1";
+                        pulseFrequencyBox.Text = pulseFrequencyValue;
+                        pulseFrequencyBox.TextChanged += (s, e) =>
+                        {
+                            dialogue.Event!.Parameters["PulseFrequency"] = pulseFrequencyBox.Text;
+                            MarkDialogueModified();
+                        };
+                        panel.Children.Add(pulseFrequencyBox);
+
+                        var pulseDurationLabel = new TextBlock
+                        {
+                            Text = "脉冲持续时间（毫秒）",
+                            Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                            FontSize = 11,
+                            Margin = new Thickness(0, 8, 0, 4)
+                        };
+                        panel.Children.Add(pulseDurationLabel);
+
+                        var pulseDurationBox = new TextBox
+                        {
+                            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                            Foreground = System.Windows.Media.Brushes.White,
+                            BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                            Padding = new Thickness(8, 6, 8, 6),
+                            FontSize = 13
+                        };
+                        var pulseDurationValue = dialogue.Event?.Parameters.TryGetValue("PulseDurationMs", out var pd) == true ? pd?.ToString() ?? "2000" : "2000";
+                        pulseDurationBox.Text = pulseDurationValue;
+                        pulseDurationBox.TextChanged += (s, e) =>
+                        {
+                            dialogue.Event!.Parameters["PulseDurationMs"] = pulseDurationBox.Text;
+                            MarkDialogueModified();
+                        };
+                        panel.Children.Add(pulseDurationBox);
+                    }
+                    else if (effectTypeComboBox.Text == "MoveTo")
+                    {
+                        var moveToXLabel = new TextBlock
+                        {
+                            Text = "目标 X 坐标",
+                            Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                            FontSize = 11,
+                            Margin = new Thickness(0, 8, 0, 4)
+                        };
+                        panel.Children.Add(moveToXLabel);
+
+                        var moveToXBox = new TextBox
+                        {
+                            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                            Foreground = System.Windows.Media.Brushes.White,
+                            BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                            Padding = new Thickness(8, 6, 8, 6),
+                            FontSize = 13
+                        };
+                        var moveToXValue = dialogue.Event?.Parameters.TryGetValue("MoveToX", out var mx) == true ? mx?.ToString() ?? "0" : "0";
+                        moveToXBox.Text = moveToXValue;
+                        moveToXBox.TextChanged += (s, e) =>
+                        {
+                            dialogue.Event!.Parameters["MoveToX"] = moveToXBox.Text;
+                            MarkDialogueModified();
+                        };
+                        panel.Children.Add(moveToXBox);
+
+                        var moveToYLabel = new TextBlock
+                        {
+                            Text = "目标 Y 坐标",
+                            Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                            FontSize = 11,
+                            Margin = new Thickness(0, 8, 0, 4)
+                        };
+                        panel.Children.Add(moveToYLabel);
+
+                        var moveToYBox = new TextBox
+                        {
+                            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                            Foreground = System.Windows.Media.Brushes.White,
+                            BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                            Padding = new Thickness(8, 6, 8, 6),
+                            FontSize = 13
+                        };
+                        var moveToYValue = dialogue.Event?.Parameters.TryGetValue("MoveToY", out var my) == true ? my?.ToString() ?? "0" : "0";
+                        moveToYBox.Text = moveToYValue;
+                        moveToYBox.TextChanged += (s, e) =>
+                        {
+                            dialogue.Event!.Parameters["MoveToY"] = moveToYBox.Text;
+                            MarkDialogueModified();
+                        };
+                        panel.Children.Add(moveToYBox);
+                    }
+                    else if (effectTypeComboBox.Text == "BorderFlash")
+                    {
+                        var borderFlashColorLabel = new TextBlock
+                        {
+                            Text = "闪烁颜色（HEX）",
+                            Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                            FontSize = 11,
+                            Margin = new Thickness(0, 8, 0, 4)
+                        };
+                        panel.Children.Add(borderFlashColorLabel);
+
+                        var borderFlashColorBox = new TextBox
+                        {
+                            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                            Foreground = System.Windows.Media.Brushes.White,
+                            BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                            Padding = new Thickness(8, 6, 8, 6),
+                            FontSize = 13
+                        };
+                        var borderFlashColorValue = dialogue.Event?.Parameters.TryGetValue("BorderFlashColor", out var bfc) == true ? bfc?.ToString() ?? "#FF0000" : "#FF0000";
+                        borderFlashColorBox.Text = borderFlashColorValue;
+                        borderFlashColorBox.TextChanged += (s, e) =>
+                        {
+                            dialogue.Event!.Parameters["BorderFlashColor"] = borderFlashColorBox.Text;
+                            MarkDialogueModified();
+                        };
+                        panel.Children.Add(borderFlashColorBox);
+
+                        var borderFlashCountLabel = new TextBlock
+                        {
+                            Text = "闪烁次数",
+                            Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                            FontSize = 11,
+                            Margin = new Thickness(0, 8, 0, 4)
+                        };
+                        panel.Children.Add(borderFlashCountLabel);
+
+                        var borderFlashCountBox = new TextBox
+                        {
+                            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                            Foreground = System.Windows.Media.Brushes.White,
+                            BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                            Padding = new Thickness(8, 6, 8, 6),
+                            FontSize = 13
+                        };
+                        var borderFlashCountValue = dialogue.Event?.Parameters.TryGetValue("BorderFlashCount", out var bfcnt) == true ? bfcnt?.ToString() ?? "3" : "3";
+                        borderFlashCountBox.Text = borderFlashCountValue;
+                        borderFlashCountBox.TextChanged += (s, e) =>
+                        {
+                            dialogue.Event!.Parameters["BorderFlashCount"] = borderFlashCountBox.Text;
+                            MarkDialogueModified();
+                        };
+                        panel.Children.Add(borderFlashCountBox);
+
+                        var borderFlashIntervalLabel = new TextBlock
+                        {
+                            Text = "闪烁间隔（毫秒）",
+                            Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 153, 153)),
+                            FontSize = 11,
+                            Margin = new Thickness(0, 8, 0, 4)
+                        };
+                        panel.Children.Add(borderFlashIntervalLabel);
+
+                        var borderFlashIntervalBox = new TextBox
+                        {
+                            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45)),
+                            Foreground = System.Windows.Media.Brushes.White,
+                            BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 80)),
+                            Padding = new Thickness(8, 6, 8, 6),
+                            FontSize = 13
+                        };
+                        var borderFlashIntervalValue = dialogue.Event?.Parameters.TryGetValue("BorderFlashIntervalMs", out var bfi) == true ? bfi?.ToString() ?? "200" : "200";
+                        borderFlashIntervalBox.Text = borderFlashIntervalValue;
+                        borderFlashIntervalBox.TextChanged += (s, e) =>
+                        {
+                            dialogue.Event!.Parameters["BorderFlashIntervalMs"] = borderFlashIntervalBox.Text;
+                            MarkDialogueModified();
+                        };
+                        panel.Children.Add(borderFlashIntervalBox);
+                    }
                 }
                 break;
         }

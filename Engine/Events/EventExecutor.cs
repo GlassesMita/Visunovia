@@ -51,6 +51,9 @@ public class EventExecutor
                 case VNEventType.WaitSeconds:
                     return await ExecuteWaitSecondsAsync(eventItem);
 
+                case VNEventType.WindowEffect:
+                    return await ExecuteWindowEffectAsync(eventItem);
+
                 case VNEventType.Custom:
                     return await ExecuteCustomAsync(eventItem);
 
@@ -239,6 +242,21 @@ public class EventExecutor
             return Task.FromResult(true);
         }
         _statusCallback?.Invoke("Custom 事件缺少 Script 参数");
+        return Task.FromResult(false);
+    }
+
+    private Task<bool> ExecuteWindowEffectAsync(VNEvent eventItem)
+    {
+        if (eventItem.Parameters.TryGetValue("EffectType", out var effectTypeObj) && effectTypeObj is string effectTypeStr)
+        {
+            if (Enum.TryParse<VNWindowEffectType>(effectTypeStr, out var effectType))
+            {
+                WindowController.ExecuteWindowEffect(effectType, eventItem.Parameters);
+                _statusCallback?.Invoke($"执行窗口效果: {effectType}");
+                return Task.FromResult(true);
+            }
+        }
+        _statusCallback?.Invoke("WindowEffect 事件缺少 EffectType 参数");
         return Task.FromResult(false);
     }
 }

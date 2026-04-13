@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.Scripting;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using Visunovia.Player.WPF.Security;
+using System.Runtime.InteropServices;
 
 namespace Visunovia.Player.WPF.Player;
 
@@ -379,6 +380,18 @@ public class PlayerEngine
                 Advance();
                 break;
 
+            case VNEventType.WindowEffect:
+                {
+                    var effectTypeStr = dialogue.Event.Parameters.TryGetValue("EffectType", out var etObj) == true ? etObj?.ToString() ?? "None" : "None";
+                    if (Enum.TryParse<VNWindowEffectType>(effectTypeStr, out var effectType) && effectType != VNWindowEffectType.None)
+                    {
+                        ExecuteWindowEffect(effectType, dialogue.Event.Parameters);
+                    }
+                    _currentDialogueIndex++;
+                    Advance();
+                }
+                break;
+
             case VNEventType.InvokeCode:
                 var code = dialogue.Event.Parameters.TryGetValue("Code", out var codeObj) == true ? codeObj?.ToString() ?? "" : "";
                 if (!string.IsNullOrEmpty(code))
@@ -471,6 +484,211 @@ public class PlayerEngine
         IsPlaying = false;
         _waitTimer.Stop();
         _isWaiting = false;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+    private const int GWL_STYLE = -16;
+    private const int WS_CAPTION = 0x00C00000;
+    private const int WS_BORDER = 0x00800000;
+    private const int WS_THICKFRAME = 0x00040000;
+    private const uint SWP_NOZORDER = 0x0004;
+    private const uint SWP_NOACTIVATE = 0x0010;
+    private const uint SWP_NOSIZE = 0x0001;
+    private const uint SWP_NOMOVE = 0x0002;
+    private const uint SWP_FRAMECHANGED = 0x0020;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    private void ExecuteWindowEffect(VNWindowEffectType effectType, Dictionary<string, object> parameters)
+    {
+        var hwnd = WindowHandleProvider.CurrentHandle;
+        if (hwnd == IntPtr.Zero) return;
+
+        switch (effectType)
+        {
+            case VNWindowEffectType.Shake:
+                {
+                    int amplitude = 15;
+                    int durationMs = 1000;
+                    if (parameters.TryGetValue("ShakeAmplitude", out var ampObj) && int.TryParse(ampObj?.ToString(), out var amp)) amplitude = amp;
+                    if (parameters.TryGetValue("ShakeDurationMs", out var durObj) && int.TryParse(durObj?.ToString(), out var dur)) durationMs = dur;
+                    ExecuteShake(hwnd, amplitude, durationMs);
+                }
+                break;
+
+            case VNWindowEffectType.Pulse:
+                {
+                    float scaleMin = 0.8f;
+                    float scaleMax = 1.2f;
+                    float frequency = 1f;
+                    int durationMs = 2000;
+                    if (parameters.TryGetValue("PulseScaleMin", out var sminObj) && float.TryParse(sminObj?.ToString(), out var smin)) scaleMin = smin;
+                    if (parameters.TryGetValue("PulseScaleMax", out var smaxObj) && float.TryParse(smaxObj?.ToString(), out var smax)) scaleMax = smax;
+                    if (parameters.TryGetValue("PulseFrequency", out var freqObj) && float.TryParse(freqObj?.ToString(), out var freq)) frequency = freq;
+                    if (parameters.TryGetValue("PulseDurationMs", out var pdurObj) && int.TryParse(pdurObj?.ToString(), out var pdur)) durationMs = pdur;
+                    ExecutePulse(hwnd, scaleMin, scaleMax, frequency, durationMs);
+                }
+                break;
+
+            case VNWindowEffectType.MoveTo:
+                {
+                    int x = 0, y = 0;
+                    if (parameters.TryGetValue("MoveToX", out var xObj) && int.TryParse(xObj?.ToString(), out var xv)) x = xv;
+                    if (parameters.TryGetValue("MoveToY", out var yObj) && int.TryParse(yObj?.ToString(), out var yv)) y = yv;
+                    SetWindowPos(hwnd, IntPtr.Zero, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+                }
+                break;
+
+            case VNWindowEffectType.BorderFlash:
+                {
+                    int flashCount = 3;
+                    int flashIntervalMs = 200;
+                    if (parameters.TryGetValue("BorderFlashCount", out var cntObj) && int.TryParse(cntObj?.ToString(), out var cnt)) flashCount = cnt;
+                    if (parameters.TryGetValue("BorderFlashIntervalMs", out var intObj) && int.TryParse(intObj?.ToString(), out var intv)) flashIntervalMs = intv;
+                    ExecuteBorderFlash(hwnd, flashCount, flashIntervalMs);
+                }
+                break;
+        }
+    }
+
+    private void ExecuteShake(IntPtr hwnd, int amplitude, int durationMs)
+    {
+        if (!GetWindowRect(hwnd, out RECT originalRect)) return;
+
+        int originalX = originalRect.Left;
+        int originalY = originalRect.Top;
+        int originalWidth = originalRect.Right - originalRect.Left;
+        int originalHeight = originalRect.Bottom - originalRect.Top;
+
+        ThreadPool.QueueUserWorkItem(_ =>
+        {
+            var startTime = DateTime.Now;
+            var random = new Random();
+
+            while ((DateTime.Now - startTime).TotalMilliseconds < durationMs)
+            {
+                try
+                {
+                    float elapsed = (float)(DateTime.Now - startTime).TotalMilliseconds;
+                    float shakeAmount = amplitude * (float)Math.Sin(2.0 * Math.PI * 2.0 * elapsed / 1000.0);
+                    float decay = 1.0f - (float)(DateTime.Now - startTime).TotalMilliseconds / durationMs;
+
+                    int offsetX = (int)(shakeAmount * decay * (random.NextDouble() - 0.5) * 2);
+                    int offsetY = (int)(shakeAmount * decay * (random.NextDouble() - 0.5) * 2);
+
+                    SetWindowPos(hwnd, IntPtr.Zero,
+                        originalX + offsetX, originalY + offsetY,
+                        originalWidth, originalHeight,
+                        SWP_NOZORDER | SWP_NOACTIVATE);
+
+                    Thread.Sleep(16);
+                }
+                catch { }
+            }
+
+            SetWindowPos(hwnd, IntPtr.Zero,
+                originalX, originalY, originalWidth, originalHeight,
+                SWP_NOZORDER | SWP_NOACTIVATE);
+        });
+    }
+
+    private void ExecutePulse(IntPtr hwnd, float scaleMin, float scaleMax, float frequency, int durationMs)
+    {
+        if (!GetWindowRect(hwnd, out RECT originalRect)) return;
+
+        int originalX = originalRect.Left;
+        int originalY = originalRect.Top;
+        int originalWidth = originalRect.Right - originalRect.Left;
+        int originalHeight = originalRect.Bottom - originalRect.Top;
+        int centerX = originalX + originalWidth / 2;
+        int centerY = originalY + originalHeight / 2;
+
+        ThreadPool.QueueUserWorkItem(_ =>
+        {
+            var startTime = DateTime.Now;
+
+            while ((DateTime.Now - startTime).TotalMilliseconds < durationMs)
+            {
+                try
+                {
+                    float elapsed = (float)(DateTime.Now - startTime).TotalMilliseconds / 1000f;
+                    float t = (float)Math.Sin(2.0 * Math.PI * frequency * elapsed);
+                    float scale = scaleMin + (scaleMax - scaleMin) * (0.5f + 0.5f * t);
+
+                    int newWidth = (int)(originalWidth * scale);
+                    int newHeight = (int)(originalHeight * scale);
+                    int newX = centerX - newWidth / 2;
+                    int newY = centerY - newHeight / 2;
+
+                    SetWindowPos(hwnd, IntPtr.Zero, newX, newY, newWidth, newHeight,
+                        SWP_NOZORDER | SWP_NOACTIVATE);
+
+                    Thread.Sleep(16);
+                }
+                catch { }
+            }
+
+            SetWindowPos(hwnd, IntPtr.Zero,
+                originalX, originalY, originalWidth, originalHeight,
+                SWP_NOZORDER | SWP_NOACTIVATE);
+        });
+    }
+
+    private void ExecuteBorderFlash(IntPtr hwnd, int flashCount, int flashIntervalMs)
+    {
+        int originalStyle = GetWindowLong(hwnd, GWL_STYLE);
+        bool hadCaption = (originalStyle & WS_CAPTION) != 0;
+
+        ThreadPool.QueueUserWorkItem(_ =>
+        {
+            for (int i = 0; i < flashCount * 2; i++)
+            {
+                try
+                {
+                    int style = GetWindowLong(hwnd, GWL_STYLE);
+                    bool isHidden = i % 2 == 0;
+
+                    if (isHidden)
+                    {
+                        style &= ~(WS_CAPTION | WS_BORDER | WS_THICKFRAME);
+                    }
+                    else
+                    {
+                        if (hadCaption) style |= WS_CAPTION | WS_BORDER | WS_THICKFRAME;
+                        else style |= WS_BORDER | WS_THICKFRAME;
+                    }
+
+                    SetWindowLong(hwnd, GWL_STYLE, style);
+                    SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0,
+                        SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+
+                    Thread.Sleep(flashIntervalMs);
+                }
+                catch { }
+            }
+
+            SetWindowLong(hwnd, GWL_STYLE, originalStyle);
+            SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0,
+                SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        });
     }
 }
 
