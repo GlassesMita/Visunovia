@@ -1,0 +1,236 @@
+@page
+@model Visunovia.Pages.IndexModel
+@using Visunovia.Services.Localization
+@inject IStringLocalizer Localizer
+@{
+    Layout = "_Layout";
+}
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center; flex-direction:column;">
+    <div style="width:48px; height:48px; border:4px solid #3B82F6; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+    <div style="color:white; margin-top:16px; font-size:14px;">@Localizer["Status.Loading"]</div>
+</div>
+
+<!-- File Browser Modal -->
+<div id="fileBrowserModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9998;">
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:700px; max-height:500px; background:#1a1a1a; border:1px solid #333; border-radius:8px; overflow:hidden;">
+        <div style="padding:12px 16px; background:#141414; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:white; font-weight:bold;">@Localizer["Editor.OpenProject"]</span>
+            <button onclick="app.closeFileBrowser()" style="background:none; border:none; color:#999; font-size:20px; cursor:pointer;">&times;</button>
+        </div>
+        <div style="padding:8px 16px; background:#0d0d0d; border-bottom:1px solid #333;">
+            <input type="text" id="fileBrowserPath"
+                style="width:100%; box-sizing:border-box; color:#ccc; font-size:12px; background:#1a1a1a; border:1px solid #444; border-radius:4px; padding:4px 8px; outline:none;"
+                placeholder="@Localizer["FileBrowser.PathPlaceholder"]"
+                spellcheck="false" />
+        </div>
+        <div id="fileBrowserContent" style="height:300px; overflow-y:auto; padding:8px;">
+            <div style="text-align:center; color:#666; padding:40px;">@Localizer["Status.Loading"]</div>
+        </div>
+        <div style="padding:12px 16px; background:#141414; border-top:1px solid #333; display:flex; justify-content:flex-end; gap:8px;">
+            <button onclick="app.closeFileBrowser()" style="background:#444; color:white; border:none; padding:6px 16px; border-radius:4px; cursor:pointer;">@Localizer["Common.Cancel"]</button>
+            <button id="fileBrowserOpenBtn" onclick="app.openSelectedInFileBrowser()" style="background:#3B82F6; color:white; border:none; padding:6px 16px; border-radius:4px; cursor:pointer;">@Localizer["Common.Ok"]</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+    <span class="toolbar-brand" id="appTitle">@Localizer["App.Title"]</span>
+    <span id="projectName" class="toolbar-project-name">@Localizer["Project.Unnamed"]</span>
+    <div class="toolbar-actions">
+        <button class="toolbar-btn" onclick="app.undo()" title="@Localizer["Shortcut.Undo"] (Ctrl+Z)">@Localizer["Editor.Undo"]</button>
+        <button class="toolbar-btn" onclick="app.redo()" title="@Localizer["Shortcut.Redo"] (Ctrl+Y)">@Localizer["Editor.Redo"]</button>
+        <button class="toolbar-btn" onclick="app.newProject()">@Localizer["Common.Create"]</button>
+        <button class="toolbar-btn" onclick="app.openProject()">@Localizer["Editor.OpenProject"]</button>
+        <button class="toolbar-btn" onclick="app.saveProject()">@Localizer["Common.Save"]</button>
+        <button class="accent-btn toolbar-btn" onclick="app.runPreview()">@Localizer["Toolbar.Run"]</button>
+        <button class="purple-btn toolbar-btn" onclick="app.previewFromSelected()">@Localizer["Toolbar.PreviewFromSelected"]</button>
+        <button class="settings-btn toolbar-btn" onclick="app.openAppSettings()" title="@Localizer["Settings.Title"]">⚙</button>
+        <button class="exit-btn toolbar-btn" onclick="app.exitApplication()" title="@Localizer["Toolbar.ExitHint"]">@Localizer["Toolbar.Exit"]</button>
+    </div>
+</div>
+
+<!-- Main Layout -->
+<div class="main-layout">
+    <!-- Resource Panel (Left) -->
+    <div class="resource-panel">
+        <div class="panel-header">@Localizer["Panel.Resources"]</div>
+        <div id="resourceList" style="padding: 8px;">
+            <p style="color: #666; font-size: 12px; padding: 8px;">@Localizer["Resource.OpenProjectFirst"]</p>
+        </div>
+        <button class="toolbar-btn" style="width:100%; text-align:center; margin-top:8px;" onclick="app.openResourceModal()">@Localizer["Resource.Manage"]</button>
+    </div>
+
+    <!-- Editor Area (Center) -->
+    <div class="editor-area">
+        <!-- Scene Tabs -->
+        <div class="scene-tabs" id="sceneTabs">
+            <button class="add-scene-btn" onclick="app.addScene()">@Localizer["Editor.AddScene"]</button>
+        </div>
+
+        <!-- Dialogue Toolbar -->
+        <div class="dialogue-toolbar">
+            <button class="accent-btn" onclick="app.addDialogue()" style="font-size:11px;">@Localizer["Editor.AddDialogue"]</button>
+            <button class="green-btn" onclick="app.addBranch()" style="font-size:11px;">@Localizer["Editor.AddBranch"]</button>
+            <button style="background:#F59E0B; color:white; border:none; padding:4px 8px; font-size:11px; cursor:pointer;" onclick="app.addEvent()">@Localizer["Editor.AddEvent"]</button>
+            <button style="background:#6B7280; color:white; border:none; padding:4px 8px; font-size:11px; cursor:pointer;" onclick="app.copyDialogue()">@Localizer["Editor.CopyDialogue"]</button>
+            <button class="red-btn" onclick="app.deleteDialogue()" style="font-size:11px;">@Localizer["Editor.DeleteDialogue"]</button>
+            <button class="accent-btn" onclick="app.moveUp()" style="font-size:11px;">@Localizer["Common.MoveUp"]</button>
+            <button class="accent-btn" onclick="app.moveDown()" style="font-size:11px;">@Localizer["Common.MoveDown"]</button>
+        </div>
+
+        <!-- Dialogue List -->
+        <div class="dialogue-list" id="dialogueList">
+            <p style="color: #666; text-align: center; margin-top: 40px;">@Localizer["Project.CreateOrOpenFirst"]</p>
+        </div>
+    </div>
+
+    <!-- Property Panel (Right) -->
+    <div class="property-panel">
+        <div class="panel-header">@Localizer["Panel.Properties"]</div>
+        <div id="propertyPanel" style="padding: 12px;">
+            <p style="color: #666; font-size: 12px;">@Localizer["Property.SelectToEdit"]</p>
+        </div>
+    </div>
+</div>
+
+<!-- Status Bar -->
+<div class="status-bar">
+    <span id="statusLabel">@Localizer["Status.Ready"]</span>
+    <span id="saveStatus" style="margin-left: auto;"></span>
+</div>
+
+<!-- Preview Overlay -->
+<div class="preview-overlay" id="previewOverlay">
+    <img class="preview-bg" id="previewBg" alt="" />
+    <img class="preview-char" id="previewChar" alt="" style="display:none;" />
+    <!-- BGM 音频播放器（隐藏，通过 JS 控制） -->
+    <audio id="previewBgm" loop preload="auto" style="display:none;"></audio>
+    <div class="preview-dialogue" id="previewDialogue" style="display:none;">
+        <div class="preview-speaker" id="previewSpeaker"></div>
+        <div class="preview-text" id="previewText"></div>
+    </div>
+    <div class="preview-choices" id="previewChoices" style="display:none;"></div>
+    <div class="preview-controls">
+        <button class="toolbar-btn" onclick="app.previewPrev()">⏮ 上一个</button>
+        <button class="toolbar-btn" onclick="app.previewNext()">下一个 ⏭</button>
+    </div>
+    <button class="toolbar-btn preview-close" onclick="app.closePreview()">❌</button>
+</div>
+
+<!-- Resource Modal -->
+<div class="modal-overlay" id="resourceModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="modal-title">@Localizer["Modal.ResourceManage"]</span>
+            <button class="modal-close" onclick="app.closeResourceModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="resource-tabs" id="resourceTabs">
+                <div class="resource-tab active" data-type="sprites" onclick="app.switchResourceTab('sprites')">@Localizer["Resource.Sprites"]</div>
+                <div class="resource-tab" data-type="backgrounds" onclick="app.switchResourceTab('backgrounds')">@Localizer["Resource.Backgrounds"]</div>
+                <div class="resource-tab" data-type="bgm" onclick="app.switchResourceTab('bgm')">@Localizer["Resource.BGM"]</div>
+                <div class="resource-tab" data-type="voice" onclick="app.switchResourceTab('voice')">@Localizer["Resource.Voice"]</div>
+                <div class="resource-tab" data-type="other" onclick="app.switchResourceTab('other')">@Localizer["Resource.Other"]</div>
+            </div>
+            <ul class="resource-list" id="modalResourceList"></ul>
+        </div>
+        <div class="modal-footer">
+            <button class="toolbar-btn" onclick="app.closeResourceModal()">@Localizer["Common.Cancel"]</button>
+            <button class="accent-btn toolbar-btn" onclick="app.confirmResourceSelection()">@Localizer["Common.Confirm"]</button>
+        </div>
+    </div>
+</div>
+
+<!-- Rename Scene Modal -->
+<div class="modal-overlay" id="renameSceneModal">
+    <div class="modal-content" style="width: 350px;">
+        <div class="modal-header">
+            <span class="modal-title">@Localizer["Editor.RenameScene"]</span>
+            <button class="modal-close" onclick="app.closeRenameSceneModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="text" id="renameSceneInput" style="width: 100%;" />
+        </div>
+        <div class="modal-footer">
+            <button class="toolbar-btn" onclick="app.closeRenameSceneModal()">@Localizer["Common.Cancel"]</button>
+            <button class="accent-btn toolbar-btn" onclick="app.confirmRenameScene()">@Localizer["Common.Confirm"]</button>
+        </div>
+    </div>
+</div>
+
+<!-- App Settings Modal -->
+<div class="modal-overlay" id="appSettingsModal">
+    <div class="modal-content" style="width: 420px;">
+        <div class="modal-header">
+            <span class="modal-title">⚙ @Localizer["Settings.Title"]</span>
+            <button class="modal-close" onclick="app.closeAppSettings()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom:16px;">
+                <div style="color:#aaa; font-size:12px; margin-bottom:6px;">@Localizer["Settings.AppInfo"]</div>
+                <div style="color:#ccc; font-size:13px; padding:8px 12px; background:#0d0d0d; border-radius:4px; line-height:1.8;">
+                    <div>@Localizer["Settings.AppNameLabel"] <strong>Visunovia</strong></div>
+                    <div>@Localizer["Settings.VersionLabel"] <strong>1.0.0</strong></div>
+                    <div>@Localizer["Settings.RuntimeLabel"] <strong>ASP.NET Razor Pages (.NET 10)</strong></div>
+                </div>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="color:#aaa; font-size:12px; display:block; margin-bottom:6px;">@Localizer["Settings.Language"]</label>
+                <select id="settingsLanguage" style="width:100%; padding:6px 8px; background:#1a1a1a; color:#ccc; border:1px solid #444; border-radius:4px; font-size:13px; outline:none;">
+                    <option value="zh-CN">中文（简体）</option>
+                    <option value="en-US">English (US)</option>
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="color:#aaa; font-size:12px; display:block; margin-bottom:6px;">@Localizer["Settings.Theme"]</label>
+                <select id="settingsTheme" style="width:100%; padding:6px 8px; background:#1a1a1a; color:#ccc; border:1px solid #444; border-radius:4px; font-size:13px; outline:none;">
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="color:#aaa; font-size:12px; display:block; margin-bottom:6px;">@Localizer["Settings.EditorFontSize"]</label>
+                <select id="settingsEditorFontSize" style="width:100%; padding:6px 8px; background:#1a1a1a; color:#ccc; border:1px solid #444; border-radius:4px; font-size:13px; outline:none;">
+                    <option value="12">12px</option>
+                    <option value="13">13px</option>
+                    <option value="14" selected>14px</option>
+                    <option value="16">16px</option>
+                    <option value="18">18px</option>
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <div style="color:#aaa; font-size:12px; margin-bottom:6px;">@Localizer["Settings.Shortcuts"]</div>
+                <div style="color:#999; font-size:12px; padding:8px 12px; background:#0d0d0d; border-radius:4px; line-height:1.8;">
+                    <div><kbd style="background:#333;padding:1px 6px;border-radius:3px;">Ctrl+Z</kbd> @Localizer["Shortcut.Undo"] &nbsp; <kbd style="background:#333;padding:1px 6px;border-radius:3px;">Ctrl+Y</kbd> @Localizer["Shortcut.Redo"]</div>
+                    <div><kbd style="background:#333;padding:1px 6px;border-radius:3px;">Ctrl+S</kbd> @Localizer["Shortcut.Save"]</div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="toolbar-btn" onclick="app.closeAppSettings()">@Localizer["Settings.CancelButton"]</button>
+            <button class="accent-btn toolbar-btn" onclick="app.saveAppSettings()">@Localizer["Settings.SaveButton"]</button>
+        </div>
+    </div>
+</div>
+
+<!-- Exit Confirmation Modal -->
+<div class="modal-overlay" id="exitConfirmModal">
+    <div class="modal-content" style="width: 360px;">
+        <div class="modal-header">
+            <span class="modal-title">@Localizer["Exit.ConfirmTitle"]</span>
+        </div>
+        <div class="modal-body">
+            <p id="exitConfirmText" style="color:#ddd; font-size:14px; line-height:1.6;">@Localizer["Exit.ConfirmMessage"]</p>
+        </div>
+        <div class="modal-footer">
+            <button class="toolbar-btn" onclick="app.closeExitConfirm()">@Localizer["Common.Cancel"]</button>
+            <button class="red-btn toolbar-btn" onclick="app.confirmExit()">@Localizer["Common.ExitConfirm"]</button>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden file input for project upload -->
+<input type="file" id="projectFileInput" webkitdirectory style="display:none;" onchange="app.handleProjectUpload(event)" />

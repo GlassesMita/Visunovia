@@ -1,0 +1,47 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = crlf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.cs]
+indent_size = 4
+
+[*.cshtml]
+indent_size = 4
+
+[*.json]
+indent_size = 4
+
+[*.xml]
+indent_size = 4
+
+[*.yaml]
+indent_size = 4
+
+[*.yml]
+indent_size = 4
+
+[*.po]
+indent_size = 4
+
+[*.css]
+indent_size = 4
+
+[*.js]
+indent_size = 4
+
+[*.html]
+indent_size = 4
+
+[*.{sln,csproj,vbproj,fsproj}]
+indent_style = tab
+indent_size = 4
+
+[*.sh]
+end_of_line = lf
+indent_size = 4

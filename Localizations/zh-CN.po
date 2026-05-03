@@ -1,0 +1,302 @@
+# Visunovia Editor - Chinese (Simplified) Translation
+# Copyright (C) 2026 Visunovia Team
+# This file is distributed under the same license as the Visunovia package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Visunovia 1.0.0\n"
+"Report-Msgid-Bugs-To: support@visunovia.com\n"
+"POT-Creation-Date: 2026-01-01 00:00+0000\n"
+"PO-Revision-Date: 2026-01-01 00:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Chinese (Simplified) <LL@li.org>\n"
+"Language: zh-CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Application title displayed in browser tab and window header
+#: Pages/Shared/_Layout.cshtml
+msgid "App.Title"
+msgstr "Visunovia 编辑器"
+
+#. Common dialog button to confirm action
+#: Views/Shared/_Dialog.cshtml
+msgid "Common.Ok"
+msgstr "确定"
+
+#. Common dialog button to cancel or dismiss action
+#: Views/Shared/_Dialog.cshtml
+msgid "Common.Cancel"
+msgstr "取消"
+
+#. Common action button to save current changes
+#: Views/Shared/_Toolbar.cshtml
+msgid "Common.Save"
+msgstr "保存"
+
+#. Common action button to delete selected item
+#: Views/Shared/_ConfirmDialog.cshtml
+msgid "Common.Delete"
+msgstr "删除"
+
+#. Common action button to edit selected item
+#: Views/Shared/_ListView.cshtml
+msgid "Common.Edit"
+msgstr "编辑"
+
+#. Common action button to create new item
+#: Views/Shared/_Toolbar.cshtml
+msgid "Common.Create"
+msgstr "新建"
+
+#. Common search input placeholder text
+#: Views/Shared/_SearchBar.cshtml
+msgid "Common.Search"
+msgstr "搜索"
+
+#. Common action button to close window or dialog
+#: Views/Shared/_Modal.cshtml
+msgid "Common.Close"
+msgstr "关闭"
+
+#. Common confirmation option for yes/no dialogs
+#: Views/Shared/_ConfirmDialog.cshtml
+msgid "Common.Yes"
+msgstr "是"
+
+#. Common denial option for yes/no dialogs
+#: Views/Shared/_ConfirmDialog.cshtml
+msgid "Common.No"
+msgstr "否"
+
+#. Main editor page title and heading
+#: Pages/Index.cshtml
+msgid "Editor.Title"
+msgstr "场景编辑器"
+
+#. Menu item or button to create a new scene
+#: js/scenes.js
+msgid "Editor.NewScene"
+msgstr "新建场景"
+
+#. Menu item or button to open an existing project
+#: js/app.js
+msgid "Editor.OpenProject"
+msgstr "打开项目"
+
+#. Menu item or button to save the current project
+#: js/app.js
+msgid "Editor.SaveProject"
+msgstr "保存项目"
+
+#. Undo last action in editor
+#: js/undoredo.js
+msgid "Editor.Undo"
+msgstr "撤销"
+
+#. Redo previously undone action
+#: js/undoredo.js
+msgid "Editor.Redo"
+msgstr "重做"
+
+#. File menu label in main menu bar
+#: Pages/Shared/_Layout.cshtml
+msgid "Menu.File"
+msgstr "文件"
+
+#. Edit menu label in main menu bar
+#: Pages/Shared/_Layout.cshtml
+msgid "Menu.Edit"
+msgstr "编辑"
+
+#. View menu label in main menu bar
+#: Pages/Shared/_Layout.cshtml
+msgid "Menu.View"
+msgstr "视图"
+
+#. Help menu label in main menu bar
+#: Pages/Shared/_Layout.cshtml
+msgid "Menu.Help"
+msgstr "帮助"
+
+#. Success message shown after saving changes
+#: js/app.js
+msgid "Status.Saved"
+msgstr "更改已成功保存"
+
+#. Generic error message for unexpected errors
+#: js/app.js
+msgid "Status.Error"
+msgstr "发生错误"
+
+#. Loading indicator text shown during async operations
+#: js/app.js
+msgid "Status.Loading"
+msgstr "加载中..."
+
+msgid "Status.Ready"
+msgstr "就绪"
+
+msgid "Project.Unnamed"
+msgstr "未命名项目"
+
+msgid "Panel.Resources"
+msgstr "资源"
+
+msgid "Resource.OpenProjectFirst"
+msgstr "打开项目后显示资源"
+
+msgid "Resource.Manage"
+msgstr "管理资源"
+
+msgid "Toolbar.Run"
+msgstr "运行"
+
+msgid "Toolbar.PreviewFromSelected"
+msgstr "从选中预览"
+
+msgid "Toolbar.Exit"
+msgstr "退出"
+
+msgid "Toolbar.ExitHint"
+msgstr "退出应用"
+
+msgid "Editor.AddScene"
+msgstr "+ 添加场景"
+
+msgid "Editor.AddDialogue"
+msgstr "+ 添加对话"
+
+msgid "Editor.AddBranch"
+msgstr "+ 添加分支"
+
+msgid "Editor.AddEvent"
+msgstr "+ 添加事件"
+
+msgid "Editor.CopyDialogue"
+msgstr "复制对话"
+
+msgid "Editor.DeleteDialogue"
+msgstr "删除对话"
+
+msgid "Common.MoveUp"
+msgstr "上移"
+
+msgid "Common.MoveDown"
+msgstr "下移"
+
+msgid "Project.CreateOrOpenFirst"
+msgstr "请先新建或打开项目"
+
+msgid "Panel.Properties"
+msgstr "属性面板"
+
+msgid "Property.SelectToEdit"
+msgstr "选择对话以编辑属性"
+
+msgid "Preview.Previous"
+msgstr "上一个"
+
+msgid "Preview.Next"
+msgstr "下一个"
+
+msgid "Modal.ResourceManage"
+msgstr "资源管理"
+
+msgid "Resource.Sprites"
+msgstr "立绘"
+
+msgid "Resource.Backgrounds"
+msgstr "背景"
+
+msgid "Resource.BGM"
+msgstr "音乐"
+
+msgid "Resource.Voice"
+msgstr "语音"
+
+msgid "Resource.Other"
+msgstr "其他"
+
+msgid "Settings.Title"
+msgstr "应用设置"
+
+msgid "Settings.AppInfo"
+msgstr "应用信息"
+
+msgid "Settings.Shortcuts"
+msgstr "快捷键参考"
+
+msgid "Shortcut.Undo"
+msgstr "撤销"
+
+msgid "Shortcut.Redo"
+msgstr "重做"
+
+msgid "Shortcut.Save"
+msgstr "保存项目"
+
+msgid "Exit.ConfirmTitle"
+msgstr "确认退出"
+
+msgid "Exit.ConfirmMessage"
+msgstr "确定要退出 Visunovia 吗？\n\n此操作将关闭当前标签页并停止后端服务。"
+
+msgid "Settings.Language"
+msgstr "界面语言"
+
+msgid "Settings.Theme"
+msgstr "界面主题"
+
+msgid "Settings.EditorFontSize"
+msgstr "编辑器字体大小"
+
+msgid "Settings.SaveButton"
+msgstr "保存设置"
+
+msgid "FileBrowser.PathPlaceholder"
+msgstr "输入路径后按 Enter 导航..."
+
+msgid "Settings.AppNameLabel"
+msgstr "名称："
+
+msgid "Settings.VersionLabel"
+msgstr "版本："
+
+msgid "Settings.RuntimeLabel"
+msgstr "运行环境："
+
+msgid "Settings.CancelButton"
+msgstr "取消"
+
+msgid "Console.LocalizationInitialized"
+msgstr "本地化已初始化。当前语言：{0}"
+
+msgid "Console.AvailableLanguages"
+msgstr "可用语言：{0}"
+
+msgid "Console.ServerRunning"
+msgstr "Visunovia 服务器运行于 http://localhost:{0}"
+
+msgid "Console.LocalizationInitFailed"
+msgstr "[警告] 本地化服务初始化失败：{0}"
+
+msgid "Console.LanguageSwitched"
+msgstr "语言已切换：{0} → {1}"
+
+msgid "Console.LanguageSwitchFailed"
+msgstr "语言切换失败，将在下次启动时生效"
+
+msgid "Console.BatchUpdateComplete"
+msgstr "批量更新完成：{0}/{1} 项成功"
+
+msgid "Console.BatchUpdateSkipped"
+msgstr "批量更新完成：{0} 项成功，{1} 项被跳过"
+
+msgid "Console.BatchUpdateFailed"
+msgstr "批量更新设置失败"
+
+msgid "Console.InvalidSettingSkipped"
+msgstr "批量更新中跳过无效项：{0}={1}"

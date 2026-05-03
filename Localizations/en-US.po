@@ -1,0 +1,302 @@
+# Visunovia Editor - English (US) Translation
+# Copyright (C) 2026 Visunovia Team
+# This file is distributed under the same license as the Visunovia package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Visunovia 1.0.0\n"
+"Report-Msgid-Bugs-To: support@visunovia.com\n"
+"POT-Creation-Date: 2026-01-01 00:00+0000\n"
+"PO-Revision-Date: 2026-01-01 00:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: English <LL@li.org>\n"
+"Language: en-US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Application title displayed in browser tab and window header
+#: Pages/Shared/_Layout.cshtml
+msgid "App.Title"
+msgstr "Visunovia Editor"
+
+#. Common dialog button to confirm action
+#: Views/Shared/_Dialog.cshtml
+msgid "Common.Ok"
+msgstr "OK"
+
+#. Common dialog button to cancel or dismiss action
+#: Views/Shared/_Dialog.cshtml
+msgid "Common.Cancel"
+msgstr "Cancel"
+
+#. Common action button to save current changes
+#: Views/Shared/_Toolbar.cshtml
+msgid "Common.Save"
+msgstr "Save"
+
+#. Common action button to delete selected item
+#: Views/Shared/_ConfirmDialog.cshtml
+msgid "Common.Delete"
+msgstr "Delete"
+
+#. Common action button to edit selected item
+#: Views/Shared/_ListView.cshtml
+msgid "Common.Edit"
+msgstr "Edit"
+
+#. Common action button to create new item
+#: Views/Shared/_Toolbar.cshtml
+msgid "Common.Create"
+msgstr "Create"
+
+#. Common search input placeholder text
+#: Views/Shared/_SearchBar.cshtml
+msgid "Common.Search"
+msgstr "Search"
+
+#. Common action button to close window or dialog
+#: Views/Shared/_Modal.cshtml
+msgid "Common.Close"
+msgstr "Close"
+
+#. Common confirmation option for yes/no dialogs
+#: Views/Shared/_ConfirmDialog.cshtml
+msgid "Common.Yes"
+msgstr "Yes"
+
+#. Common denial option for yes/no dialogs
+#: Views/Shared/_ConfirmDialog.cshtml
+msgid "Common.No"
+msgstr "No"
+
+#. Main editor page title and heading
+#: Pages/Index.cshtml
+msgid "Editor.Title"
+msgstr "Scene Editor"
+
+#. Menu item or button to create a new scene
+#: js/scenes.js
+msgid "Editor.NewScene"
+msgstr "New Scene"
+
+#. Menu item or button to open an existing project
+#: js/app.js
+msgid "Editor.OpenProject"
+msgstr "Open Project"
+
+#. Menu item or button to save the current project
+#: js/app.js
+msgid "Editor.SaveProject"
+msgstr "Save Project"
+
+#. Undo last action in editor
+#: js/undoredo.js
+msgid "Editor.Undo"
+msgstr "Undo"
+
+#. Redo previously undone action
+#: js/undoredo.js
+msgid "Editor.Redo"
+msgstr "Redo"
+
+#. File menu label in main menu bar
+#: Pages/Shared/_Layout.cshtml
+msgid "Menu.File"
+msgstr "File"
+
+#. Edit menu label in main menu bar
+#: Pages/Shared/_Layout.cshtml
+msgid "Menu.Edit"
+msgstr "Edit"
+
+#. View menu label in main menu bar
+#: Pages/Shared/_Layout.cshtml
+msgid "Menu.View"
+msgstr "View"
+
+#. Help menu label in main menu bar
+#: Pages/Shared/_Layout.cshtml
+msgid "Menu.Help"
+msgstr "Help"
+
+#. Success message shown after saving changes
+#: js/app.js
+msgid "Status.Saved"
+msgstr "Changes saved successfully"
+
+#. Generic error message for unexpected errors
+#: js/app.js
+msgid "Status.Error"
+msgstr "An error occurred"
+
+#. Loading indicator text shown during async operations
+#: js/app.js
+msgid "Status.Loading"
+msgstr "Loading..."
+
+msgid "Status.Ready"
+msgstr "Ready"
+
+msgid "Project.Unnamed"
+msgstr "Untitled Project"
+
+msgid "Panel.Resources"
+msgstr "Resources"
+
+msgid "Resource.OpenProjectFirst"
+msgstr "Resources will appear after opening a project"
+
+msgid "Resource.Manage"
+msgstr "Manage Resources"
+
+msgid "Toolbar.Run"
+msgstr "Run"
+
+msgid "Toolbar.PreviewFromSelected"
+msgstr "Preview from Selected"
+
+msgid "Toolbar.Exit"
+msgstr "Exit"
+
+msgid "Toolbar.ExitHint"
+msgstr "Exit Application"
+
+msgid "Editor.AddScene"
+msgstr "+ Add Scene"
+
+msgid "Editor.AddDialogue"
+msgstr "+ Add Dialogue"
+
+msgid "Editor.AddBranch"
+msgstr "+ Add Branch"
+
+msgid "Editor.AddEvent"
+msgstr "+ Add Event"
+
+msgid "Editor.CopyDialogue"
+msgstr "Copy Dialogue"
+
+msgid "Editor.DeleteDialogue"
+msgstr "Delete Dialogue"
+
+msgid "Common.MoveUp"
+msgstr "Move Up"
+
+msgid "Common.MoveDown"
+msgstr "Move Down"
+
+msgid "Project.CreateOrOpenFirst"
+msgstr "Please create or open a project first"
+
+msgid "Panel.Properties"
+msgstr "Properties"
+
+msgid "Property.SelectToEdit"
+msgstr "Select a dialogue to edit properties"
+
+msgid "Preview.Previous"
+msgstr "Previous"
+
+msgid "Preview.Next"
+msgstr "Next"
+
+msgid "Modal.ResourceManage"
+msgstr "Resource Management"
+
+msgid "Resource.Sprites"
+msgstr "Sprites"
+
+msgid "Resource.Backgrounds"
+msgstr "Backgrounds"
+
+msgid "Resource.BGM"
+msgstr "BGM"
+
+msgid "Resource.Voice"
+msgstr "Voice"
+
+msgid "Resource.Other"
+msgstr "Other"
+
+msgid "Settings.Title"
+msgstr "Application Settings"
+
+msgid "Settings.AppInfo"
+msgstr "Application Information"
+
+msgid "Settings.Shortcuts"
+msgstr "Keyboard Shortcuts"
+
+msgid "Shortcut.Undo"
+msgstr "Undo"
+
+msgid "Shortcut.Redo"
+msgstr "Redo"
+
+msgid "Shortcut.Save"
+msgstr "Save Project"
+
+msgid "Exit.ConfirmTitle"
+msgstr "Confirm Exit"
+
+msgid "Exit.ConfirmMessage"
+msgstr "Are you sure you want to exit Visunovia?\n\nThis will close the current tab and stop the backend service."
+
+msgid "Settings.Language"
+msgstr "Language"
+
+msgid "Settings.Theme"
+msgstr "Theme"
+
+msgid "Settings.EditorFontSize"
+msgstr "Editor Font Size"
+
+msgid "Settings.SaveButton"
+msgstr "Save Settings"
+
+msgid "FileBrowser.PathPlaceholder"
+msgstr "Enter path and press Enter to navigate..."
+
+msgid "Settings.AppNameLabel"
+msgstr "Name:"
+
+msgid "Settings.VersionLabel"
+msgstr "Version:"
+
+msgid "Settings.RuntimeLabel"
+msgstr "Runtime:"
+
+msgid "Settings.CancelButton"
+msgstr "Cancel"
+
+msgid "Console.LocalizationInitialized"
+msgstr "Localization initialized. Current language: {0}"
+
+msgid "Console.AvailableLanguages"
+msgstr "Available languages: {0}"
+
+msgid "Console.ServerRunning"
+msgstr "Visunovia server running on http://localhost:{0}"
+
+msgid "Console.LocalizationInitFailed"
+msgstr "[Warning] Localization service initialization failed: {0}"
+
+msgid "Console.LanguageSwitched"
+msgstr "Language switched: {0} → {1}"
+
+msgid "Console.LanguageSwitchFailed"
+msgstr "Language switch failed, will apply on next restart"
+
+msgid "Console.BatchUpdateComplete"
+msgstr "Batch update complete: {0}/{1} items successful"
+
+msgid "Console.BatchUpdateSkipped"
+msgstr "Batch update complete: {0} items successful, {1} items skipped"
+
+msgid "Console.BatchUpdateFailed"
+msgstr "Batch update settings failed"
+
+msgid "Console.InvalidSettingSkipped"
+msgstr "Skipped invalid item in batch update: {0}={1}"

@@ -1,0 +1,24 @@
+@using Visunovia.Services.Localization
+@inject IStringLocalizer Localizer
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@Localizer["App.Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/editor.css" />
+    <link rel="stylesheet" href="~/css/modal.css" />
+</head>
+<body>
+    @RenderBody()
+
+    <script src="~/js/app.js"></script>
+    <script src="~/js/scenes.js"></script>
+    <script src="~/js/dialogues.js"></script>
+    <script src="~/js/properties.js"></script>
+    <script src="~/js/resources.js"></script>
+    <script src="~/js/preview.js"></script>
+    <script src="~/js/undoredo.js"></script>
+</body>
+</html>
