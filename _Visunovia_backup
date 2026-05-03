@@ -1,0 +1,28 @@
+文件类型	实际使用后缀（保留 / 新设计）	融合风格造语全写（氛围展示）	国际音标 / 日式罗马音	双风格核心拆解与圣书馆设定
+项目入口文件	.tlor（完全保留）	Torieloria	/ˌtɔːriˈelɔːriə/  罗马音：Torieroria	【核心锚点】融合 BA 希伯来语 Tora（妥拉圣典）与梶浦语 -el/-oria 双柔和词尾；【设定】洛蕾圣书馆的「圣书序章总刻印」，每部叙事典籍的开篇总纲。
+剧本结构文件	.lor（完全保留）	Liorathil	/liˈɔːrəθɪl/  罗马音：Riorashiru	【核心锚点】融合 BA 希伯来语 Lior（我的光 / 逻各斯圣言）与梶浦语 -thil 低语叙事词尾；【设定】洛蕾圣书馆的「叙事核心碑文」，记录典籍的剧情逻辑与分支骨架。
+引擎 / 编辑器 UI 语言包	.lingel（5 字符）	Lioralingel	/liˌɔːrəˈlɪndʒel/  罗马音：Riorarinjeru	【后缀提取】造语全写核心 Lingel（Lingua 通用语 + Angel 天使）；【双风格】-lingua 对应语言功能，-el 是 BA 经典天使后缀，贴合梶浦语柔和收尾；【设定】洛蕾圣书馆的「馆员通译语刻印」，用于编辑器 / 引擎与用户的对话交互。
+剧本文本本地化包	.testil（6 字符）	Lioratestil	/liˌɔːrəˈtɛstɪl/  罗马音：Rioratesutiru	【后缀提取】造语全写核心 Testil（Testament 圣约 + Thil 叙事）；【双风格】-testament 对应译本功能（BA 伊甸条约圣约感），-thil 是梶浦语标志性低语叙事词尾；【设定】洛蕾圣书馆的「圣约译本抄本刻印」，同一叙事碑文的不同语言咏唱版本。
+资源清单文件	.resona（6 字符）	Lioresoria	/liˌɔːrəˈsɔːriə/  罗马音：Rioresoria	【后缀提取】造语全写核心 Resona（Resonance 共鸣 + Ria 珍宝）；【双风格】-resonance 对应资源与叙事的羁绊共鸣（BA 核心主题），-ria 贴合梶浦语合唱般的流畅感；【设定】洛蕾圣书馆的「什亭珍宝库名录刻印」，记录立绘、BGM、语音等所有叙事资源。
+存档文件	.savith（6 字符）	Liorasavith	/liˌɔːrəˈsævɪθ/  罗马音：Riorasavisu	【后缀提取】造语全写核心 Savith（Save 留存 + Sith 记忆）；【双风格】-save 对应存档功能，-sith 隐含 BA 圣约印记与梶浦语忧伤余韵；【设定】洛蕾圣书馆的「读者羁绊印记刻印」，记录玩家的选择、进度与专属记忆。
+引擎 / 项目配置文件	.caneli（6 字符）	Lioracanoniel	/liˌɔːrəˈkænəniel/  罗马音：Riorakanonieru	【后缀提取】造语全写核心 Caneli（Canon 教规 + Eli 天使）；【双风格】-canon 对应配置功能（BA 圣三一学院教典感），-eli 弱化规则生硬感，贴合梶浦语柔和秩序；【设定】洛蕾圣书馆的「运行教规刻印」，记录引擎 / 编辑器的偏好设置与运行秩序。
+
+
+
+
+
+# Editor 版本（洛蕾圣书馆 · 编纂室）
+./Projects/<MyNovel>/
+├── Project.tlor               # 圣书序章总刻印 / 项目入口文件
+├── UI/                        # UI 资源目录，若无此目录或目录为空，将使用默认 UI 资源包
+├── Scripts/
+│   └── Main/Chapter1.lor      # 叙事核心碑文 / 项目剧本
+├── Locales/
+│   ├── Engine/UI.zh-CN.lingel # 馆员通译语刻印 / 项目引擎 UI 语言包
+│   └── Chapter1.zh-CN.testil  # 圣约译本抄本刻印 / 项目剧本文本本地化包
+├── Assets/Index.resona        # 什亭珍宝库名录刻印 / 项目资源清单文件
+├── Saves/
+│   └── MemoryX.savith         # 测试用羁绊印记刻印 / 项目存档文件，X = 存档编号
+└── Settings/
+    ├── Editor/Editor.caneli   # 编纂室运行教规刻印 / 项目引擎配置文件
+    └── Configium.caneli       # 项目运行教规刻印 / 应用配置文件

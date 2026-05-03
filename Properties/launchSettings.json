@@ -1,1 +1,17 @@
-{"$schema": "https://json.schemastore.org/launchsettings.json", "profiles": {"Visunovia": {"commandName": "Project", "dotnetRunMessages": true, "launchBrowser": true, "environmentVariables": {"ASPNETCORE_ENVIRONMENT": "Development"}}}}
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "Visunovia": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "Windows Machine": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}

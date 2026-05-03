@@ -10,6 +10,8 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+dist/
+out/
 
 ## Visual Studio 用户特定文件
 *.suo
@@ -25,17 +27,11 @@ bld/
 .idea/
 *.sln.iml
 
+## VS Code
+.vscode/
+
 ## Trae IDE
 .trae/
-
-## 构建结果
-[Dd]ebug/
-[Rr]elease/
-x64/
-build/
-bld/
-[Bb]in/
-[Oo]bj/
 
 ## NuGet 包
 **/[Pp]ackages/*
@@ -43,19 +39,12 @@ bld/
 **/[Pp]ackages/**
 !**/[Pp]ackages/build/
 *.snupkg
-
-## NuGet 符号包
 *.symbols.nupkg
-
-## NuGet v3
 *.nuget.props
 *.nuget.targets
 
 ## MSBuild 二进制和结构化日志
 *.binlog
-
-## Visual Studio 缓存/选项目录
-.vs/
 
 ## Visual Studio 自动生成的文件
 *_i.c
@@ -127,9 +116,25 @@ PublishProfiles/
 *.bim.layout
 *.bim_*.settings
 
+## 依赖目录
+node_modules/
+vendor/
+
+## 环境配置文件
+.env
+.env.local
+.env.*.local
+
+## 缓存文件
+.cache/
+*.cache
+
 ## 项目运行时数据（VN 引擎工作目录）
 _Visunovia/
 _Visunovia_backup/
+
+## Git 克隆的第三方资源目录
+Git Cloned/
 
 ## 压缩的静态资源（构建时自动生成）
 *.css.gz
@@ -142,6 +147,18 @@ _Visunovia_backup/
 *.woff2.gz
 *.svg.gz
 
+## NW.js 打包
+Visunovia.Player.NW/node_modules/
+PlayerTemplate/node_modules/
+
+## 压缩包
+*.zip
+*.rar
+*.7z
+
 ## 临时文件
+tmp/
+temp/
 *.swp
+*.swo
 *~

@@ -1,0 +1,101 @@
+; Visunovia Localization File - English (en-US)
+; This is the default/fallback language file
+
+[Language]
+Name=English (US)
+
+[UI]
+Ready=Ready
+UnnamedProject=Unnamed Project
+Resources=Resources
+PropertyPanel=Property Panel
+DialogueList=Dialogue List
+Assets=Assets
+Fonts=Fonts
+Others=Others
+Start=Start
++AddScene=+ Add Scene
++AddDialogue=+ Add Dialogue
++AddBranch=+ Add Branch
++AddEvent=+ Add Event
+CopyDialogue=Copy Dialogue
+DeleteDialogue=Delete Dialogue
+MoveUp=Move Up
+MoveDown=Move Down
+
+[Menu]
+File=File
+NewProject=New Project (Ctrl+N)
+QuickNewProject=Quick New Project (Ctrl+Shift+N)
+OpenProject=Open Project (Ctrl+O)
+SaveProject=Save Project (Ctrl+S)
+PackageProject=Package Project (Ctrl+B)
+Edit=Edit
+Undo=Undo (Ctrl+Z)
+Redo=Redo (Ctrl+Y)
+Settings=Settings
+EngineSettings=Engine Settings...
+
+[Toolbar]
+Undo=Undo
+Redo=Redo
+New=New
+QuickCreate=Quick Create
+Open=Open
+Save=Save
+Run=Run
+Stop=Stop
+Package=Package
+PreviewFromSelected=From Selected Preview
+Settings=Settings
+
+[Status]
+Ready=Ready
+ProjectSaved=Project saved
+Saved=Saved
+SaveFailed=Save failed
+UnsavedChanges=Unsaved Changes
+NoProjectToPackage=No project to package
+PackageCancelled=Package cancelled
+PackagingProject=Packaging project...
+PackageFailed_MissingPlayer=Package failed: Missing NW.js player
+PackageComplete=Package complete
+PackageFailed=Package failed
+PleaseSaveFirst=Please save the project first before previewing.
+NotSaved=Not Saved
+NewProjectDialogTitle=New Project
+OpenProjectDialogTitle=Open Project
+SaveProjectDialogTitle=Save Project
+SelectRecentProject=Select Recent Project
+OpenProjectButton=Open Project
+CurrentProjectHasUnsavedChanges=Current project has unsaved changes, save first?
+
+[Dialog]
+EnterKey=Enter Key
+EnterPackageKey=Please enter the key for encrypting the game package:
+KeyCannotBeEmpty=Key cannot be empty
+Confirm=Confirm
+Cancel=Cancel
+OK=OK
+Error=Error
+Warning=Warning
+Information=Information
+PackageCompleteMessage=Game has been packaged to: {0}
+PackageCompleteTitle=Package complete
+
+[EventTypes]
+JumpScene=JumpScene
+SetVariable=SetVariable
+PlaySound=PlaySound
+ChangeBackground=ChangeBackground
+ChangeBgm=ChangeBgm
+ShowCharacter=ShowCharacter
+HideCharacter=HideCharacter
+Pause=Pause
+WaitSeconds=WaitSeconds
+Custom=Custom
+
+[DialogueTypes]
+Dialogue=Dialogue
+Branch=Branch
+Event=Event

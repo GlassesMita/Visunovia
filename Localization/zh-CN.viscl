@@ -1,0 +1,100 @@
+; Visunovia Localization File - Simplified Chinese (zh-CN)
+
+[Language]
+Name=中文（简体）
+
+[UI]
+Ready=就绪
+UnnamedProject=未命名项目
+Resources=资源
+PropertyPanel=属性面板
+DialogueList=对话列表
+Assets=立绘
+Fonts=背景
+Others=音乐
+Start=开始
++AddScene=+ 添加场景
++AddDialogue=+ 添加对话
++AddBranch=+ 添加分支
++AddEvent=+ 添加事件
+CopyDialogue=复制对话
+DeleteDialogue=删除对话
+MoveUp=上移
+MoveDown=下移
+
+[Menu]
+File=文件
+NewProject=新建项目 (Ctrl+N)
+QuickNewProject=快速创建项目 (Ctrl+Shift+N)
+OpenProject=打开项目 (Ctrl+O)
+SaveProject=保存项目 (Ctrl+S)
+PackageProject=打包项目 (Ctrl+B)
+Edit=编辑
+Undo=撤销 (Ctrl+Z)
+Redo=重做 (Ctrl+Y)
+Settings=设置
+EngineSettings=引擎设置...
+
+[Toolbar]
+Undo=撤销
+Redo=重做
+New=新建
+QuickCreate=快速创建
+Open=打开
+Save=保存
+Run=运行
+Stop=停止
+Package=打包
+PreviewFromSelected=从选中预览
+Settings=设置
+
+[Status]
+Ready=就绪
+ProjectSaved=项目已保存
+Saved=已保存
+SaveFailed=保存失败
+UnsavedChanges=未保存的更改
+NoProjectToPackage=没有可打包的项目
+PackageCancelled=打包已取消
+PackagingProject=正在打包项目...
+PackageFailed_MissingPlayer=打包失败：缺少 NW.js 播放器
+PackageComplete=打包完成
+PackageFailed=打包失败
+PleaseSaveFirst=请先保存项目再进行预览。
+NotSaved=未保存
+NewProjectDialogTitle=新建项目
+OpenProjectDialogTitle=打开项目
+SaveProjectDialogTitle=保存项目
+SelectRecentProject=选择最近打开的项目
+OpenProjectButton=打开项目
+CurrentProjectHasUnsavedChanges=当前项目有未保存的更改，是否先保存？
+
+[Dialog]
+EnterKey=输入密钥
+EnterPackageKey=请输入用于加密游戏包的密钥：
+KeyCannotBeEmpty=密钥不能为空
+Confirm=确认
+Cancel=取消
+OK=确定
+Error=错误
+Warning=警告
+Information=信息
+PackageCompleteMessage=游戏已打包到: {0}
+PackageCompleteTitle=打包完成
+
+[EventTypes]
+JumpScene=跳转场景
+SetVariable=设置变量
+PlaySound=播放音效
+ChangeBackground=更改背景
+ChangeBgm=更改背景音乐
+ShowCharacter=显示角色
+HideCharacter=隐藏角色
+Pause=暂停
+WaitSeconds=等待秒数
+Custom=自定义
+
+[DialogueTypes]
+Dialogue=对话
+Branch=分支
+Event=事件

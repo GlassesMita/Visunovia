@@ -1,0 +1,64 @@
+<UserControl x:Class="Visunovia.Controls.PluginPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#1A1A1A">
+    <UserControl.Resources>
+        <Style x:Key="PluginLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#999999"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+        <Style x:Key="PluginComboBox" TargetType="ComboBox">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Background" Value="#2A2A2A"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style x:Key="PluginButton" TargetType="Button">
+            <Setter Property="Background" Value="#3B82F6"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="插件调用" FontSize="13" FontWeight="Bold" Foreground="White" Margin="0,0,0,12"/>
+
+            <TextBlock Text="程序集 (DLL)" Style="{StaticResource PluginLabel}"/>
+            <ComboBox x:Name="AssemblyComboBox"
+                      Style="{StaticResource PluginComboBox}"
+                      SelectionChanged="OnAssemblyChanged"/>
+
+            <TextBlock Text="类" Style="{StaticResource PluginLabel}"/>
+            <ComboBox x:Name="ClassComboBox"
+                      Style="{StaticResource PluginComboBox}"
+                      SelectionChanged="OnClassChanged"/>
+
+            <TextBlock Text="方法" Style="{StaticResource PluginLabel}"/>
+            <TextBox x:Name="MethodTextBox"
+                     FontSize="11"
+                     Margin="0,0,0,8"
+                     Padding="6,4"
+                     Background="#2A2A2A"
+                     Foreground="White"
+                     BorderThickness="0"/>
+
+            <Button x:Name="InvokeButton"
+                    Content="执行方法"
+                    Style="{StaticResource PluginButton}"
+                    Click="OnInvokeClicked"/>
+        </StackPanel>
+    </Grid>
+</UserControl>
