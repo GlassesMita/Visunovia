@@ -5,47 +5,70 @@
 
 ## 项目简介
 
-Visunovia 是一款基于 WPF 和 .NET 10 的视觉小说（Visual Novel）对话编辑器，提供直观的可视化界面来创建和管理视觉小说项目。
+Visunovia 是一款基于 ASP.NET Core 和 .NET 10 的视觉小说（Visual Novel）对话编辑器，采用浏览器作为前端界面，提供直观的可视化操作来创建和管理视觉小说项目。
 
 ### 主要功能
 
-- **场景管理**：创建、编辑和组织视觉小说场景
-- **对话节点**：可视化编辑角色对话和叙事内容
-- **事件系统**：支持多种事件类型
-  - 更改背景（ChangeBackground）
-  - 更改 BGM（ChangeBgm）
-  - 显示/隐藏角色（ShowCharacter/HideCharacter）
-  - 等待指定秒数（WaitSeconds）
-  - 跳转场景、设置变量等
-- **资源管理**：内置资源管理器，支持背景、音乐、角色立绘等资源
-- **实时预览**：预览模式下可实时查看对话流程和效果
-- **过渡效果**：支持淡入淡出、滑动等多种过渡效果
-- **项目打包**：支持导出为可执行的视觉小说播放器
+- **场景管理**：创建、编辑、重命名和组织视觉小说场景
+- **对话编辑**：支持三种对话类型
+  - 普通对话（Dialogue）：角色台词和叙事文本
+  - 分支选项（Branch）：玩家选择分支
+  - 事件触发（Event）：背景切换、BGM 变更、角色显隐、等待、跳转、变量操作等
+- **资源管理**：内置资源浏览器，支持背景、角色立绘、BGM、语音、音效五类资源
+- **实时预览**：在预览模式下实时查看对话流程、背景切换、BGM 播放和角色显隐效果
+- **撤销/重做**：完整的操作历史管理，支持最多 100 步撤销
+- **多语言支持**：基于 PO 文件的国际化系统，内置中文和英文
+- **文件浏览器**：服务端文件系统浏览，支持直接打开 `.tlor` 项目文件
+- **快捷键**：Ctrl+Z/Y（撤销/重做）、Ctrl+S（保存）、Ctrl+N（新建）、Ctrl+O（打开）
 
 ### 技术栈
 
-- **框架**：WPF（Windows Presentation Foundation）
-- **语言**：C# 12 / .NET 10
-- **播放器**：基于 NW.js 构建
-- **数据格式**：YAML + XML
+- **后端框架**：ASP.NET Core（Kestrel 自托管）
+- **语言**：C# 13 / .NET 10
+- **前端**：原生 JavaScript + Bootstrap + jQuery
+- **数据格式**：XML（项目元数据）+ YAML（场景脚本）+ JSON（变量存储）
+- **本地化**：PO 文件格式
+- **依赖库**：YamlDotNet、System.Configuration.ConfigurationManager
 
 ## 项目结构
 
 ```
 Visunovia/
-├── Controls/              # 自定义 UI 控件
-│   ├── PreviewControl.xaml.cs    # 预览控件
-│   └── ResourceManagerControl.xaml.cs  # 资源管理控件
-├── Engine/                # 核心引擎
-│   ├── Core/              # 核心类型和引擎
-│   ├── Editor/            # 编辑器服务
-│   ├── Events/            # 事件系统
-│   ├── Resource/          # 资源管理
-│   └── Script/            # 脚本解析
-├── PlayerTemplate/        # 播放器模板（传统）
-├── Visunovia.Player.NW/   # NW.js 播放器
-├── Resources/             # 应用程序资源
-└── Properties/            # 项目属性
+├── Controllers/                # API 控制器
+│   ├── Models/                 # 请求/响应 DTO
+│   ├── EditorController.cs     # 场景与对话编辑 API
+│   ├── FileBrowserController.cs # 文件浏览 API
+│   ├── LocalizationController.cs # 本地化 API
+│   ├── PreviewController.cs    # 预览数据 API
+│   ├── ProjectController.cs    # 项目管理 API
+│   ├── ResourceController.cs   # 资源管理 API
+│   ├── SettingsController.cs   # 设置管理 API
+│   └── SystemController.cs     # 系统操作 API
+├── Services/                   # 业务逻辑层
+│   ├── Configuration/          # 配置处理
+│   ├── Localization/           # PO 文件解析与本地化服务
+│   ├── EditorService.cs        # 核心编辑器服务
+│   ├── EditorSessionService.cs # 编辑器会话管理
+│   ├── EditorCommands.cs       # 撤销/重做命令
+│   ├── UndoRedoManager.cs      # 撤销/重做管理器
+│   ├── LocalizationService.cs  # 本地化服务
+│   └── SettingsService.cs      # 配置管理服务
+├── Models/Engine/              # 数据模型
+│   ├── ResourceType.cs         # 资源类型定义
+│   ├── VNProject.cs            # 项目模型
+│   └── VNTypes.cs              # VN 核心类型
+├── Middleware/                  # 中间件
+│   └── GlobalExceptionMiddleware.cs # 全局异常处理
+├── Pages/                      # Razor Pages
+├── Localizations/              # PO 本地化文件
+│   ├── en-US.po
+│   └── zh-CN.po
+├── wwwroot/                    # 静态资源
+│   ├── css/                    # 样式（深色主题）
+│   ├── js/                     # 前端脚本
+│   ├── fonts/                  # 自定义字体
+│   └── lib/                    # 第三方库（Bootstrap/jQuery）
+└── Properties/                 # 项目属性
 ```
 
 ## 构建说明
@@ -79,63 +102,93 @@ dotnet build
 dotnet run
 ```
 
-### 发布打包
-
-运行打包脚本：
-```powershell
-.\build.ps1
+应用默认在 `http://localhost:28478` 启动。可通过 `--port` 参数指定端口：
+```bash
+dotnet run -- --port 8080
 ```
 
-或在 Visual Studio 中选择 `发布` 功能。
+### 发布打包
+
+```bash
+dotnet publish -c Release -r win-x64 --self-contained
+```
+
+## API 概览
+
+| 路由前缀 | 控制器 | 功能 |
+|----------|--------|------|
+| `/api/editor` | EditorController | 场景与对话的增删改查、撤销/重做 |
+| `/api/files` | FileBrowserController | 文件系统浏览、项目打开 |
+| `/api/localization` | LocalizationController | 语言切换、翻译查询 |
+| `/api/preview` | PreviewController | 预览数据获取 |
+| `/api/project` | ProjectController | 项目创建、打开、保存 |
+| `/api/resources` | ResourceController | 资源查询与文件访问 |
+| `/api/settings` | SettingsController | 应用设置读写与重置 |
+| `/api/system` | SystemController | 系统操作（关闭服务） |
 
 ## 使用说明
 
 ### 创建新项目
 
-1. 启动应用程序
-2. 点击 `文件` → `新建项目`
-3. 选择保存位置并输入项目名称
-4. 系统会自动创建项目目录结构：
-   - `Assets/Backgrounds/` - 背景图片
-   - `Assets/Characters/` - 角色立绘
-   - `Assets/Musics/` - BGM 音乐
-   - `Assets/Voices/` - 语音文件
-   - `Assets/Images/` - 其他图片资源
+1. 启动应用后，浏览器自动打开编辑器界面
+2. 使用快捷键 `Ctrl+N` 或点击新建按钮
+3. 系统自动创建项目目录结构：
+   - `Assets/Backgrounds/` — 背景图片
+   - `Assets/Characters/` — 角色立绘
+   - `Assets/Musics/` — BGM 音乐
+   - `Assets/Voices/` — 语音文件
+   - `Assets/SFX/` — 音效文件
 
-### 添加资源
+### 打开已有项目
 
-1. 在左侧资源管理器中选择资源类型（背景/角色/音乐）
-2. 点击 `添加资源` 按钮或直接将文件拖入对应文件夹
-3. 资源会自动扫描并添加到列表中
+- 使用快捷键 `Ctrl+O` 或点击打开按钮，通过文件浏览器选择 `.tlor` 项目文件
+- 或直接拖拽 `.tlor` 文件到上传区域
 
 ### 编辑对话
 
-1. 在场景列表中选择场景
-2. 在右侧对话列表中查看和编辑对话节点
-3. 点击节点可查看和修改属性
-4. 使用 `上移` / `下移` 按钮调整节点顺序
+1. 在场景标签栏选择或创建场景
+2. 在中间对话列表中查看和编辑对话节点
+3. 点击对话卡片查看和修改属性（右侧属性面板）
+4. 对话类型说明：
+   - **Dialogue**：角色名 + 对话文本
+   - **Branch**：分支选项列表，每个选项可跳转到不同场景
+   - **Event**：事件类型 + 参数（如背景路径、BGM 路径、等待秒数等）
 
 ### 预览项目
 
-1. 点击工具栏上的 `预览` 按钮
-2. 在预览窗口中查看对话流程
-3. 使用 `下一句` 按钮或空格键前进
+1. 点击预览按钮进入预览模式
+2. 使用空格键或点击推进对话
+3. 遇到分支选项时点击选择
+4. 按 `Esc` 退出预览
+
+### 资源管理
+
+1. 在左侧资源面板切换资源类别标签
+2. 点击资源项可在属性面板中选择使用
+3. 支持缩略图预览
 
 ## 已知问题
 
 - 资源管理面板在某些操作后可能需要刷新
 - 预览模式下 BGM 和立绘显示依赖正确的资源路径配置
-- 打包功能需要确保 NW.js 播放器目录存在
+- 当前为单用户模式，不支持多用户同时编辑
 
 ## 更新日志
 
-### v0.1.0-alpha (当前版本)
+### v0.2.0-alpha (当前版本)
+- 迁移至 ASP.NET Core Web 架构
+- 基于 PO 文件的多语言支持（中/英）
+- 完整的 RESTful API
+- 全局异常处理中间件
+- 设置持久化服务
+- 文件浏览器功能
+
+### v0.1.0-alpha
 - 初始 Alpha 版本发布
 - 基本场景和对话管理功能
 - 资源管理器
 - 事件系统基础支持
 - 实时预览功能
-- NW.js 播放器打包支持
 
 ## 贡献指南
 

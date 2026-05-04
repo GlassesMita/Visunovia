@@ -147,10 +147,6 @@ Git Cloned/
 *.woff2.gz
 *.svg.gz
 
-## NW.js 打包
-Visunovia.Player.NW/node_modules/
-PlayerTemplate/node_modules/
-
 ## 压缩包
 *.zip
 *.rar

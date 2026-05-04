@@ -1,9 +1,0 @@
-; Visunovia Engine Settings
-
-[General]
-Language=en-US
-AutoSave=false
-
-[Performance]
-MaxCacheSize=512
-EnableHardwareAcceleration=true
