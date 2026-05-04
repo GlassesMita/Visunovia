@@ -54,7 +54,8 @@ public class SettingsController : ControllerBase
 
             var response = new SettingsResponseDto
             {
-                Settings = settings
+                Settings = settings,
+                IsRemoteSession = IsRemoteConnection()
             };
 
             return Ok(ApiResponseDto<SettingsResponseDto>.SuccessResponse(response));
@@ -416,9 +417,23 @@ public class SettingsController : ControllerBase
             DefaultSettings.RecentProjectsLimitKey when int.TryParse(value, out int limit) => limit,
             DefaultSettings.PreviewWidthKey when int.TryParse(value, out int width) => width,
             DefaultSettings.PreviewHeightKey when int.TryParse(value, out int height) => height,
+            DefaultSettings.AllowRemoteSessionKey when bool.TryParse(value, out bool allowRemote) => allowRemote,
             _ => value // 默认返回字符串
         };
     }
 
     #endregion
+
+    /// <summary>
+    /// 判断当前 HTTP 连接是否为远程会话。
+    /// 通过检查客户端 IP 是否为回环地址（127.0.0.1 或 ::1）来判断，
+    /// 非回环地址视为远程连接。
+    /// </summary>
+    /// <returns>如果客户端 IP 不是回环地址则返回 true</returns>
+    private bool IsRemoteConnection()
+    {
+        var remoteIp = HttpContext.Connection.RemoteIpAddress;
+        if (remoteIp == null) return false;
+        return !System.Net.IPAddress.IsLoopback(remoteIp);
+    }
 }

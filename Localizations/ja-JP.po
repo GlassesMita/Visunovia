@@ -1,4 +1,4 @@
-# Visunovia Editor - English (US) Translation
+# Visunovia Editor - Japanese Translation
 # Copyright (C) 2026 Visunovia Team
 # This file is distributed under the same license as the Visunovia package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
@@ -10,20 +10,20 @@ msgstr ""
 "POT-Creation-Date: 2026-01-01 00:00+0000\n"
 "PO-Revision-Date: 2026-01-01 00:00+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: English <LL@li.org>\n"
-"Language: en-US\n"
+"Language-Team: Japanese <LL@li.org>\n"
+"Language: ja-JP\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #. Display Language
 msgid "Common.LanguageDisplayName"
-msgstr "English (US)"
+msgstr "日本語"
 
 #. Application title displayed in browser tab and window header
 #: Pages/Shared/_Layout.cshtml
 msgid "App.Title"
-msgstr "Visunovia Editor"
+msgstr "Visunovia エディタ"
 
 #. Common dialog button to confirm action
 #: Views/Shared/_Dialog.cshtml
@@ -33,303 +33,303 @@ msgstr "OK"
 #. Common dialog button to cancel or dismiss action
 #: Views/Shared/_Dialog.cshtml
 msgid "Common.Cancel"
-msgstr "Cancel"
+msgstr "キャンセル"
 
 #. Common action button to save current changes
 #: Views/Shared/_Toolbar.cshtml
 msgid "Common.Save"
-msgstr "Save"
+msgstr "保存"
 
 #. Common action button to confirm exit
 #: Views/Shared/_Toolbar.cshtml
 msgid "Common.ExitConfirm"
-msgstr "Confirm"
+msgstr "退出を確認する"
 
 #. Common action button to delete selected item
 #: Views/Shared/_ConfirmDialog.cshtml
 msgid "Common.Delete"
-msgstr "Delete"
+msgstr "削除"
 
 #. Common action button to edit selected item
 #: Views/Shared/_ListView.cshtml
 msgid "Common.Edit"
-msgstr "Edit"
+msgstr "編集"
 
 #. Common action button to create new item
 #: Views/Shared/_Toolbar.cshtml
 msgid "Common.Create"
-msgstr "Create"
+msgstr "新規作成"
 
 #. Common search input placeholder text
 #: Views/Shared/_SearchBar.cshtml
 msgid "Common.Search"
-msgstr "Search"
+msgstr "検索"
 
 #. Common action button to close window or dialog
 #: Views/Shared/_Modal.cshtml
 msgid "Common.Close"
-msgstr "Close"
+msgstr "閉じる"
 
 #. Common confirmation option for yes/no dialogs
 #: Views/Shared/_ConfirmDialog.cshtml
 msgid "Common.Yes"
-msgstr "Yes"
+msgstr "はい"
 
 #. Common denial option for yes/no dialogs
 #: Views/Shared/_ConfirmDialog.cshtml
 msgid "Common.No"
-msgstr "No"
+msgstr "いいえ"
 
 #. Main editor page title and heading
 #: Pages/Index.cshtml
 msgid "Editor.Title"
-msgstr "Scene Editor"
+msgstr "シーンエディタ"
 
 #. Menu item or button to create a new scene
 #: js/scenes.js
 msgid "Editor.NewScene"
-msgstr "New Scene"
+msgstr "新しいシーン"
 
 #. Menu item or button to open an existing project
 #: js/app.js
 msgid "Editor.OpenProject"
-msgstr "Open Project"
+msgstr "プロジェクトを開く"
 
 #. Menu item or button to save the current project
 #: js/app.js
 msgid "Editor.SaveProject"
-msgstr "Save Project"
+msgstr "プロジェクトを保存"
 
 #. Undo last action in editor
 #: js/undoredo.js
 msgid "Editor.Undo"
-msgstr "Undo"
+msgstr "元に戻す"
 
 #. Redo previously undone action
 #: js/undoredo.js
 msgid "Editor.Redo"
-msgstr "Redo"
+msgstr "やり直し"
 
 #. File menu label in main menu bar
 #: Pages/Shared/_Layout.cshtml
 msgid "Menu.File"
-msgstr "File"
+msgstr "ファイル"
 
 #. Edit menu label in main menu bar
 #: Pages/Shared/_Layout.cshtml
 msgid "Menu.Edit"
-msgstr "Edit"
+msgstr "編集"
 
 #. View menu label in main menu bar
 #: Pages/Shared/_Layout.cshtml
 msgid "Menu.View"
-msgstr "View"
+msgstr "表示"
 
 #. Help menu label in main menu bar
 #: Pages/Shared/_Layout.cshtml
 msgid "Menu.Help"
-msgstr "Help"
+msgstr "ヘルプ"
 
 #. Success message shown after saving changes
 #: js/app.js
 msgid "Status.Saved"
-msgstr "Changes saved successfully"
+msgstr "変更を保存しました"
 
 #. Generic error message for unexpected errors
 #: js/app.js
 msgid "Status.Error"
-msgstr "An error occurred"
+msgstr "エラーが発生しました"
 
 #. Loading indicator text shown during async operations
 #: js/app.js
 msgid "Status.Loading"
-msgstr "Loading..."
+msgstr "読み込み中..."
 
 msgid "Status.Ready"
-msgstr "Ready"
+msgstr "準備完了"
 
 msgid "Project.Unnamed"
-msgstr "Untitled Project"
+msgstr "無題プロジェクト"
 
 msgid "Panel.Resources"
-msgstr "Resources"
+msgstr "リソース"
 
 msgid "Resource.OpenProjectFirst"
-msgstr "Resources will appear after opening a project"
+msgstr "プロジェクトを開くとリソースが表示されます"
 
 msgid "Resource.Manage"
-msgstr "Manage Resources"
+msgstr "リソース管理"
 
 msgid "Toolbar.Run"
-msgstr "Run"
+msgstr "実行"
 
 msgid "Toolbar.PreviewFromSelected"
-msgstr "Preview from Selected"
+msgstr "選択位置からプレビュー"
 
 msgid "Toolbar.Exit"
-msgstr "Exit"
+msgstr "終了"
 
 msgid "Toolbar.ExitHint"
-msgstr "Exit Application"
+msgstr "アプリケーションを終了"
 
 msgid "Editor.AddScene"
-msgstr "+ Add Scene"
+msgstr "+ シーンを追加"
 
 msgid "Editor.AddDialogue"
-msgstr "+ Add Dialogue"
+msgstr "+ 対話を追加"
 
 msgid "Editor.AddBranch"
-msgstr "+ Add Branch"
+msgstr "+ 分岐を追加"
 
 msgid "Editor.AddEvent"
-msgstr "+ Add Event"
+msgstr "+ イベントを追加"
 
 msgid "Editor.CopyDialogue"
-msgstr "Copy Dialogue"
+msgstr "対話をコピー"
 
 msgid "Editor.DeleteDialogue"
-msgstr "Delete Dialogue"
+msgstr "対話を削除"
 
 msgid "Common.MoveUp"
-msgstr "Move Up"
+msgstr "上へ"
 
 msgid "Common.MoveDown"
-msgstr "Move Down"
+msgstr "下へ"
 
 msgid "Project.CreateOrOpenFirst"
-msgstr "Please create or open a project first"
+msgstr "先にプロジェクトを作成または開いてください"
 
 msgid "Panel.Properties"
-msgstr "Properties"
+msgstr "プロパティ"
 
 msgid "Property.SelectToEdit"
-msgstr "Select a dialogue to edit properties"
+msgstr "対話を選択してプロパティを編集"
 
 msgid "Preview.Previous"
-msgstr "Previous"
+msgstr "前へ"
 
 msgid "Preview.Next"
-msgstr "Next"
+msgstr "次へ"
 
 msgid "Modal.ResourceManage"
-msgstr "Resource Management"
+msgstr "リソース管理"
 
 msgid "Resource.Sprites"
-msgstr "Sprites"
+msgstr "立ち絵"
 
 msgid "Resource.Backgrounds"
-msgstr "Backgrounds"
+msgstr "背景"
 
 msgid "Resource.BGM"
 msgstr "BGM"
 
 msgid "Resource.Voice"
-msgstr "Voice"
+msgstr "音声"
 
 msgid "Resource.Other"
-msgstr "Other"
+msgstr "その他"
 
 msgid "Settings.Title"
-msgstr "Application Settings"
+msgstr "アプリケーション設定"
 
 msgid "Settings.AppInfo"
-msgstr "Application Information"
+msgstr "アプリケーション情報"
 
 msgid "Settings.Shortcuts"
-msgstr "Keyboard Shortcuts"
+msgstr "キーボードショートカット"
 
 msgid "Shortcut.Undo"
-msgstr "Undo"
+msgstr "元に戻す"
 
 msgid "Shortcut.Redo"
-msgstr "Redo"
+msgstr "やり直し"
 
 msgid "Shortcut.Save"
-msgstr "Save Project"
+msgstr "プロジェクトを保存"
 
 msgid "Exit.ConfirmTitle"
-msgstr "Confirm Exit"
+msgstr "終了の確認"
 
 msgid "Exit.ConfirmMessage"
-msgstr "Are you sure you want to exit Visunovia?\n\nThis will close the current tab and stop the backend service."
+msgstr "Visunovia を終了しますか？\n\n現在のタブを閉じ、バックエンドサービスを停止します。"
 
 msgid "Settings.Language"
-msgstr "Language"
+msgstr "言語"
 
 msgid "Settings.Theme"
-msgstr "Theme"
+msgstr "テーマ"
 
 msgid "Settings.EditorFontSize"
-msgstr "Editor Font Size"
+msgstr "エディタのフォントサイズ"
 
 msgid "Settings.SaveButton"
-msgstr "Save Settings"
+msgstr "設定を保存"
 
 msgid "FileBrowser.PathPlaceholder"
-msgstr "Enter path and press Enter to navigate..."
+msgstr "パスを入力して Enter で移動..."
 
 msgid "Settings.AppNameLabel"
-msgstr "Name:"
+msgstr "名前："
 
 msgid "Settings.VersionLabel"
-msgstr "Version:"
+msgstr "バージョン："
 
 msgid "Settings.RuntimeLabel"
-msgstr "Runtime:"
+msgstr "ランタイム："
 
 msgid "Settings.CancelButton"
-msgstr "Cancel"
+msgstr "キャンセル"
 
 msgid "Console.LocalizationInitialized"
-msgstr "Localization initialized. Current language: {0}"
+msgstr "ローカライズが初期化されました。現在の言語：{0}"
 
 msgid "Console.AvailableLanguages"
-msgstr "Available languages: {0}"
+msgstr "使用可能な言語：{0}"
 
 msgid "Console.ServerRunning"
-msgstr "Visunovia server running on http://localhost:{0}"
+msgstr "Visunovia サーバーが http://localhost:{0} で起動しました"
 
 msgid "Console.LocalizationInitFailed"
-msgstr "[Warning] Localization service initialization failed: {0}"
+msgstr "[警告] ローカライズサービスの初期化に失敗しました：{0}"
 
 msgid "Console.LanguageSwitched"
-msgstr "Language switched: {0} → {1}"
+msgstr "言語が切り替わりました：{0} → {1}"
 
 msgid "Console.LanguageSwitchFailed"
-msgstr "Language switch failed, will apply on next restart"
+msgstr "言語の切り替えに失敗しました。次回起動時に適用されます"
 
 msgid "Console.BatchUpdateComplete"
-msgstr "Batch update complete: {0}/{1} items successful"
+msgstr "一括更新完了：{0}/{1} 件成功"
 
 msgid "Console.BatchUpdateSkipped"
-msgstr "Batch update complete: {0} items successful, {1} items skipped"
+msgstr "一括更新完了：{0} 件成功、{1} 件スキップ"
 
 msgid "Console.BatchUpdateFailed"
-msgstr "Batch update settings failed"
+msgstr "一括更新設定に失敗しました"
 
 msgid "Console.InvalidSettingSkipped"
-msgstr "Skipped invalid item in batch update: {0}={1}"
+msgstr "一括更新で無効な項目をスキップ：{0}={1}"
 
 msgid "Console.ListenMode"
-msgstr "Listen mode: Local only (loopback)"
+msgstr "リッスンモード：ローカルのみ（ループバック）"
 
 msgid "Console.ListenModeRemote"
-msgstr "Listen mode: Remote connections allowed (all interfaces)"
+msgstr "リッスンモード：リモート接続を許可（すべてのインターフェース）"
 
 msgid "Settings.AllowRemoteSession"
-msgstr "Allow Remote Access"
+msgstr "リモートアクセスを許可"
 
 msgid "Settings.AllowRemoteSessionHint"
-msgstr "Requires application restart to take effect"
+msgstr "変更後、アプリケーションの再起動が必要です"
 
 msgid "RemoteAccess.ConfirmTitle"
-msgstr "Enable Remote Access"
+msgstr "リモートアクセスの有効化"
 
 msgid "RemoteAccess.ConfirmMessage"
-msgstr "Enabling remote access will allow other devices on the network to connect to this application.\n\nThis is a potentially dangerous operation that may expose your data to unauthorized access.\n\nAre you sure you want to enable remote access?"
+msgstr "リモートアクセスを有効にすると、ネットワーク上の他のデバイスがこのアプリケーションに接続できるようになります。\n\nこの操作は危険であり、データが不正アクセスされる可能性があります。\n\nリモートアクセスを有効にしてもよろしいですか？"
 
 msgid "RemoteAccess.ConfirmButton"
-msgstr "Enable Remote Access"
+msgstr "リモートアクセスを有効にする"
 
 msgid "Settings.RemoteSessionLocked"
-msgstr "Remote access cannot be disabled during a remote session"
+msgstr "リモートセッション中はリモートアクセスを無効にできません"

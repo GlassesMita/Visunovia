@@ -606,6 +606,38 @@ public class LocalizationService : IDisposable
     }
 
     /// <summary>
+    /// 获取指定语言的显示名称。
+    /// 从该语言的 PO 文件中查找 Common.LanguageDisplayName 条目的 msgstr，
+    /// 如果找不到则回退使用语言代码本身作为显示名称。
+    /// </summary>
+    /// <param name="languageCode">语言代码（PO 文件名去 .po 后缀）</param>
+    /// <returns>语言的显示名称</returns>
+    public string GetLanguageDisplayName(string languageCode)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(languageCode);
+
+        try
+        {
+            var filePath = GetPoFilePath(languageCode);
+            if (!File.Exists(filePath))
+                return languageCode;
+
+            var poFile = _parser.Parse(filePath);
+            var entry = poFile.FindByMsgId("Common.LanguageDisplayName");
+            if (entry != null && !string.IsNullOrWhiteSpace(entry.MsgStr))
+                return entry.MsgStr;
+        }
+        catch (Exception ex)
+        {
+            // 异常来源：PO 文件解析失败或文件读取错误
+            // 处理方式：回退使用语言代码，不抛出异常
+            _logger.LogDebug(ex, "[LocalizationService] 读取语言显示名称失败: {LanguageCode}", languageCode);
+        }
+
+        return languageCode;
+    }
+
+    /// <summary>
     /// 检查指定语言的 PO 文件是否存在且可用。
     /// </summary>
     /// <param name="languageCode">要检查的语言代码</param>

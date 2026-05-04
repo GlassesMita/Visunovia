@@ -50,11 +50,18 @@ public class LocalizationController : ControllerBase
         try
         {
             var availableLanguages = _localizationService.GetAvailableLanguages();
+            var languageInfos = availableLanguages
+                .Select(code => new LanguageInfoDto
+                {
+                    Code = code,
+                    DisplayName = _localizationService.GetLanguageDisplayName(code)
+                })
+                .ToList();
 
             var response = new LanguagesResponseDto
             {
                 CurrentLanguage = _localizationService.CurrentLanguage,
-                AvailableLanguages = availableLanguages.ToList(),
+                AvailableLanguages = languageInfos,
                 FallbackLanguage = _localizationService.FallbackLanguage
             };
 

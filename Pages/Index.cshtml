@@ -180,8 +180,6 @@
             <div style="margin-bottom:16px;">
                 <label style="color:#aaa; font-size:12px; display:block; margin-bottom:6px;">@Localizer["Settings.Language"]</label>
                 <select id="settingsLanguage" style="width:100%; padding:6px 8px; background:#1a1a1a; color:#ccc; border:1px solid #444; border-radius:4px; font-size:13px; outline:none;">
-                    <option value="zh-CN">中文（简体）</option>
-                    <option value="en-US">English (US)</option>
                 </select>
             </div>
             <div style="margin-bottom:16px;">
@@ -200,6 +198,18 @@
                     <option value="16">16px</option>
                     <option value="18">18px</option>
                 </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="color:#aaa; font-size:12px; display:block; margin-bottom:6px;">@Localizer["Settings.AllowRemoteSession"]</label>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="settingsAllowRemoteSession" />
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span id="settingsAllowRemoteSessionLabel" style="color:#999; font-size:12px;"></span>
+                </div>
+                <div style="color:#666; font-size:11px; margin-top:4px;">@Localizer["Settings.AllowRemoteSessionHint"]</div>
+                <div id="settingsRemoteSessionLockedHint" style="display:none; color:#F59E0B; font-size:11px; margin-top:4px;">⚠ @Localizer["Settings.RemoteSessionLocked"]</div>
             </div>
             <div style="margin-bottom:16px;">
                 <div style="color:#aaa; font-size:12px; margin-bottom:6px;">@Localizer["Settings.Shortcuts"]</div>
@@ -228,6 +238,22 @@
         <div class="modal-footer">
             <button class="toolbar-btn" onclick="app.closeExitConfirm()">@Localizer["Common.Cancel"]</button>
             <button class="red-btn toolbar-btn" onclick="app.confirmExit()">@Localizer["Common.ExitConfirm"]</button>
+        </div>
+    </div>
+</div>
+
+<!-- Remote Access Confirmation Modal -->
+<div class="modal-overlay" id="remoteAccessConfirmModal">
+    <div class="modal-content" style="width: 380px;">
+        <div class="modal-header">
+            <span class="modal-title" style="color:#EF4444;">⚠ @Localizer["RemoteAccess.ConfirmTitle"]</span>
+        </div>
+        <div class="modal-body">
+            <p style="color:#ddd; font-size:14px; line-height:1.6;">@Localizer["RemoteAccess.ConfirmMessage"]</p>
+        </div>
+        <div class="modal-footer">
+            <button class="toolbar-btn" onclick="app.cancelRemoteAccess()">@Localizer["Common.Cancel"]</button>
+            <button class="danger-btn toolbar-btn" id="remoteAccessConfirmBtn" disabled onclick="app.confirmRemoteAccess()">@Localizer["RemoteAccess.ConfirmButton"]</button>
         </div>
     </div>
 </div>

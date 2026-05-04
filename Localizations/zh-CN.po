@@ -16,6 +16,10 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#. Display Language
+msgid "Common.LanguageDisplayName"
+msgstr "中文（简体）"
+
 #. Application title displayed in browser tab and window header
 #: Pages/Shared/_Layout.cshtml
 msgid "App.Title"
@@ -35,6 +39,11 @@ msgstr "取消"
 #: Views/Shared/_Toolbar.cshtml
 msgid "Common.Save"
 msgstr "保存"
+
+#. Common action button to confirm exit
+#: Views/Shared/_Toolbar.cshtml
+msgid "Common.ExitConfirm"
+msgstr "确认退出"
 
 #. Common action button to delete selected item
 #: Views/Shared/_ConfirmDialog.cshtml
@@ -300,3 +309,27 @@ msgstr "批量更新设置失败"
 
 msgid "Console.InvalidSettingSkipped"
 msgstr "批量更新中跳过无效项：{0}={1}"
+
+msgid "Console.ListenMode"
+msgstr "监听模式：仅本地连接（回环地址）"
+
+msgid "Console.ListenModeRemote"
+msgstr "监听模式：允许远程连接（所有网络接口）"
+
+msgid "Settings.AllowRemoteSession"
+msgstr "允许远程访问"
+
+msgid "Settings.AllowRemoteSessionHint"
+msgstr "修改后需重启应用才能生效"
+
+msgid "RemoteAccess.ConfirmTitle"
+msgstr "启用远程访问"
+
+msgid "RemoteAccess.ConfirmMessage"
+msgstr "启用远程访问将允许局域网内的其他设备连接到本应用。\n\n此操作存在安全风险，可能导致您的数据被未授权访问。\n\n确定要启用远程访问吗？"
+
+msgid "RemoteAccess.ConfirmButton"
+msgstr "启用远程访问"
+
+msgid "Settings.RemoteSessionLocked"
+msgstr "远程会话期间无法关闭远程访问"

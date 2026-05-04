@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json.Serialization;
 
 namespace Visunovia.Controllers.Models;
@@ -10,4 +11,8 @@ public class SettingsResponseDto
     /// <summary>所有设置项的键值对字典</summary>
     [JsonPropertyName("settings")]
     public Dictionary<string, object?> Settings { get; set; } = new();
+
+    /// <summary>当前连接是否为远程会话（非 localhost 连接）</summary>
+    [JsonPropertyName("isRemoteSession")]
+    public bool IsRemoteSession { get; set; }
 }

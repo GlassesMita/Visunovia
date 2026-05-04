@@ -341,6 +341,7 @@ public class SettingsService : IDisposable
         section[DefaultSettings.RecentProjectsLimitKey] = DefaultSettings.DefaultRecentProjectsLimit.ToString();
         section[DefaultSettings.PreviewWidthKey] = DefaultSettings.DefaultPreviewWidth.ToString();
         section[DefaultSettings.PreviewHeightKey] = DefaultSettings.DefaultPreviewHeight.ToString();
+        section[DefaultSettings.AllowRemoteSessionKey] = DefaultSettings.DefaultAllowRemoteSession.ToString();
         return section;
     }
 

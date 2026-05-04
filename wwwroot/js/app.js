@@ -1293,14 +1293,12 @@ document.addEventListener('keydown', function (e) {
 
 app.showAppSettings = function (e) {
     if (e) e.preventDefault();
-    var modal = document.getElementById('appSettingsModal');
-    if (modal) modal.style.display = 'flex';
+    app.showModal('appSettingsModal');
     app.loadAppSettings();
 };
 
 app.openAppSettings = function () {
-    var modal = document.getElementById('appSettingsModal');
-    if (modal) modal.style.display = 'flex';
+    app.showModal('appSettingsModal');
     app.loadAppSettings();
 };
 
@@ -1321,9 +1319,36 @@ app.loadAppSettings = function () {
                 var fontSizeSelect = document.getElementById('settingsEditorFontSize');
                 if (fontSizeSelect) fontSizeSelect.value = String(data.editorFontSize);
             }
+            var remoteToggle = document.getElementById('settingsAllowRemoteSession');
+            if (remoteToggle) {
+                remoteToggle.checked = data.allowRemoteSession === true;
+                app.updateRemoteSessionLabel(data.allowRemoteSession === true);
+            }
+            var isRemote = resp.data && resp.data.isRemoteSession === true;
+            app.applyRemoteSessionLock(isRemote);
         })
         .catch(function (err) {
             console.error('Failed to load settings:', err);
+        });
+
+    fetch('/api/localization/languages')
+        .then(function (response) { return response.json(); })
+        .then(function (resp) {
+            var langs = (resp && resp.data && resp.data.availableLanguages) || [];
+            var langSelect = document.getElementById('settingsLanguage');
+            if (!langSelect) return;
+            var currentVal = langSelect.value;
+            langSelect.innerHTML = '';
+            for (var i = 0; i < langs.length; i++) {
+                var opt = document.createElement('option');
+                opt.value = langs[i].code;
+                opt.textContent = langs[i].displayName;
+                langSelect.appendChild(opt);
+            }
+            if (currentVal) langSelect.value = currentVal;
+        })
+        .catch(function (err) {
+            console.error('Failed to load language list:', err);
         });
 };
 
@@ -1331,11 +1356,13 @@ app.saveAppSettings = function () {
     var langSelect = document.getElementById('settingsLanguage');
     var themeSelect = document.getElementById('settingsTheme');
     var fontSizeSelect = document.getElementById('settingsEditorFontSize');
+    var remoteToggle = document.getElementById('settingsAllowRemoteSession');
 
     var settings = {};
     if (langSelect) settings.language = langSelect.value;
     if (themeSelect) settings.theme = themeSelect.value;
     if (fontSizeSelect) settings.editorFontSize = parseInt(fontSizeSelect.value, 10);
+    if (remoteToggle) settings.allowRemoteSession = remoteToggle.checked;
 
     fetch('/api/settings', {
         method: 'PUT',
@@ -1386,14 +1413,107 @@ app.refreshPageContent = function () {
 };
 
 app.closeAppSettings = function () {
-    var modal = document.getElementById('appSettingsModal');
-    if (modal) modal.style.display = 'none';
+    app.hideModal('appSettingsModal');
+};
+
+// ==================== 模态框动画工具 ====================
+
+app.showModal = function (id) {
+    var modal = document.getElementById(id);
+    if (!modal) return;
+    modal.style.display = 'flex';
+    modal.offsetHeight;
+    modal.classList.add('visible');
+    modal.classList.remove('fade-out');
+};
+
+app.hideModal = function (id) {
+    var modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.add('fade-out');
+    modal.classList.remove('visible');
+    setTimeout(function () {
+        modal.style.display = 'none';
+        modal.classList.remove('fade-out');
+    }, 200);
+};
+
+// ==================== 远程访问开关逻辑 ====================
+
+app.updateRemoteSessionLabel = function (enabled) {
+    var label = document.getElementById('settingsAllowRemoteSessionLabel');
+    if (label) label.textContent = enabled ? 'ON' : 'OFF';
+};
+
+app.confirmRemoteAccess = function () {
+    app.clearRemoteAccessCountdown();
+    var toggle = document.getElementById('settingsAllowRemoteSession');
+    if (toggle) {
+        toggle.checked = true;
+        app.updateRemoteSessionLabel(true);
+    }
+    app.hideModal('remoteAccessConfirmModal');
+};
+
+app.cancelRemoteAccess = function () {
+    app.clearRemoteAccessCountdown();
+    var toggle = document.getElementById('settingsAllowRemoteSession');
+    if (toggle) {
+        toggle.checked = false;
+        app.updateRemoteSessionLabel(false);
+    }
+    app.hideModal('remoteAccessConfirmModal');
+};
+
+app._remoteAccessCountdownTimer = null;
+
+app.startRemoteAccessCountdown = function () {
+    app.clearRemoteAccessCountdown();
+    var btn = document.getElementById('remoteAccessConfirmBtn');
+    if (!btn) return;
+    btn.disabled = true;
+    var originalText = btn.getAttribute('data-original-text') || btn.textContent;
+    btn.setAttribute('data-original-text', originalText);
+    var seconds = 5;
+    btn.textContent = originalText + ' (' + seconds + 's)';
+    app._remoteAccessCountdownTimer = setInterval(function () {
+        seconds--;
+        if (seconds <= 0) {
+            app.clearRemoteAccessCountdown();
+            btn.disabled = false;
+            btn.textContent = originalText;
+        } else {
+            btn.textContent = originalText + ' (' + seconds + 's)';
+        }
+    }, 1000);
+};
+
+app.clearRemoteAccessCountdown = function () {
+    if (app._remoteAccessCountdownTimer) {
+        clearInterval(app._remoteAccessCountdownTimer);
+        app._remoteAccessCountdownTimer = null;
+    }
+};
+
+app.applyRemoteSessionLock = function (isRemote) {
+    var toggle = document.getElementById('settingsAllowRemoteSession');
+    var hint = document.getElementById('settingsRemoteSessionLockedHint');
+    if (isRemote) {
+        if (toggle) {
+            toggle.checked = true;
+            toggle.disabled = true;
+            app.updateRemoteSessionLabel(true);
+        }
+        if (hint) hint.style.display = 'block';
+    } else {
+        if (toggle) toggle.disabled = false;
+        if (hint) hint.style.display = 'none';
+    }
 };
 
 // ==================== 退出应用功能 ====================
 
 app.exitApplication = function () {
-    // 构建确认提示文本：如果有未保存修改，额外警告
     var textEl = document.getElementById('exitConfirmText');
     if (textEl) {
         if (app.state.hasUnsavedChanges) {
@@ -1402,13 +1522,11 @@ app.exitApplication = function () {
             textEl.innerHTML = '确定要退出 Visunovia 吗？<br/><br/>此操作将关闭当前标签页并停止后端服务。';
         }
     }
-    var modal = document.getElementById('exitConfirmModal');
-    if (modal) modal.style.display = 'flex';
+    app.showModal('exitConfirmModal');
 };
 
 app.closeExitConfirm = function () {
-    var modal = document.getElementById('exitConfirmModal');
-    if (modal) modal.style.display = 'none';
+    app.hideModal('exitConfirmModal');
 };
 
 app.confirmExit = function () {
@@ -1444,16 +1562,30 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // 点击模态框外部区域关闭
-    [ 'appSettingsModal', 'exitConfirmModal' ].forEach(function (id) {
+    [ 'appSettingsModal', 'exitConfirmModal', 'remoteAccessConfirmModal' ].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) {
             el.addEventListener('click', function (e) {
                 if (e.target === this) {
-                    this.style.display = 'none';
+                    app.hideModal(id);
                 }
             });
         }
     });
+
+    // 远程访问开关点击事件
+    var remoteToggle = document.getElementById('settingsAllowRemoteSession');
+    if (remoteToggle) {
+        remoteToggle.addEventListener('click', function (e) {
+            if (this.checked) {
+                e.preventDefault();
+                app.showModal('remoteAccessConfirmModal');
+                app.startRemoteAccessCountdown();
+            } else {
+                app.updateRemoteSessionLabel(false);
+            }
+        });
+    }
 
     // 自动恢复项目：如果 URL 包含 project 参数，页面刷新后自动重新加载
     (function () {

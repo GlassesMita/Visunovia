@@ -11,9 +11,9 @@ public class LanguagesResponseDto
     [JsonPropertyName("currentLanguage")]
     public string CurrentLanguage { get; set; } = string.Empty;
 
-    /// <summary>所有可用语言的代码列表</summary>
+    /// <summary>所有可用语言的信息列表（包含代码和显示名称）</summary>
     [JsonPropertyName("availableLanguages")]
-    public List<string> AvailableLanguages { get; set; } = new();
+    public List<LanguageInfoDto> AvailableLanguages { get; set; } = new();
 
     /// <summary>回退语言代码</summary>
     [JsonPropertyName("fallbackLanguage")]

@@ -36,6 +36,9 @@ public static class DefaultSettings
     /// <summary>预览窗口高度键名</summary>
     public const string PreviewHeightKey = "previewHeight";
 
+    /// <summary>允许远程会话键名（控制是否监听所有网络接口）</summary>
+    public const string AllowRemoteSessionKey = "allowRemoteSession";
+
     #endregion
 
     #region 默认值常量
@@ -61,6 +64,9 @@ public static class DefaultSettings
     /// <summary>默认预览窗口高度（像素）</summary>
     public const int DefaultPreviewHeight = 540;
 
+    /// <summary>默认不允许远程会话（仅本地连接）</summary>
+    public const bool DefaultAllowRemoteSession = false;
+
     #endregion
 
     #region XML 元素名映射
@@ -83,6 +89,7 @@ public static class DefaultSettings
             RecentProjectsLimitKey => "RecentProjectsLimit",
             PreviewWidthKey => "PreviewWidth",
             PreviewHeightKey => "PreviewHeight",
+            AllowRemoteSessionKey => "AllowRemoteSession",
             _ => key
         };
     }
@@ -102,6 +109,7 @@ public static class DefaultSettings
             "RecentProjectsLimit" => RecentProjectsLimitKey,
             "PreviewWidth" => PreviewWidthKey,
             "PreviewHeight" => PreviewHeightKey,
+            "AllowRemoteSession" => AllowRemoteSessionKey,
             _ => null
         };
     }
@@ -136,6 +144,7 @@ public static class DefaultSettings
             RecentProjectsLimitKey => DefaultRecentProjectsLimit,
             PreviewWidthKey => DefaultPreviewWidth,
             PreviewHeightKey => DefaultPreviewHeight,
+            AllowRemoteSessionKey => DefaultAllowRemoteSession,
             _ => null
         };
     }
@@ -154,7 +163,8 @@ public static class DefaultSettings
             AutoSaveIntervalKey,
             RecentProjectsLimitKey,
             PreviewWidthKey,
-            PreviewHeightKey
+            PreviewHeightKey,
+            AllowRemoteSessionKey
         ];
     }
 
