@@ -1299,4 +1299,262 @@ public class EditorService
             return false;
         }
     }
+
+    private Dictionary<string, SceneGraphData> _sceneGraphs = new();
+
+    public SceneGraphData? GetSceneGraph(string sceneId)
+    {
+        if (_sceneGraphs.TryGetValue(sceneId, out var graph))
+        {
+            return graph;
+        }
+        return null;
+    }
+
+    public void SaveSceneGraph(string sceneId, string jsonData)
+    {
+        try
+        {
+            var data = JsonSerializer.Deserialize<SceneGraphData>(jsonData);
+            if (data != null)
+            {
+                _sceneGraphs[sceneId] = data;
+                HasUnsavedChanges = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorOccurred?.Invoke($"保存场景图失败: {ex.Message}");
+        }
+    }
+
+    public object CreateNode(string sceneId, NodeCreateRequest request)
+    {
+        var graph = GetSceneGraph(sceneId);
+        if (graph == null)
+        {
+            graph = new SceneGraphData { Id = sceneId, Nodes = new List<NodeData>() };
+            _sceneGraphs[sceneId] = graph;
+        }
+
+        var node = new NodeData
+        {
+            Id = request.Id,
+            Type = request.Type,
+            Position = new PositionData { X = request.Position.X, Y = request.Position.Y },
+            Properties = request.Properties,
+            Inputs = request.Inputs.Select(p => new PortData
+            {
+                Id = p.Id,
+                Label = p.Label,
+                Type = p.Type,
+                DataType = p.DataType
+            }).ToList(),
+            Outputs = request.Outputs.Select(p => new PortData
+            {
+                Id = p.Id,
+                Label = p.Label,
+                Type = p.Type,
+                DataType = p.DataType
+            }).ToList()
+        };
+
+        graph.Nodes.Add(node);
+        HasUnsavedChanges = true;
+        return node;
+    }
+
+    public object UpdateNode(string sceneId, string nodeId, NodeUpdateRequest request)
+    {
+        var graph = GetSceneGraph(sceneId);
+        if (graph == null)
+        {
+            throw new Exception($"场景图 {sceneId} 不存在");
+        }
+
+        var node = graph.Nodes.FirstOrDefault(n => n.Id == nodeId);
+        if (node == null)
+        {
+            throw new Exception($"节点 {nodeId} 不存在");
+        }
+
+        if (request.Position != null)
+        {
+            node.Position = new PositionData { X = request.Position.X, Y = request.Position.Y };
+        }
+        if (request.Properties != null)
+        {
+            node.Properties = request.Properties;
+        }
+        if (request.Inputs != null)
+        {
+            node.Inputs = request.Inputs.Select(p => new PortData
+            {
+                Id = p.Id,
+                Label = p.Label,
+                Type = p.Type,
+                DataType = p.DataType
+            }).ToList();
+        }
+        if (request.Outputs != null)
+        {
+            node.Outputs = request.Outputs.Select(p => new PortData
+            {
+                Id = p.Id,
+                Label = p.Label,
+                Type = p.Type,
+                DataType = p.DataType
+            }).ToList();
+        }
+
+        HasUnsavedChanges = true;
+        return node;
+    }
+
+    public void DeleteNode(string sceneId, string nodeId)
+    {
+        var graph = GetSceneGraph(sceneId);
+        if (graph == null) return;
+
+        graph.Nodes.RemoveAll(n => n.Id == nodeId);
+        graph.Edges.RemoveAll(e => e.Source == nodeId || e.Target == nodeId);
+        HasUnsavedChanges = true;
+    }
+
+    public object CreateEdge(string sceneId, EdgeCreateRequest request)
+    {
+        var graph = GetSceneGraph(sceneId);
+        if (graph == null)
+        {
+            graph = new SceneGraphData { Id = sceneId, Nodes = new List<NodeData>(), Edges = new List<EdgeData>() };
+            _sceneGraphs[sceneId] = graph;
+        }
+
+        var edge = new EdgeData
+        {
+            Id = request.Id,
+            Source = request.Source,
+            SourcePort = request.SourcePort,
+            Target = request.Target,
+            TargetPort = request.TargetPort,
+            Type = request.Type
+        };
+
+        graph.Edges.Add(edge);
+        HasUnsavedChanges = true;
+        return edge;
+    }
+
+    public void DeleteEdge(string sceneId, string edgeId)
+    {
+        var graph = GetSceneGraph(sceneId);
+        if (graph == null) return;
+
+        graph.Edges.RemoveAll(e => e.Id == edgeId);
+        HasUnsavedChanges = true;
+    }
+
+    public List<string> GetSceneGraphList()
+    {
+        return _sceneGraphs.Keys.ToList();
+    }
+}
+
+public class SceneGraphData
+{
+    public string Id { get; set; } = "";
+    public ViewportData Viewport { get; set; } = new();
+    public List<NodeData> Nodes { get; set; } = new();
+    public List<EdgeData> Edges { get; set; } = new();
+    public SceneConfigData? SceneConfig { get; set; }
+}
+
+public class ViewportData
+{
+    public double X { get; set; }
+    public double Y { get; set; }
+    public double Zoom { get; set; } = 1.0;
+}
+
+public class NodeData
+{
+    public string Id { get; set; } = "";
+    public string Type { get; set; } = "";
+    public PositionData Position { get; set; } = new();
+    public Dictionary<string, object> Properties { get; set; } = new();
+    public List<PortData> Inputs { get; set; } = new();
+    public List<PortData> Outputs { get; set; } = new();
+}
+
+public class PositionData
+{
+    public double X { get; set; }
+    public double Y { get; set; }
+}
+
+public class PortData
+{
+    public string Id { get; set; } = "";
+    public string Label { get; set; } = "";
+    public string Type { get; set; } = "";
+    public string? DataType { get; set; }
+    public string? Target { get; set; }
+    public string? TargetPort { get; set; }
+}
+
+public class EdgeData
+{
+    public string Id { get; set; } = "";
+    public string Source { get; set; } = "";
+    public string SourcePort { get; set; } = "";
+    public string Target { get; set; } = "";
+    public string TargetPort { get; set; } = "";
+    public string Type { get; set; } = "exec";
+}
+
+public class SceneConfigData
+{
+    public string? Background { get; set; }
+    public BgmData? Bgm { get; set; }
+}
+
+public class BgmData
+{
+    public string? Path { get; set; }
+    public int Volume { get; set; } = 80;
+    public bool Loop { get; set; } = true;
+}
+
+public class NodeCreateRequest
+{
+    public string Id { get; set; } = "";
+    public string Type { get; set; } = "";
+    public PositionData Position { get; set; } = new();
+    public Dictionary<string, object> Properties { get; set; } = new();
+    public List<PortData> Inputs { get; set; } = new();
+    public List<PortData> Outputs { get; set; } = new();
+}
+
+public class PositionRequest
+{
+    public double X { get; set; }
+    public double Y { get; set; }
+}
+
+public class NodeUpdateRequest
+{
+    public PositionRequest? Position { get; set; }
+    public Dictionary<string, object>? Properties { get; set; }
+    public List<PortData>? Inputs { get; set; }
+    public List<PortData>? Outputs { get; set; }
+}
+
+public class EdgeCreateRequest
+{
+    public string Id { get; set; } = "";
+    public string Source { get; set; } = "";
+    public string SourcePort { get; set; } = "";
+    public string Target { get; set; } = "";
+    public string TargetPort { get; set; } = "";
+    public string Type { get; set; } = "exec";
 }

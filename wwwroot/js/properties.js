@@ -195,7 +195,7 @@ app.renderEventProperties = function (container, dialogue, resources) {
     var evt = dialogue.event || { eventType: 0, parameters: {} };
     var eventType = evt.eventType;
     if (typeof eventType === 'number') {
-        eventType = ['JumpScene', 'SetVariable', 'PlaySound', 'ChangeBackground', 'ChangeBgm', 'ShowCharacter', 'HideCharacter', 'Pause', 'WaitSeconds', 'Custom'][eventType] || 'Custom';
+        eventType = ['JumpScene', 'SetVariable', 'PlaySound', 'ChangeBackground', 'ChangeBgm', 'ShowCharacter', 'HideCharacter', 'Pause', 'WaitSeconds', 'WindowEffect', 'Custom', 'SendSystemNotification'][eventType] || 'Custom';
     }
     var params = evt.parameters || {};
 
@@ -204,7 +204,7 @@ app.renderEventProperties = function (container, dialogue, resources) {
     html += '<div class="property-section">';
     html += '<div class="property-label">事件类型</div>';
     html += '<select id="propEventType">';
-    var eventTypes = ['JumpScene', 'SetVariable', 'PlaySound', 'ChangeBackground', 'ChangeBgm', 'ShowCharacter', 'HideCharacter', 'Pause', 'WaitSeconds', 'Custom'];
+    var eventTypes = ['JumpScene', 'SetVariable', 'PlaySound', 'ChangeBackground', 'ChangeBgm', 'ShowCharacter', 'HideCharacter', 'Pause', 'WaitSeconds', 'WindowEffect', 'Custom', 'SendSystemNotification'];
     for (var i = 0; i < eventTypes.length; i++) {
         var sel = eventType === eventTypes[i] ? ' selected' : '';
         html += '<option value="' + eventTypes[i] + '"' + sel + '>' + eventTypes[i] + '</option>';
@@ -364,6 +364,17 @@ app.renderEventParams = function (eventType, params, resources) {
             html += '</div>';
             break;
 
+        case 'SendSystemNotification':
+            html += '<div class="property-section">';
+            html += '<div class="property-label">标题</div>';
+            html += '<input type="text" id="eventParam_title" value="' + app.escapeAttr(params.title || '') + '" />';
+            html += '</div>';
+            html += '<div class="property-section">';
+            html += '<div class="property-label">正文</div>';
+            html += '<input type="text" id="eventParam_message" value="' + app.escapeAttr(params.message || '') + '" />';
+            html += '</div>';
+            break;
+
         case 'Custom':
             html += '<div class="property-section">';
             html += '<div class="property-label">自定义命令</div>';
@@ -451,7 +462,7 @@ app.onEventTypeChange = function (newEventType, resources) {
     var oldEventType = dialogue.event.eventType;
     if (typeof oldEventType === 'number') {
         var typeNames = ['JumpScene', 'SetVariable', 'PlaySound', 'ChangeBackground',
-            'ChangeBgm', 'ShowCharacter', 'HideCharacter', 'Pause', 'WaitSeconds', 'Custom'];
+            'ChangeBgm', 'ShowCharacter', 'HideCharacter', 'Pause', 'WaitSeconds', 'WindowEffect', 'Custom', 'SendSystemNotification'];
         oldEventType = typeNames[oldEventType] || 'Custom';
     }
 
@@ -475,7 +486,8 @@ app.bindEventParamListeners = function (resources) {
     var paramIds = [
         'eventParam_targetScene', 'eventParam_variableName', 'eventParam_variableValue',
         'eventParam_soundFile', 'eventParam_background', 'eventParam_bgmFile',
-        'eventParam_character', 'eventParam_duration', 'eventParam_command'
+        'eventParam_character', 'eventParam_duration', 'eventParam_command',
+        'eventParam_title', 'eventParam_message'
     ];
 
     // 使用命名回调函数，以便后续可以移除旧监听器防止重复绑定
@@ -528,18 +540,26 @@ app.collectAndSendEventParams = function () {
     var durationEl = document.getElementById('eventParam_duration');
     if (durationEl) params.duration = parseInt(durationEl.value, 10) || 0;
 
+    var titleEl = document.getElementById('eventParam_title');
+    if (titleEl) params.title = titleEl.value;
+
+    var messageEl = document.getElementById('eventParam_message');
+    if (messageEl) params.message = messageEl.value;
+
     var commandEl = document.getElementById('eventParam_command');
     if (commandEl) params.command = commandEl.value;
 
-    // ★ 防御性检查：仅当参数确实发生变化时才发送请求
-    // 避免冗余的网络往返和可能的竞态条件
+    console.log('[DEBUG] collectAndSendEventParams - params:', params, '| dialogue.event.parameters before:', JSON.stringify(dialogue.event.parameters));
+
     var oldParamsJson = JSON.stringify(dialogue.event.parameters || {});
     var newParamsJson = JSON.stringify(params);
     if (oldParamsJson === newParamsJson) {
-        return; // 参数未变化，跳过发送
+        console.log('[DEBUG] 参数未变化，跳过发送');
+        return;
     }
 
     dialogue.event.parameters = params;
+    console.log('[DEBUG] 发送参数到后端:', params);
     app.sendDialogueUpdate(dialogue);
 };
 

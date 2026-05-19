@@ -191,7 +191,9 @@ app.parseProjectXml = function (xmlString) {
                         'variableName': 'variableName',
                         'variableValue': 'variableValue',
                         'duration': 'duration',
-                        'command': 'command'
+                        'command': 'command',
+                        'title': 'title',
+                        'message': 'message'
                     };
                     paramEls.forEach(function (paramEl) {
                         var xmlName = paramEl.nodeName;
@@ -378,7 +380,7 @@ app.normalizeProjectData = function (data) {
         0: 'JumpScene', 1: 'SetVariable', 2: 'PlaySound',
         3: 'ChangeBackground', 4: 'ChangeBgm', 5: 'ShowCharacter',
         6: 'HideCharacter', 7: 'Pause', 8: 'WaitSeconds',
-        9: 'WindowEffect', 10: 'Custom'
+        9: 'WindowEffect', 10: 'Custom', 11: 'SendSystemNotification'
     };
     for (var key in data) {
         if (!Object.prototype.hasOwnProperty.call(data, key)) continue;
@@ -402,77 +404,241 @@ app.normalizeProjectData = function (data) {
 };
 
 app.newProject = function () {
-    app.showLoading('正在创建项目...');
-    app.fetchText('/api/project/new', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: '未命名项目', path: '' })
-    })
-    .then(function (xmlString) {
-        var data = app.parseProjectXml(xmlString);
-        if (data) {
-            app.state.project = data;
-            app.state.activeSceneIndex = 0;
-            app.state.selectedDialogueIndex = -1;
-            app.state.hasUnsavedChanges = true;
-            app.state.projectPath = '';
-            app.setStatus('新项目已创建');
-            app.setSaveStatus('未保存');
-            app.updateUI();
-        }
-    })
-    .catch(function (err) {
-        app.setStatus('创建项目失败: ' + err.message);
-    })
-    .finally(function () {
-        app.hideLoading();
-    });
+    app.showFileBrowser('newProject');
 };
 
 app.openProject = function () {
-    app.showFileBrowser();
+    app.showFileBrowser('openProject');
 };
 
 app.closeFileBrowser = function () {
     document.getElementById('fileBrowserModal').style.display = 'none';
 };
 
-app.showFileBrowser = function () {
+app.showFileBrowser = function (mode) {
     var modal = document.getElementById('fileBrowserModal');
     modal.style.display = 'block';
     app.fileBrowserSelectedPath = null;
+    app.fileBrowserMode = mode || 'openProject';
+    app._fbUserTyping = false;
 
-    var pathInput = document.getElementById('fileBrowserPath');
-    if (pathInput) {
-        // 移除旧监听器，避免重复绑定
-        pathInput.removeEventListener('keydown', app._fbPathKeyHandler);
-        // 绑定 Enter/Escape 键盘事件：Enter 导航到输入路径，Escape 恢复原始路径
-        app._fbPathKeyHandler = function (e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                app._fbUserTyping = false; // 清除输入标记，允许响应更新路径显示
-                var newPath = this.value.trim();
-                if (newPath) {
-                    app.loadFileBrowserDirectory(newPath);
-                }
-            } else if (e.key === 'Escape') {
-                e.preventDefault();
-                this.value = app.fileBrowserCurrentPath || '';
-                this.blur();
-            }
-        };
-        pathInput.addEventListener('keydown', app._fbPathKeyHandler);
-        // 聚焦时全选文本，方便用户直接输入新路径
-        pathInput.addEventListener('focus', function () { this.select(); });
-        // 标记用户正在手动输入，防止异步 API 响应覆盖输入内容
-        if (!app._fbInputHandler) {
-            app._fbInputHandler = function () { app._fbUserTyping = true; };
-        }
-        pathInput.removeEventListener('input', app._fbInputHandler);
-        pathInput.addEventListener('input', app._fbInputHandler);
+    var titleSpan = modal.querySelector('.fb-modal-title');
+    if (titleSpan) {
+        titleSpan.textContent = app.fileBrowserMode === 'newProject' ? '新建项目' : '打开项目';
     }
 
+    var newFolderBtn = document.getElementById('fileBrowserNewFolderBtn');
+    if (newFolderBtn) {
+        newFolderBtn.style.display = app.fileBrowserMode === 'openProject' ? 'none' : 'inline-block';
+    }
+
+    app.loadFileBrowserSidebar();
     app.loadFileBrowserDirectory();
+};
+
+app.loadFileBrowserSidebar = function () {
+    var sidebarDiv = document.getElementById('fileBrowserSidebar');
+    if (!sidebarDiv) return;
+
+    var sidebarHtml = '<div class="fb-sidebar-section">';
+    sidebarHtml += '<div class="fb-sidebar-section-title">驱动器</div>';
+    sidebarHtml += '<div id="fb-drive-list">加载中...</div>';
+    sidebarHtml += '</div>';
+
+    sidebarHtml += '<div class="fb-sidebar-section">';
+    sidebarHtml += '<div class="fb-sidebar-section-title">位置</div>';
+    sidebarHtml += '<div id="fb-special-list">加载中...</div>';
+    sidebarHtml += '</div>';
+
+    sidebarDiv.innerHTML = sidebarHtml;
+
+    fetch('/api/files/drive-info')
+    .then(function (response) {
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.json();
+    })
+    .then(function (data) {
+        var driveListDiv = document.getElementById('fb-drive-list');
+        if (!driveListDiv) return;
+
+        var drives = data.drives || [];
+        if (drives.length === 0) {
+            driveListDiv.innerHTML = '<div class="fb-sidebar-item fb-sidebar-item-disabled">无可用驱动器</div>';
+            return;
+        }
+
+        var driveHtml = '';
+        for (var i = 0; i < drives.length; i++) {
+            var drive = drives[i];
+            if (drive.error) {
+                driveHtml += '<div class="fb-sidebar-item fb-sidebar-item-disabled" data-path="' + app.escapeAttr(drive.path) + '" data-name="' + app.escapeAttr(drive.name) + '">';
+                driveHtml += '<span class="fb-icon fb-icon-drive"></span>';
+                driveHtml += '<div class="fb-drive-name">' + app.escapeHtml(drive.label) + '</div>';
+                driveHtml += '<div class="fb-sidebar-error">' + app.escapeHtml(drive.error) + '</div>';
+                driveHtml += '</div>';
+            } else if (drive.isSpecial) {
+                driveHtml += '<div class="fb-sidebar-item" data-path="' + app.escapeAttr(drive.path) + '" data-type="drive">';
+                driveHtml += '<span class="fb-icon fb-icon-folder"></span>';
+                driveHtml += '<span>' + app.escapeHtml(drive.name) + '</span>';
+                driveHtml += '</div>';
+            } else {
+                var barColor = '#22c55e';
+                if (drive.usedPercent > 80) barColor = '#ef4444';
+                else if (drive.usedPercent > 60) barColor = '#f59e0b';
+
+                var driveLetter = drive.name.replace(/[/\\]/g, '').replace(':', '');
+                driveHtml += '<div class="fb-sidebar-item" data-path="' + app.escapeAttr(drive.path) + '" data-type="drive">';
+                driveHtml += '<span class="fb-icon fb-icon-drive"></span>';
+                driveHtml += '<div style="flex:1;min-width:0;">';
+                driveHtml += '<div class="fb-drive-name">(' + app.escapeHtml(driveLetter) + ':) ' + app.escapeHtml(drive.label || drive.name) + ' ' + drive.usedPercent + '%</div>';
+                driveHtml += '<div class="fb-drive-bar"><div class="fb-drive-bar-used" style="width:' + drive.usedPercent + '%;background:' + barColor + ';"></div></div>';
+                driveHtml += '</div>';
+                driveHtml += '</div>';
+            }
+        }
+        driveListDiv.innerHTML = driveHtml;
+
+        driveListDiv.querySelectorAll('.fb-sidebar-item[data-path]').forEach(function(item) {
+            item.addEventListener('click', function() {
+                var itemPath = this.getAttribute('data-path');
+                var itemName = this.getAttribute('data-name');
+                if (this.classList.contains('fb-sidebar-item-disabled')) {
+                    app.showToast('无权访问的目录：' + itemName);
+                    return;
+                }
+                app.loadFileBrowserDirectory(itemPath);
+            });
+        });
+    })
+    .catch(function (err) {
+        var driveListDiv = document.getElementById('fb-drive-list');
+        if (driveListDiv) {
+            driveListDiv.innerHTML = '<div class="fb-sidebar-item fb-sidebar-item-disabled">加载失败</div>';
+        }
+    });
+
+    fetch('/api/files/roots')
+    .then(function (response) {
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.json();
+    })
+    .then(function (data) {
+        var specialListDiv = document.getElementById('fb-special-list');
+        if (!specialListDiv) return;
+
+        var specialHtml = '';
+        if (data.home) {
+            specialHtml += '<div class="fb-sidebar-item" data-path="' + app.escapeAttr(data.home) + '">';
+            specialHtml += '<span class="fb-icon fb-icon-folder"></span>';
+            specialHtml += '<span>主目录</span></div>';
+        }
+        if (data.documents) {
+            specialHtml += '<div class="fb-sidebar-item" data-path="' + app.escapeAttr(data.documents) + '">';
+            specialHtml += '<span class="fb-icon fb-icon-folder"></span>';
+            specialHtml += '<span>文档</span></div>';
+        }
+
+        if (specialHtml === '') {
+            specialHtml = '<div class="fb-sidebar-item fb-sidebar-item-disabled">无可用位置</div>';
+        }
+
+        specialListDiv.innerHTML = specialHtml;
+
+        specialListDiv.querySelectorAll('.fb-sidebar-item[data-path]').forEach(function(item) {
+            item.addEventListener('click', function() {
+                var itemPath = this.getAttribute('data-path');
+                app.loadFileBrowserDirectory(itemPath);
+            });
+        });
+    })
+    .catch(function (err) {
+        var specialListDiv = document.getElementById('fb-special-list');
+        if (specialListDiv) {
+            specialListDiv.innerHTML = '<div class="fb-sidebar-item fb-sidebar-item-disabled">加载失败</div>';
+        }
+    });
+};
+
+app.showNewFolderInput = function () {
+    var inputDiv = document.getElementById('fileBrowserNewFolderInput');
+    if (inputDiv) {
+        inputDiv.style.display = 'block';
+        var input = inputDiv.querySelector('input');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+    }
+};
+
+app.hideNewFolderInput = function () {
+    var inputDiv = document.getElementById('fileBrowserNewFolderInput');
+    if (inputDiv) {
+        inputDiv.style.display = 'none';
+    }
+};
+
+app.confirmCreateFolder = function () {
+    var inputDiv = document.getElementById('fileBrowserNewFolderInput');
+    var input = inputDiv ? inputDiv.querySelector('input') : null;
+    var folderName = input ? input.value.trim() : '';
+
+    if (!folderName) {
+        app.setStatus('请输入文件夹名称');
+        return;
+    }
+
+    if (!app.fileBrowserCurrentPath) {
+        app.setStatus('请先选择一个目录');
+        return;
+    }
+
+    app.hideNewFolderInput();
+    app.showLoading('正在创建文件夹...');
+
+    fetch('/api/files/create-folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: app.fileBrowserCurrentPath, name: folderName })
+    })
+    .then(function (response) {
+        if (!response.ok) {
+            return response.json().then(function(err) {
+                throw new Error(err.error || 'HTTP ' + response.status);
+            });
+        }
+        return response.json();
+    })
+    .then(function (data) {
+        app.setStatus('文件夹已创建: ' + folderName);
+        app.loadFileBrowserDirectory(app.fileBrowserCurrentPath);
+    })
+    .catch(function (err) {
+        app.setStatus('创建文件夹失败: ' + err.message);
+        app.showToast('创建文件夹失败: ' + err.message);
+    })
+    .finally(function () {
+        app.hideLoading();
+    });
+};
+
+app.cancelCreateFolder = function () {
+    app.hideNewFolderInput();
+};
+
+app.showToast = function (message) {
+    var toast = document.getElementById('toastNotification');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toastNotification';
+        toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#333;color:#fff;padding:12px 20px;border-radius:6px;z-index:10000;font-size:13px;opacity:0;transition:opacity 0.3s;';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.opacity = '1';
+    setTimeout(function() {
+        toast.style.opacity = '0';
+    }, 3000);
 };
 
 app.loadFileBrowserDirectory = function (path) {
@@ -505,23 +671,42 @@ app.loadFileBrowserDirectory = function (path) {
 
         var html = '';
         if (data.parent) {
-            html += '<div class="fb-item" data-path="' + app.escapeAttr(data.parent) + '" data-type="parent" style="color:#888; cursor:pointer; padding:4px 8px;">📁 ..</div>';
+            html += '<div class="fb-item" data-path="' + app.escapeAttr(data.parent) + '" data-type="parent" style="color:#888;">';
+            html += '<span class="fb-icon fb-icon-parent"></span>';
+            html += '<span class="fb-item-name"><span class="fb-item-name-inner">..</span></span>';
+            html += '</div>';
         }
 
-        if (!data.entries || data.entries.length === 0) {
+        if (data.accessDenied) {
+            var dirName = data.path ? data.path.split(/[/\\]/).pop() : '';
+            app.showToast('无权访问的目录：' + (dirName || data.path));
+            html += '<div style="text-align:center; color:#f59e0b; padding:40px;">无权访问此目录</div>';
+        } else if (!data.entries || data.entries.length === 0) {
             html += '<div style="text-align:center; color:#666; padding:40px;">目录为空</div>';
         } else {
         for (var i = 0; i < data.entries.length; i++) {
             var entry = data.entries[i];
             var isTlor = entry.extension === '.tlor';
+            var nameInner = app.marqueeText(app.escapeHtml(entry.name));
             if (entry.type === 'directory') {
-                html += '<div class="fb-item" data-path="' + app.escapeAttr(entry.path) + '" data-type="directory" style="cursor:pointer; padding:4px 8px; color:#fff;">📁 ' + app.escapeHtml(entry.name) + '</div>';
+                html += '<div class="fb-item" data-path="' + app.escapeAttr(entry.path) + '" data-type="directory" style="color:#fff;">';
+                html += '<span class="fb-icon fb-icon-folder"></span>';
+                html += '<span class="fb-item-name"><span class="fb-item-name-inner">' + nameInner + '</span></span>';
+                html += '</div>';
             } else if (isTlor) {
                 var sizeStr = app.formatFileSize(entry.size);
-                html += '<div class="fb-item fb-tlor" data-path="' + app.escapeAttr(entry.path) + '" data-type="file" data-ext=".tlor" style="cursor:pointer; padding:4px 8px; color:#3B82F6;">📋 ' + app.escapeHtml(entry.name) + '<span style="float:right;color:#666;font-size:11px;margin-right:4px;">' + sizeStr + '</span></div>';
+                html += '<div class="fb-item fb-tlor" data-path="' + app.escapeAttr(entry.path) + '" data-type="file" data-ext=".tlor" style="color:#3B82F6;">';
+                html += '<span class="fb-icon fb-icon-file"></span>';
+                html += '<span class="fb-item-name"><span class="fb-item-name-inner">' + nameInner + '</span></span>';
+                html += '<span class="fb-item-size">' + sizeStr + '</span>';
+                html += '</div>';
             } else {
                 var sizeStr2 = app.formatFileSize(entry.size);
-                html += '<div class="fb-item fb-disabled" data-path="' + app.escapeAttr(entry.path) + '" data-type="file" data-ext="' + app.escapeAttr(entry.extension) + '" style="cursor:not-allowed; padding:4px 8px; color:#555;">📄 ' + app.escapeHtml(entry.name) + '<span style="float:right;color:#444;font-size:11px;margin-right:4px;">' + sizeStr2 + '</span></div>';
+                html += '<div class="fb-item fb-disabled" data-path="' + app.escapeAttr(entry.path) + '" data-type="file" data-ext="' + app.escapeAttr(entry.extension) + '" style="color:#555;">';
+                html += '<span class="fb-icon fb-icon-file"></span>';
+                html += '<span class="fb-item-name"><span class="fb-item-name-inner">' + nameInner + '</span></span>';
+                html += '<span class="fb-item-size">' + sizeStr2 + '</span>';
+                html += '</div>';
             }
         }
         }
@@ -578,7 +763,46 @@ app.formatFileSize = function (bytes) {
     return (bytes / (1024 * 1024)).toFixed(1).replace(/\.0$/, '') + ' MB';
 };
 
+app.marqueeText = function (escapedStr) {
+    if (!escapedStr) return '';
+    return escapedStr;
+};
+
 app.openSelectedInFileBrowser = function () {
+    if (app.fileBrowserMode === 'newProject') {
+        if (!app.fileBrowserCurrentPath) {
+            app.setStatus('请先选择一个目录');
+            return;
+        }
+        app.closeFileBrowser();
+        app.showLoading('正在创建项目...');
+        app.fetchText('/api/project/new', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: '未命名项目', path: app.fileBrowserCurrentPath })
+        })
+        .then(function (xmlString) {
+            var data = app.parseProjectXml(xmlString);
+            if (data) {
+                app.state.project = data;
+                app.state.activeSceneIndex = 0;
+                app.state.selectedDialogueIndex = -1;
+                app.state.hasUnsavedChanges = true;
+                app.state.projectPath = app.fileBrowserCurrentPath;
+                app.setStatus('新项目已创建');
+                app.setSaveStatus('未保存');
+                app.updateUI();
+            }
+        })
+        .catch(function (err) {
+            app.setStatus('创建项目失败: ' + err.message);
+        })
+        .finally(function () {
+            app.hideLoading();
+        });
+        return;
+    }
+
     if (!app.fileBrowserSelectedPath) {
         app.setStatus('请先选择要打开的项目');
         return;
@@ -613,7 +837,6 @@ app.openSelectedInFileBrowser = function () {
             app.setSaveStatus('已保存');
             app.updateUI();
 
-            // 更新 URL 参数，使页面刷新后能自动恢复项目
             var newUrl = window.location.pathname + '?project=' + encodeURIComponent(app.fileBrowserSelectedPath);
             window.history.replaceState({ path: app.fileBrowserSelectedPath }, '', newUrl);
             console.log('[DEBUG] URL 已更新，包含项目路径参数');

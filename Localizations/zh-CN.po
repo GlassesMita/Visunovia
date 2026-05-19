@@ -333,3 +333,272 @@ msgstr "启用远程访问"
 
 msgid "Settings.RemoteSessionLocked"
 msgstr "远程会话期间无法关闭远程访问"
+
+#. Event type: Send system notification
+msgid "Event.SendSystemNotification"
+msgstr "发送系统通知"
+
+#. Parameter label for notification title
+msgid "EventParam.NotificationTitle"
+msgstr "标题"
+
+#. Parameter label for notification message body
+msgid "EventParam.NotificationMessage"
+msgstr "正文"
+
+# React Frontend - Menu Bar
+msgid "menu.file"
+msgstr "文件"
+
+msgid "menu.edit"
+msgstr "编辑"
+
+msgid "menu.resource"
+msgstr "资源"
+
+msgid "menu.tools"
+msgstr "工具"
+
+msgid "menu.window"
+msgstr "窗口"
+
+msgid "menu.help"
+msgstr "帮助"
+
+# React Frontend - Status Bar
+msgid "status.scene"
+msgstr "场景:"
+
+msgid "status.notSelected"
+msgstr "未选择"
+
+msgid "status.selected"
+msgstr "选中:"
+
+msgid "status.nodes"
+msgstr "个节点"
+
+msgid "status.ready"
+msgstr "就绪"
+
+# React Frontend - Node Types
+msgid "nodes.start.title"
+msgstr "开始"
+
+msgid "nodes.end.title"
+msgstr "结束"
+
+msgid "nodes.sequence.title"
+msgstr "序列"
+
+msgid "nodes.dialogue.title"
+msgstr "对话"
+
+msgid "nodes.branch.title"
+msgstr "分支"
+
+msgid "nodes.changeBackground.title"
+msgstr "切换背景"
+
+msgid "nodes.showCharacter.title"
+msgstr "显示角色"
+
+msgid "nodes.hideCharacter.title"
+msgstr "隐藏角色"
+
+msgid "nodes.cameraShake.title"
+msgstr "镜头震动"
+
+msgid "nodes.fadeScreen.title"
+msgstr "屏幕淡入淡出"
+
+msgid "nodes.playBGM.title"
+msgstr "播放音乐"
+
+msgid "nodes.stopBGM.title"
+msgstr "停止音乐"
+
+msgid "nodes.playSFX.title"
+msgstr "播放音效"
+
+msgid "nodes.playVoice.title"
+msgstr "播放语音"
+
+msgid "nodes.setVariable.title"
+msgstr "设置变量"
+
+msgid "nodes.conditional.title"
+msgstr "条件判断"
+
+msgid "nodes.delay.title"
+msgstr "延迟"
+
+msgid "nodes.conditional.placeholder"
+msgstr "条件表达式"
+
+msgid "nodes.conditional.true"
+msgstr "真"
+
+msgid "nodes.conditional.false"
+msgstr "假"
+
+msgid "nodes.branch.defaultPrompt"
+msgstr "选择:"
+
+msgid "nodes.showCharacter.defaultExpression"
+msgstr "默认"
+
+msgid "nodes.fadeScreen.defaultColor"
+msgstr "黑色"
+
+msgid "nodes.sequence.item1"
+msgstr "项 1"
+
+msgid "nodes.sequence.item2"
+msgstr "项 2"
+
+msgid "nodes.sequence.item3"
+msgstr "项 3"
+
+msgid "common.exec"
+msgstr "执行"
+
+# React Frontend - Shortcuts Page
+msgid "shortcuts.category.file"
+msgstr "文件操作"
+
+msgid "shortcuts.category.edit"
+msgstr "编辑操作"
+
+msgid "shortcuts.category.tools"
+msgstr "工具"
+
+msgid "shortcuts.category.window"
+msgstr "窗口"
+
+msgid "shortcuts.file.newProject"
+msgstr "新建项目"
+
+msgid "shortcuts.file.openProject"
+msgstr "打开项目"
+
+msgid "shortcuts.file.saveProject"
+msgstr "保存项目"
+
+msgid "shortcuts.edit.undo"
+msgstr "撤销"
+
+msgid "shortcuts.edit.redo"
+msgstr "重做"
+
+msgid "shortcuts.edit.copy"
+msgstr "复制"
+
+msgid "shortcuts.edit.paste"
+msgstr "粘贴"
+
+msgid "shortcuts.edit.cut"
+msgstr "剪切"
+
+msgid "shortcuts.edit.delete"
+msgstr "删除选中项"
+
+msgid "shortcuts.tools.preferences"
+msgstr "偏好设置"
+
+msgid "shortcuts.tools.resetLayout"
+msgstr "重置布局"
+
+msgid "shortcuts.window.fullscreen"
+msgstr "切换全屏"
+
+# React Frontend - Settings / Preferences
+msgid "settings.general.title"
+msgstr "常规设置"
+
+msgid "settings.general.language"
+msgstr "语言"
+
+msgid "settings.general.language.desc"
+msgstr "选择界面显示语言"
+
+msgid "settings.general.theme"
+msgstr "主题"
+
+msgid "settings.general.theme.desc"
+msgstr "选择主题模式"
+
+msgid "settings.theme.light"
+msgstr "浅色"
+
+msgid "settings.theme.dark"
+msgstr "深色"
+
+msgid "settings.theme.system"
+msgstr "跟随系统"
+
+msgid "preferences.title"
+msgstr "偏好设置"
+
+msgid "preferences.sidebar.general"
+msgstr "常规"
+
+msgid "preferences.sidebar.editor"
+msgstr "编辑器"
+
+msgid "preferences.sidebar.preview"
+msgstr "预览"
+
+msgid "preferences.sidebar.network"
+msgstr "网络"
+
+msgid "preferences.save"
+msgstr "保存"
+
+msgid "preferences.cancel"
+msgstr "取消"
+
+# React Frontend - App
+msgid "app.loadingTranslations"
+msgstr "正在加载翻译资源..."
+
+# React Frontend - Panel Labels
+msgid "panel.hierarchy"
+msgstr "层级"
+
+msgid "panel.properties"
+msgstr "属性"
+
+msgid "panel.resources"
+msgstr "资源"
+
+msgid "panel.console"
+msgstr "控制台"
+
+msgid "nodePalette.title"
+msgstr "添加节点"
+
+# React Frontend - Toolbar
+msgid "toolbar.undo"
+msgstr "撤销"
+
+msgid "toolbar.redo"
+msgstr "重做"
+
+msgid "toolbar.copy"
+msgstr "复制"
+
+msgid "toolbar.paste"
+msgstr "粘贴"
+
+msgid "toolbar.delete"
+msgstr "删除"
+
+msgid "toolbar.play"
+msgstr "播放"
+
+msgid "toolbar.pause"
+msgstr "暂停"
+
+msgid "toolbar.nextFrame"
+msgstr "下一帧"

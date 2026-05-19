@@ -180,11 +180,23 @@ app.processPreviewEvent = function (dialogue) {
     var evt = dialogue.event;
     var eventType = evt.eventType;
     if (typeof eventType === 'number') {
-        eventType = ['JumpScene', 'SetVariable', 'PlaySound', 'ChangeBackground', 'ChangeBgm', 'ShowCharacter', 'HideCharacter', 'Pause', 'WaitSeconds', 'Custom'][eventType] || 'Custom';
+        eventType = ['JumpScene', 'SetVariable', 'PlaySound', 'ChangeBackground', 'ChangeBgm', 'ShowCharacter', 'HideCharacter', 'Pause', 'WaitSeconds', 'WindowEffect', 'Custom', 'SendSystemNotification'][eventType] || 'Custom';
     }
     var params = evt.parameters || {};
 
     switch (eventType) {
+        case 'SendSystemNotification':
+            if (params.title || params.message) {
+                app.fetchJson('/api/system/send-notification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: params.title || '', message: params.message || '' })
+                }).catch(function (err) {
+                    console.warn('[Preview] 系统通知发送失败: ' + err.message);
+                });
+            }
+            break;
+
         case 'ChangeBackground':
             if (params.background) {
                 app.previewState.currentBg = params.background;

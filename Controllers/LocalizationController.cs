@@ -5,12 +5,13 @@ using Visunovia.Services.Localization;
 namespace Visunovia.Controllers;
 
 /// <summary>
-/// 本地化管理 API 控制器，提供语言切换、翻译查询和语言列表功能。
+/// 本地化管理 API 控制器，提供语言列表查询、翻译获取和语言切换功能。
 /// 通过 LocalizationService 实现完整的国际化（i18n）支持，
 /// 包括 PO 文件翻译查找、运行时语言切换和可用语言发现。
 ///
 /// API 端点概览：
-/// - GET /api/localization/languages - 获取可用语言列表
+/// - GET /api/localization/languages - 获取可用语言列表（含 code、name、nativeName）
+/// - GET /api/localization/translations?lang=zh-CN - 获取指定语言的全部翻译键值对
 /// - POST /api/localization/language - 切换当前语言
 /// - GET /api/localization/translate - 查询单条翻译
 /// - POST /api/localization/translate/batch - 批量查询翻译
@@ -21,6 +22,25 @@ public class LocalizationController : ControllerBase
 {
     private readonly LocalizationService _localizationService;
     private readonly ILogger<LocalizationController> _logger;
+
+    /// <summary>
+    /// 预定义的语言元数据映射表
+    /// 为已知语言提供标准化的名称和本地化名称
+    /// 优先使用此映射表，未知语言则回退到 LocalizationService.GetLanguageDisplayName()
+    /// </summary>
+    private static readonly Dictionary<string, (string Name, string NativeName)> KnownLanguages = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "zh-CN", ("中文（简体）", "中文（简体）") },
+        { "en-US", ("English (US)", "English (US)") },
+        { "ja-JP", ("日本語", "日本語") },
+        { "zh-TW", ("中文（繁體）", "中文（繁體）") },
+        { "ko-KR", ("한국어", "한국어") },
+        { "fr-FR", ("Français", "Français") },
+        { "de-DE", ("Deutsch", "Deutsch") },
+        { "es-ES", ("Español", "Español") },
+        { "ru-RU", ("Русский", "Русский") },
+        { "pt-BR", ("Português (Brasil)", "Português (Brasil)") }
+    };
 
     /// <summary>
     /// 初始化 LocalizationController 实例
@@ -36,43 +56,33 @@ public class LocalizationController : ControllerBase
     }
 
     /// <summary>
-    /// 获取可用语言列表及当前语言信息
-    /// 返回所有已安装的语言包（PO 文件）、当前活动语言和回退语言信息
+    /// 获取可用语言列表
+    /// 返回所有已安装的语言包（PO 文件）及其元数据信息。
+    /// 每个语言条目包含代码、通用名称和本地化名称，
     /// 前端可使用此接口构建语言选择器 UI
     /// </summary>
-    /// <returns>包含语言信息的标准化 JSON 响应</returns>
+    /// <returns>包含语言列表的标准化 JSON 响应，格式为 { success: true, data: [{ code, name, nativeName }] }</returns>
     /// <response code="200">成功获取语言列表</response>
     [HttpGet("languages")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(ApiResponseDto<LanguagesResponseDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponseDto<List<LanguageInfoDto>>), 200)]
     public IActionResult GetAvailableLanguages()
     {
         try
         {
             var availableLanguages = _localizationService.GetAvailableLanguages();
             var languageInfos = availableLanguages
-                .Select(code => new LanguageInfoDto
-                {
-                    Code = code,
-                    DisplayName = _localizationService.GetLanguageDisplayName(code)
-                })
+                .Select(code => BuildLanguageInfo(code))
                 .ToList();
 
-            var response = new LanguagesResponseDto
-            {
-                CurrentLanguage = _localizationService.CurrentLanguage,
-                AvailableLanguages = languageInfos,
-                FallbackLanguage = _localizationService.FallbackLanguage
-            };
-
-            return Ok(ApiResponseDto<LanguagesResponseDto>.SuccessResponse(response));
+            return Ok(ApiResponseDto<List<LanguageInfoDto>>.SuccessResponse(languageInfos));
         }
         catch (Exception ex)
         {
             // 异常来源：扫描本地化目录或读取语言文件时发生错误
             // 处理方式：返回 500 错误并记录详细日志用于排查目录权限或文件系统问题
             _logger.LogError(ex, "[LocalizationController] 获取语言列表失败");
-            return StatusCode(500, ApiResponseDto<LanguagesResponseDto>.ErrorResponse(
+            return StatusCode(500, ApiResponseDto<List<LanguageInfoDto>>.ErrorResponse(
                 "INTERNAL_ERROR", "获取语言列表时发生内部错误"));
         }
     }
@@ -160,6 +170,112 @@ public class LocalizationController : ControllerBase
             _logger.LogError(ex, "[LocalizationController] 切换语言时发生意外错误");
             return StatusCode(500, ApiResponseDto<LanguageChangeResponseDto>.ErrorResponse(
                 "INTERNAL_ERROR", "切换语言时发生内部错误"));
+        }
+    }
+
+    /// <summary>
+    /// 获取指定语言的全部翻译键值对
+    /// 从 PO 文件中读取该语言的所有翻译条目，以字典形式返回。
+    /// 适用于前端初始化时批量加载翻译数据，或翻译管理工具查看所有条目。
+    /// </summary>
+    /// <param name="lang">目标语言代码（如 zh-CN、en-US），若为空则使用当前语言</param>
+    /// <returns>包含全部翻译键值对的标准化 JSON 响应</returns>
+    /// <response code="200">成功获取翻译数据</response>
+    /// <response code="400">语言代码参数无效</response>
+    /// <response code="404">目标语言的 PO 文件不存在</response>
+    /// <response code="500">服务器内部错误</response>
+    [HttpGet("translations")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ApiResponseDto<AllTranslationsResponseDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponseDto<AllTranslationsResponseDto>), 400)]
+    [ProducesResponseType(typeof(ApiResponseDto<AllTranslationsResponseDto>), 404)]
+    [ProducesResponseType(typeof(ApiResponseDto<AllTranslationsResponseDto>), 500)]
+    public IActionResult GetTranslations([FromQuery] string? lang = null)
+    {
+        try
+        {
+            // 确定目标语言：优先使用参数值，否则回退到当前活动语言
+            var targetLanguage = !string.IsNullOrWhiteSpace(lang)
+                ? lang.Trim()
+                : _localizationService.CurrentLanguage;
+
+            // 参数验证：检查语言代码是否有效
+            if (string.IsNullOrWhiteSpace(targetLanguage))
+            {
+                return BadRequest(ApiResponseDto<AllTranslationsResponseDto>.ErrorResponse(
+                    "INVALID_LANGUAGE", "语言代码不能为空"));
+            }
+
+            // 验证目标语言是否可用
+            if (!_localizationService.IsLanguageAvailable(targetLanguage))
+            {
+                var availableLanguages = string.Join(", ", _localizationService.GetAvailableLanguages());
+                return NotFound(ApiResponseDto<AllTranslationsResponseDto>.ErrorResponse(
+                    "LANGUAGE_NOT_FOUND",
+                    $"语言 '{targetLanguage}' 不支持。可用语言: {availableLanguages}"));
+            }
+
+            try
+            {
+                // 加载指定语言的 PO 文件
+                var poFile = _localizationService.LoadLanguage(targetLanguage);
+                if (poFile == null)
+                {
+                    // 异常来源：PO 文件存在但加载失败（可能是格式错误或 I/O 问题）
+                    // 处理方式：返回 404 错误并提示用户检查文件
+                    _logger.LogWarning("[LocalizationController] 无法加载语言 {Language} 的 PO 文件", targetLanguage);
+                    return NotFound(ApiResponseDto<AllTranslationsResponseDto>.ErrorResponse(
+                        "LANGUAGE_LOAD_FAILED",
+                        $"无法加载语言 '{targetLanguage}' 的翻译文件"));
+                }
+
+                // 提取所有翻译条目（跳过 msgId 为空的头部条目）
+                var translations = new Dictionary<string, string>();
+                foreach (var entry in poFile.Entries)
+                {
+                    if (!string.IsNullOrWhiteSpace(entry.MsgId) && entry.HasTranslation)
+                    {
+                        translations[entry.MsgId] = entry.MsgStr;
+                    }
+                }
+
+                var response = new AllTranslationsResponseDto
+                {
+                    Language = targetLanguage,
+                    Translations = translations
+                };
+
+                _logger.LogInformation(
+                    "[LocalizationController] 获取翻译成功: {Language}, {Count} 条",
+                    targetLanguage, translations.Count);
+
+                return Ok(ApiResponseDto<AllTranslationsResponseDto>.SuccessResponse(
+                    response, $"成功获取 {translations.Count} 条翻译"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // 异常来源：PO 文件加载失败（由 LocalizationService 抛出）
+                // 处理方式：返回 404 错误并附带具体原因
+                _logger.LogWarning(ex, "[LocalizationController] 加载翻译失败: {Language}", targetLanguage);
+                return NotFound(ApiResponseDto<AllTranslationsResponseDto>.ErrorResponse(
+                    "LANGUAGE_LOAD_ERROR", ex.Message));
+            }
+        }
+        catch (ArgumentException ex)
+        {
+            // 异常来源：语言代码格式无效（如包含非法字符）
+            // 处理方式：返回 400 错误并提示正确的格式要求
+            _logger.LogWarning(ex, "[LocalizationController] 语言代码格式无效");
+            return BadRequest(ApiResponseDto<AllTranslationsResponseDto>.ErrorResponse(
+                "INVALID_FORMAT", $"语言代码格式无效: {ex.Message}"));
+        }
+        catch (Exception ex)
+        {
+            // 异常来源：意外的异常情况（如内存不足、并发问题等）
+            // 处理方式：返回 500 错误并记录完整堆栈信息用于排查
+            _logger.LogError(ex, "[LocalizationController] 获取翻译时发生意外错误: {Language}", lang);
+            return StatusCode(500, ApiResponseDto<AllTranslationsResponseDto>.ErrorResponse(
+                "INTERNAL_ERROR", "获取翻译时发生内部错误"));
         }
     }
 
@@ -303,4 +419,37 @@ public class LocalizationController : ControllerBase
                 "INTERNAL_ERROR", "批量翻译时发生内部错误"));
         }
     }
+
+    #region 私有辅助方法
+
+    /// <summary>
+    /// 根据语言代码构建语言信息 DTO 对象。
+    /// 从预定义映射表或 LocalizationService 获取显示名称，
+    /// 并标记是否为当前激活的语言。
+    /// </summary>
+    /// <param name="languageCode">语言代码（如 zh-CN、en-US）</param>
+    /// <returns>包含完整信息的 LanguageInfoDto 实例</returns>
+    private LanguageInfoDto BuildLanguageInfo(string languageCode)
+    {
+        // 优先从预定义映射表获取显示名称，未知语言则回退到 LocalizationService
+        string displayName;
+        if (KnownLanguages.TryGetValue(languageCode, out var known))
+        {
+            displayName = known.Name;
+        }
+        else
+        {
+            // 从 PO 文件读取 "Common.LanguageDisplayName" 条目
+            displayName = _localizationService.GetLanguageDisplayName(languageCode);
+        }
+
+        return new LanguageInfoDto
+        {
+            Code = languageCode,
+            DisplayName = displayName,
+            IsCurrent = string.Equals(languageCode, _localizationService.CurrentLanguage, StringComparison.OrdinalIgnoreCase)
+        };
+    }
+
+    #endregion
 }

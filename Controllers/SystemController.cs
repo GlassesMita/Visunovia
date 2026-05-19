@@ -2,33 +2,56 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Visunovia.Controllers;
 
-/// <summary>
-/// 系统控制 API，提供应用退出等系统级操作
-/// </summary>
 [ApiController]
 [Route("api/system")]
 public class SystemController : ControllerBase
 {
     private readonly IHostApplicationLifetime _lifetime;
+    private readonly ToastService _toastService;
 
-    public SystemController(IHostApplicationLifetime lifetime)
+    public SystemController(IHostApplicationLifetime lifetime, ToastService toastService)
     {
         _lifetime = lifetime;
+        _toastService = toastService;
     }
 
-    /// <summary>
-    /// 请求停止后端服务（用于前端退出应用时调用）
-    /// </summary>
     [HttpPost("shutdown")]
     public IActionResult Shutdown()
     {
-        // 异步延迟停止，确保响应能先返回给前端
         Task.Run(async () =>
         {
-            await Task.Delay(300); // 等待 300ms 让 HTTP 响应先发送
+            await Task.Delay(300);
             _lifetime.StopApplication();
         });
 
         return Ok(new { message = "服务正在关闭" });
     }
+
+    [HttpPost("send-notification")]
+    public IActionResult SendNotification([FromBody] SendNotificationRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Title) && string.IsNullOrWhiteSpace(request.Message))
+        {
+            return BadRequest(new { message = "标题和正文不能同时为空" });
+        }
+
+        var title = request.Title ?? string.Empty;
+        var message = request.Message ?? string.Empty;
+
+        try
+        {
+            _toastService.ShowToast(title, message);
+            return Ok(new { message = "通知已发送" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "通知发送失败", error = ex.Message });
+        }
+    }
+}
+
+public class SendNotificationRequest
+{
+    public string Title { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
 }

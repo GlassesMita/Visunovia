@@ -5,9 +5,14 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableDefaultContentItems>true</EnableDefaultContentItems>
+    <!-- 禁用 StaticWebAssets 机制，避免嵌套目录和额外清单文件 -->
+    <EnableStaticWebAssetsSupport>false</EnableStaticWebAssetsSupport>
+    <StaticWebAssetPrecompress>false</StaticWebAssetPrecompress>
+    <EnableStaticWebAssetManifestInBuild>false</EnableStaticWebAssetManifestInBuild>
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- 排除工作目录和备份目录 -->
     <Compile Remove="_Visunovia\**" />
     <Compile Remove="_Visunovia_backup\**" />
     <Content Remove="_Visunovia\**" />
@@ -17,6 +22,18 @@
     <None Remove="_Visunovia_backup\**" />
     <EmbeddedResource Remove="_Visunovia\**" />
     <EmbeddedResource Remove="_Visunovia_backup\**" />
+
+    <!-- 直接复制整个 wwwroot 目录到编译输出和发布目录（包含源码） -->
+    <Content Update="wwwroot\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+
+    <!-- 本地化文件 -->
+    <Content Include="Localizations\*.po">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -24,18 +41,36 @@
     <PackageReference Include="YamlDotNet" Version="17.1.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Update="wwwroot\**\*.*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-  </ItemGroup>
+  <!-- 发布后清理 StaticWebAssets 产生的嵌套目录 -->
+  <Target Name="CleanNestedPublishDirs" AfterTargets="Publish">
+    <RemoveDir Directories="$(PublishDir)Visunovia" Condition="Exists('$(PublishDir)Visunovia')" />
+    <RemoveDir Directories="$(PublishDir)publish" Condition="Exists('$(PublishDir)publish')" />
+    <RemoveDir Directories="$(PublishDir)releases" Condition="Exists('$(PublishDir)releases')" />
+    <Delete Files="$(PublishDir)Visunovia.staticwebassets.endpoints.json" Condition="Exists('$(PublishDir)Visunovia.staticwebassets.endpoints.json')" />
+    <Delete Files="$(PublishDir)Visunovia.staticwebassets.runtime.json" Condition="Exists('$(PublishDir)Visunovia.staticwebassets.runtime.json')" />
+  </Target>
 
-  <ItemGroup>
-    <Content Include="Localizations\*.po">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-  </ItemGroup>
+  <!-- 在编译前，将 www_build 目录的内容复制到 wwwroot 目录 -->
+  <Target Name="CopyVueBuildToWwwroot" BeforeTargets="PrepareForBuild">
+    <Message Text="Checking for www_build directory..." Importance="high" />
+    <Message Text="ProjectDir: $(ProjectDir)" Importance="high" />
+    
+    <!-- 检查 www_build 目录是否存在 -->
+    <Message Text="www_build exists: $([System.IO.Directory]::Exists('$(ProjectDir)www_build'))" Importance="high" />
+    
+    <!-- 如果 www_build 存在，则复制其内容到 wwwroot -->
+    <ItemGroup>
+      <VueBuildFiles Include="$(ProjectDir)www_build\**\*" />
+    </ItemGroup>
+    
+    <Message Text="VueBuildFiles count: @(VueBuildFiles->Count())" Importance="high" />
+    
+    <!-- 复制文件到 wwwroot -->
+    <Copy SourceFiles="@(VueBuildFiles)" 
+          DestinationFiles="@(VueBuildFiles->'$(ProjectDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" 
+          Condition="Exists('$(ProjectDir)www_build')" />
+          
+    <Message Text="Vue build copied to wwwroot" Importance="high" Condition="Exists('$(ProjectDir)www_build')" />
+  </Target>
 
 </Project>

@@ -110,7 +110,8 @@ public enum VNEventType
     Pause,
     WaitSeconds,
     WindowEffect,
-    Custom
+    Custom,
+    SendSystemNotification = 11
 }
 
 public enum VNTransitionEffect

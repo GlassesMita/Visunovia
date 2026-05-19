@@ -333,3 +333,272 @@ msgstr "啟用遠端存取"
 
 msgid "Settings.RemoteSessionLocked"
 msgstr "遠端工作階段期間無法關閉遠端存取"
+
+#. Event type: Send system notification
+msgid "Event.SendSystemNotification"
+msgstr "傳送系統通知"
+
+#. Parameter label for notification title
+msgid "EventParam.NotificationTitle"
+msgstr "標題"
+
+#. Parameter label for notification message body
+msgid "EventParam.NotificationMessage"
+msgstr "內文"
+
+# React Frontend - Menu Bar
+msgid "menu.file"
+msgstr "檔案"
+
+msgid "menu.edit"
+msgstr "編輯"
+
+msgid "menu.resource"
+msgstr "資源"
+
+msgid "menu.tools"
+msgstr "工具"
+
+msgid "menu.window"
+msgstr "視窗"
+
+msgid "menu.help"
+msgstr "說明"
+
+# React Frontend - Status Bar
+msgid "status.scene"
+msgstr "場景:"
+
+msgid "status.notSelected"
+msgstr "未選擇"
+
+msgid "status.selected"
+msgstr "已選取:"
+
+msgid "status.nodes"
+msgstr "個節點"
+
+msgid "status.ready"
+msgstr "就緒"
+
+# React Frontend - Node Types
+msgid "nodes.start.title"
+msgstr "開始"
+
+msgid "nodes.end.title"
+msgstr "結束"
+
+msgid "nodes.sequence.title"
+msgstr "序列"
+
+msgid "nodes.dialogue.title"
+msgstr "對話"
+
+msgid "nodes.branch.title"
+msgstr "分支"
+
+msgid "nodes.changeBackground.title"
+msgstr "切換背景"
+
+msgid "nodes.showCharacter.title"
+msgstr "顯示角色"
+
+msgid "nodes.hideCharacter.title"
+msgstr "隱藏角色"
+
+msgid "nodes.cameraShake.title"
+msgstr "鏡頭震動"
+
+msgid "nodes.fadeScreen.title"
+msgstr "螢幕淡入淡出"
+
+msgid "nodes.playBGM.title"
+msgstr "播放音樂"
+
+msgid "nodes.stopBGM.title"
+msgstr "停止音樂"
+
+msgid "nodes.playSFX.title"
+msgstr "播放音效"
+
+msgid "nodes.playVoice.title"
+msgstr "播放語音"
+
+msgid "nodes.setVariable.title"
+msgstr "設定變數"
+
+msgid "nodes.conditional.title"
+msgstr "條件判斷"
+
+msgid "nodes.delay.title"
+msgstr "延遲"
+
+msgid "nodes.conditional.placeholder"
+msgstr "條件運算式"
+
+msgid "nodes.conditional.true"
+msgstr "真"
+
+msgid "nodes.conditional.false"
+msgstr "假"
+
+msgid "nodes.branch.defaultPrompt"
+msgstr "選擇:"
+
+msgid "nodes.showCharacter.defaultExpression"
+msgstr "預設"
+
+msgid "nodes.fadeScreen.defaultColor"
+msgstr "黑色"
+
+msgid "nodes.sequence.item1"
+msgstr "項目 1"
+
+msgid "nodes.sequence.item2"
+msgstr "項目 2"
+
+msgid "nodes.sequence.item3"
+msgstr "項目 3"
+
+msgid "common.exec"
+msgstr "執行"
+
+# React Frontend - Shortcuts Page
+msgid "shortcuts.category.file"
+msgstr "檔案操作"
+
+msgid "shortcuts.category.edit"
+msgstr "編輯操作"
+
+msgid "shortcuts.category.tools"
+msgstr "工具"
+
+msgid "shortcuts.category.window"
+msgstr "視窗"
+
+msgid "shortcuts.file.newProject"
+msgstr "新建專案"
+
+msgid "shortcuts.file.openProject"
+msgstr "開啟專案"
+
+msgid "shortcuts.file.saveProject"
+msgstr "儲存專案"
+
+msgid "shortcuts.edit.undo"
+msgstr "復原"
+
+msgid "shortcuts.edit.redo"
+msgstr "重做"
+
+msgid "shortcuts.edit.copy"
+msgstr "複製"
+
+msgid "shortcuts.edit.paste"
+msgstr "貼上"
+
+msgid "shortcuts.edit.cut"
+msgstr "剪下"
+
+msgid "shortcuts.edit.delete"
+msgstr "刪除已選取項目"
+
+msgid "shortcuts.tools.preferences"
+msgstr "偏好設定"
+
+msgid "shortcuts.tools.resetLayout"
+msgstr "重設版面配置"
+
+msgid "shortcuts.window.fullscreen"
+msgstr "切換全螢幕"
+
+# React Frontend - Settings / Preferences
+msgid "settings.general.title"
+msgstr "一般設定"
+
+msgid "settings.general.language"
+msgstr "語言"
+
+msgid "settings.general.language.desc"
+msgstr "選擇介面顯示語言"
+
+msgid "settings.general.theme"
+msgstr "主題"
+
+msgid "settings.general.theme.desc"
+msgstr "選擇主題模式"
+
+msgid "settings.theme.light"
+msgstr "淺色"
+
+msgid "settings.theme.dark"
+msgstr "深色"
+
+msgid "settings.theme.system"
+msgstr "跟隨系統"
+
+msgid "preferences.title"
+msgstr "偏好設定"
+
+msgid "preferences.sidebar.general"
+msgstr "一般"
+
+msgid "preferences.sidebar.editor"
+msgstr "編輯器"
+
+msgid "preferences.sidebar.preview"
+msgstr "預覽"
+
+msgid "preferences.sidebar.network"
+msgstr "網路"
+
+msgid "preferences.save"
+msgstr "儲存"
+
+msgid "preferences.cancel"
+msgstr "取消"
+
+# React Frontend - App
+msgid "app.loadingTranslations"
+msgstr "正在載入翻譯資源..."
+
+# React Frontend - Panel Labels
+msgid "panel.hierarchy"
+msgstr "階層"
+
+msgid "panel.properties"
+msgstr "屬性"
+
+msgid "panel.resources"
+msgstr "資源"
+
+msgid "panel.console"
+msgstr "控制台"
+
+msgid "nodePalette.title"
+msgstr "新增節點"
+
+# React Frontend - Toolbar
+msgid "toolbar.undo"
+msgstr "復原"
+
+msgid "toolbar.redo"
+msgstr "重做"
+
+msgid "toolbar.copy"
+msgstr "複製"
+
+msgid "toolbar.paste"
+msgstr "貼上"
+
+msgid "toolbar.delete"
+msgstr "刪除"
+
+msgid "toolbar.play"
+msgstr "播放"
+
+msgid "toolbar.pause"
+msgstr "暫停"
+
+msgid "toolbar.nextFrame"
+msgstr "下一幀"

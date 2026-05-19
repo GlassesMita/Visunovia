@@ -1,0 +1,1 @@
+import{K as s,V as d,J as e,x as o}from"./index-DXNPnK0b.js";const r={},t={class:"editor-page"};function i(l,a){return d(),e("div",t,[...a[0]||(a[0]=[o("h1",null,"Visunovia Editor",-1),o("p",null,"BaklavaJS Editor will be loaded here",-1)])])}const c=s(r,[["render",i],["__scopeId","data-v-fa2528c4"]]);export{c as default};

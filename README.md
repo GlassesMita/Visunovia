@@ -1,209 +1,316 @@
-# Visunovia
+# Visunovia - Visual Novel Editor
 
-> ⚠️ **早期版本声明**
-> 本项目目前处于早期开发阶段（Alpha），部分功能尚不完善，可能存在 bug 和不稳定情况。欢迎提交 Issue 和 Pull Request！
+## 📖 项目介绍
 
-## 项目简介
+Visunovia 是一款基于 Web 的视觉小说编辑器，采用现代化的技术栈，提供直观的节点图编辑器和实时预览功能。
 
-Visunovia 是一款基于 ASP.NET Core 和 .NET 10 的视觉小说（Visual Novel）对话编辑器，采用浏览器作为前端界面，提供直观的可视化操作来创建和管理视觉小说项目。
+### 核心特性
 
-### 主要功能
+- 🎨 **节点图编辑器**：使用 BaklavaJS 构建的可视化节点编辑器
+- 🌐 **多语言支持**：内置中英文国际化支持
+- ⚡ **实时预览**：支持实时预览视觉小说内容
+- 📦 **模块化架构**：基于 Vue 3 + Pinia 的现代化前端架构
+- 🔧 **跨平台**：基于 ASP.NET Core 的后端服务
 
-- **场景管理**：创建、编辑、重命名和组织视觉小说场景
-- **对话编辑**：支持三种对话类型
-  - 普通对话（Dialogue）：角色台词和叙事文本
-  - 分支选项（Branch）：玩家选择分支
-  - 事件触发（Event）：背景切换、BGM 变更、角色显隐、等待、跳转、变量操作等
-- **资源管理**：内置资源浏览器，支持背景、角色立绘、BGM、语音、音效五类资源
-- **实时预览**：在预览模式下实时查看对话流程、背景切换、BGM 播放和角色显隐效果
-- **撤销/重做**：完整的操作历史管理，支持最多 100 步撤销
-- **多语言支持**：基于 PO 文件的国际化系统，内置中文和英文
-- **文件浏览器**：服务端文件系统浏览，支持直接打开 `.tlor` 项目文件
-- **快捷键**：Ctrl+Z/Y（撤销/重做）、Ctrl+S（保存）、Ctrl+N（新建）、Ctrl+O（打开）
+## 🛠 技术栈
 
-### 技术栈
+### 前端技术
+- **框架**：Vue 3.5+ (Composition API)
+- **构建工具**：Vite 5.4+
+- **节点图引擎**：BaklavaJS 2.8+
+- **状态管理**：Pinia 2.3+
+- **路由**：Vue Router 4.2+
+- **国际化**：vue-i18n 9.14+
+- **样式**：Tailwind CSS 3.4+
+- **图标**：Lucide Vue Next
 
-- **后端框架**：ASP.NET Core（Kestrel 自托管）
-- **语言**：C# 13 / .NET 10
-- **前端**：原生 JavaScript + Bootstrap + jQuery
-- **数据格式**：XML（项目元数据）+ YAML（场景脚本）+ JSON（变量存储）
-- **本地化**：PO 文件格式
-- **依赖库**：YamlDotNet、System.Configuration.ConfigurationManager
+### 后端技术
+- **框架**：ASP.NET Core 10.0
+- **本地化**：自定义 PO 文件解析器
+- **配置**：YAML 配置管理
 
-## 项目结构
+## 📁 目录结构
 
 ```
 Visunovia/
-├── Controllers/                # API 控制器
-│   ├── Models/                 # 请求/响应 DTO
-│   ├── EditorController.cs     # 场景与对话编辑 API
-│   ├── FileBrowserController.cs # 文件浏览 API
-│   ├── LocalizationController.cs # 本地化 API
-│   ├── PreviewController.cs    # 预览数据 API
-│   ├── ProjectController.cs    # 项目管理 API
-│   ├── ResourceController.cs   # 资源管理 API
-│   ├── SettingsController.cs   # 设置管理 API
-│   └── SystemController.cs     # 系统操作 API
-├── Services/                   # 业务逻辑层
-│   ├── Configuration/          # 配置处理
-│   ├── Localization/           # PO 文件解析与本地化服务
-│   ├── EditorService.cs        # 核心编辑器服务
-│   ├── EditorSessionService.cs # 编辑器会话管理
-│   ├── EditorCommands.cs       # 撤销/重做命令
-│   ├── UndoRedoManager.cs      # 撤销/重做管理器
-│   ├── LocalizationService.cs  # 本地化服务
-│   └── SettingsService.cs      # 配置管理服务
-├── Models/Engine/              # 数据模型
-│   ├── ResourceType.cs         # 资源类型定义
-│   ├── VNProject.cs            # 项目模型
-│   └── VNTypes.cs              # VN 核心类型
-├── Middleware/                  # 中间件
-│   └── GlobalExceptionMiddleware.cs # 全局异常处理
-├── Pages/                      # Razor Pages
-├── Localizations/              # PO 本地化文件
-│   ├── en-US.po
-│   └── zh-CN.po
-├── wwwroot/                    # 静态资源
-│   ├── css/                    # 样式（深色主题）
-│   ├── js/                     # 前端脚本
-│   ├── fonts/                  # 自定义字体
-│   └── lib/                    # 第三方库（Bootstrap/jQuery）
-└── Properties/                 # 项目属性
+├── Controllers/              # API 控制器
+├── Localizations/           # 本地化资源文件（.po）
+├── Middleware/              # 自定义中间件
+├── Models/                  # 数据模型
+├── Pages/                   # Razor Pages
+├── Properties/              # 项目属性
+├── Services/                # 业务服务层
+├── wwwroot/                 # 前端源码
+│   ├── src/
+│   │   ├── components/     # Vue 组件
+│   │   │   ├── baklava-nodes/  # BaklavaJS 节点定义
+│   │   │   ├── dialogs/    # 对话框组件
+│   │   │   ├── layout/     # 布局组件
+│   │   │   └── panels/     # 面板组件
+│   │   ├── composables/    # Vue Composables
+│   │   ├── i18n/          # 国际化配置
+│   │   ├── pages/         # 页面组件
+│   │   ├── router/        # 路由配置
+│   │   ├── stores/        # Pinia 状态管理
+│   │   └── types/         # TypeScript 类型定义
+│   ├── css/               # 样式文件
+│   ├── fonts/              # 字体文件
+│   ├── js/                # JavaScript 文件
+│   ├── lib/               # 第三方库
+│   └── www_build/         # 前端构建产物
+├── scripts/                # 构建脚本
+├── Program.cs              # 程序入口
+├── Visunovia.csproj        # 项目文件
+└── Visunovia.sln           # 解决方案文件
 ```
 
-## 构建说明
+## 🚀 快速开始
 
 ### 环境要求
 
-- Windows 10 或更高版本
-- .NET 10 SDK
-- Visual Studio 2022 17.10+ 或 VS Code + C# 扩展
+- **Node.js**: 18.0+ 
+- **.NET SDK**: 10.0+
+- **操作系统**: Windows 10/11
 
-### 构建步骤
+### 安装依赖
 
-1. 克隆项目
 ```bash
-git clone https://github.com/GlassesMita/Visunovia.git
-cd Visunovia
+# 安装前端依赖
+cd wwwroot
+npm install
 ```
 
-2. 还原依赖
+### 开发模式
+
+#### 方式 1：前端独立开发
 ```bash
-dotnet restore
+cd wwwroot
+npm run dev
 ```
 
-3. 构建项目
+#### 方式 2：完整开发（推荐）
 ```bash
-dotnet build
-```
+# 终端 1：启动前端开发服务器
+cd wwwroot
+npm run dev
 
-4. 运行项目
-```bash
+# 终端 2：启动后端服务
+cd ..
 dotnet run
 ```
 
-应用默认在 `http://localhost:28478` 启动。可通过 `--port` 参数指定端口：
-```bash
-dotnet run -- --port 8080
-```
+服务器将在 `http://127.0.0.1:28478` 启动，并自动打开浏览器。
 
-### 发布打包
+### 生产构建
 
 ```bash
-dotnet publish -c Release -r win-x64 --self-contained
+# 1. 构建前端
+cd wwwroot
+npm run build
+
+# 2. 编译后端（自动复制前端构建产物）
+cd ..
+dotnet build
+
+# 3. 发布
+dotnet publish -c Release
 ```
 
-## API 概览
+## 🎯 项目架构
 
-| 路由前缀 | 控制器 | 功能 |
-|----------|--------|------|
-| `/api/editor` | EditorController | 场景与对话的增删改查、撤销/重做 |
-| `/api/files` | FileBrowserController | 文件系统浏览、项目打开 |
-| `/api/localization` | LocalizationController | 语言切换、翻译查询 |
-| `/api/preview` | PreviewController | 预览数据获取 |
-| `/api/project` | ProjectController | 项目创建、打开、保存 |
-| `/api/resources` | ResourceController | 资源查询与文件访问 |
-| `/api/settings` | SettingsController | 应用设置读写与重置 |
-| `/api/system` | SystemController | 系统操作（关闭服务） |
+### 前端架构
 
-## 使用说明
+#### 节点系统
+采用"大类型节点 + 子类型"的设计理念：
 
-### 创建新项目
+```
+节点类型 (6种)
+├── StartNode        # 开始节点
+├── EndNode          # 结束节点
+├── EventNode        # 事件节点（9种子类型）
+│   ├── PlayBGM          # 播放背景音乐
+│   ├── StopBGM          # 停止背景音乐
+│   ├── PlaySFX          # 播放音效
+│   ├── PlayVoice        # 播放语音
+│   ├── ChangeBackground # 切换背景
+│   ├── ShowCharacter    # 显示角色
+│   ├── HideCharacter    # 隐藏角色
+│   ├── CameraShake      # 镜头震动
+│   └── FadeScreen       # 屏幕淡入淡出
+├── DialogueNode     # 对话节点
+├── BranchNode       # 分支节点
+└── LogicNode       # 逻辑节点（3种子类型）
+    ├── SetVariable      # 设置变量
+    ├── Conditional      # 条件判断
+    └── Delay            # 延迟
+```
 
-1. 启动应用后，浏览器自动打开编辑器界面
-2. 使用快捷键 `Ctrl+N` 或点击新建按钮
-3. 系统自动创建项目目录结构：
-   - `Assets/Backgrounds/` — 背景图片
-   - `Assets/Characters/` — 角色立绘
-   - `Assets/Musics/` — BGM 音乐
-   - `Assets/Voices/` — 语音文件
-   - `Assets/SFX/` — 音效文件
+#### 状态管理
+使用 Pinia 进行状态管理，主要 Store：
 
-### 打开已有项目
+- `useEditorStore` - 编辑器状态（选中节点、项目信息）
+- `useNodeGraphStore` - 节点图状态（节点、连接）
+- `useUIStore` - UI 状态（面板显示/隐藏）
+- `useLocalizationStore` - 国际化状态
+- `useUndoRedoStore` - 撤销/重做历史
 
-- 使用快捷键 `Ctrl+O` 或点击打开按钮，通过文件浏览器选择 `.tlor` 项目文件
-- 或直接拖拽 `.tlor` 文件到上传区域
+#### 组件结构
+```
+AppLayout
+├── MenuBar           # 菜单栏
+├── Toolbar           # 工具栏
+├── ProjectPanel      # 项目面板
+├── BaklavaEditor     # 节点图编辑器
+├── InspectorPanel    # 属性检查器（支持动态属性）
+├── HierarchyPanel    # 层级面板
+├── ConsolePanel      # 控制台面板
+└── StatusBar         # 状态栏
+```
 
-### 编辑对话
+### 后端架构
 
-1. 在场景标签栏选择或创建场景
-2. 在中间对话列表中查看和编辑对话节点
-3. 点击对话卡片查看和修改属性（右侧属性面板）
-4. 对话类型说明：
-   - **Dialogue**：角色名 + 对话文本
-   - **Branch**：分支选项列表，每个选项可跳转到不同场景
-   - **Event**：事件类型 + 参数（如背景路径、BGM 路径、等待秒数等）
+#### API 控制器
+- `EditorController` - 编辑器操作
+- `FileBrowserController` - 文件浏览
+- `LocalizationController` - 本地化管理
+- `ProjectController` - 项目管理
+- `ResourceController` - 资源管理
+- `SceneGraphController` - 场景图管理
+- `SettingsController` - 设置管理
+- `SystemController` - 系统信息
 
-### 预览项目
+#### 本地化系统
+支持 `.po` 格式的本地化文件，自动解析并提供多语言支持。
 
-1. 点击预览按钮进入预览模式
-2. 使用空格键或点击推进对话
-3. 遇到分支选项时点击选择
-4. 按 `Esc` 退出预览
+## 🔧 开发指南
 
-### 资源管理
+### 添加新节点
 
-1. 在左侧资源面板切换资源类别标签
-2. 点击资源项可在属性面板中选择使用
-3. 支持缩略图预览
+1. 在 `wwwroot/src/components/baklava-nodes/` 创建节点文件：
+```typescript
+// EventNode.ts
+import { defineNode, ExecInterface } from 'baklavajs'
 
-## 已知问题
+export default defineNode({
+  type: 'EventNode',
+  title: 'Event',
+  inputs: {
+    execIn: () => new ExecInterface('exec_in'),
+  },
+  outputs: {
+    execOut: () => new ExecInterface('exec_out'),
+  },
+})
+```
 
-- 资源管理面板在某些操作后可能需要刷新
-- 预览模式下 BGM 和立绘显示依赖正确的资源路径配置
-- 当前为单用户模式，不支持多用户同时编辑
+2. 在 `nodeRegistry.ts` 中注册节点：
+```typescript
+import EventNode from '@/components/baklava-nodes/EventNode'
 
-## 更新日志
+export function registerAllNodes(editor) {
+  editor.registerNodeType(EventNode)
+}
+```
 
-### v0.2.0-alpha (当前版本)
-- 迁移至 ASP.NET Core Web 架构
-- 基于 PO 文件的多语言支持（中/英）
-- 完整的 RESTful API
-- 全局异常处理中间件
-- 设置持久化服务
-- 文件浏览器功能
+3. 添加国际化文本：
+```typescript
+// zh-CN.po
+msgid "nodes.event"
+msgstr "事件"
+```
 
-### v0.1.0-alpha
-- 初始 Alpha 版本发布
-- 基本场景和对话管理功能
-- 资源管理器
-- 事件系统基础支持
-- 实时预览功能
+### 添加新页面
 
-## 贡献指南
+1. 创建 Vue 组件：
+```vue
+<!-- src/pages/NewPage.vue -->
+<template>
+  <div class="new-page">
+    <h1>New Page</h1>
+  </div>
+</template>
+
+<script setup lang="ts">
+</script>
+```
+
+2. 添加路由：
+```typescript
+// router/index.ts
+const routes = [
+  { path: '/new-page', component: NewPage },
+]
+```
+
+### 添加 API 接口
+
+1. 创建控制器：
+```csharp
+// Controllers/NewController.cs
+[ApiController]
+[Route("api/[controller]")]
+public class NewController : ControllerBase
+{
+    [HttpGet]
+    public IActionResult Get()
+    {
+        return Ok(new { message = "Hello" });
+    }
+}
+```
+
+2. 添加本地化文本（可选）：
+```po
+msgid "NewController.Message"
+msgstr "你好"
+```
+
+## 📦 构建产物
+
+### 目录结构
+
+```
+bin/
+└── Debug/
+    └── net10.0/
+        ├── Visunovia.dll          # 主程序集
+        ├── Visunovia.exe          # 可执行文件
+        └── wwwroot/              # 前端构建产物
+            ├── index.html
+            ├── assets/
+            │   ├── index-*.js
+            │   ├── baklavajs-*.js
+            │   └── vue-vendor-*.js
+            ├── css/
+            ├── js/
+            └── ...
+```
+
+### 部署
+
+发布后的 `wwwroot` 目录包含所有前端资源，无需额外配置即可部署。
+
+## 🐛 调试
+
+### 前端调试
+- 启动开发服务器：`npm run dev`
+- 打开浏览器 DevTools
+- 使用 Vue DevTools 监控状态
+
+### 后端调试
+- 使用 Visual Studio 或 VS Code
+- 设置断点
+- 使用 `dotnet watch run` 启用热重载
+
+## 📚 相关文档
+
+- [技术架构文档](./Visunovia_UI_Modernization_Roadmap.md)
+- [项目分析报告](./Visunovia_VN_Engine_Analysis_Report.docx)
+
+## 🤝 贡献
 
 欢迎提交 Issue 和 Pull Request！
 
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建 Pull Request
+## 📄 许可证
 
-## 许可证
-
-本项目基于 MIT 许可证开源。详情请参阅 [LICENSE](LICENSE) 文件。
-
-## 联系方式
-
-- GitHub Issues: https://github.com/GlassesMita/Visunovia/issues
+本项目采用专有许可证。

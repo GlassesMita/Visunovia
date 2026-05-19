@@ -11,7 +11,7 @@ app.normalizeEventType = function (eventType) {
         0: 'JumpScene', 1: 'SetVariable', 2: 'PlaySound',
         3: 'ChangeBackground', 4: 'ChangeBgm', 5: 'ShowCharacter',
         6: 'HideCharacter', 7: 'Pause', 8: 'WaitSeconds',
-        9: 'WindowEffect', 10: 'Custom'
+        9: 'WindowEffect', 10: 'Custom', 11: 'SendSystemNotification'
     };
     if (eventTypeMap[eventType]) return eventTypeMap[eventType];
     return eventType || 'Custom';

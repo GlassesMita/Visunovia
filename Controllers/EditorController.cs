@@ -269,6 +269,7 @@ public class EditorController : ControllerBase
     {
         try
         {
+            Console.WriteLine($"[DEBUG] UpdateDialogue - Scene:{request.SceneIndex} Dialogue:{request.DialogueIndex} EventType:{request.Dialogue?.Event?.EventType} Params:{System.Text.Json.JsonSerializer.Serialize(request.Dialogue?.Event?.Parameters)}");
             var editor = _sessionService.GetEditor();
             if (editor.CurrentProject == null)
                 return BadRequest(new { error = "没有打开的项目" });

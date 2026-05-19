@@ -333,3 +333,272 @@ msgstr "Enable Remote Access"
 
 msgid "Settings.RemoteSessionLocked"
 msgstr "Remote access cannot be disabled during a remote session"
+
+#. Event type: Send system notification
+msgid "Event.SendSystemNotification"
+msgstr "Send System Notification"
+
+#. Parameter label for notification title
+msgid "EventParam.NotificationTitle"
+msgstr "Title"
+
+#. Parameter label for notification message body
+msgid "EventParam.NotificationMessage"
+msgstr "Message"
+
+# React Frontend - Menu Bar
+msgid "menu.file"
+msgstr "File"
+
+msgid "menu.edit"
+msgstr "Edit"
+
+msgid "menu.resource"
+msgstr "Resource"
+
+msgid "menu.tools"
+msgstr "Tools"
+
+msgid "menu.window"
+msgstr "Window"
+
+msgid "menu.help"
+msgstr "Help"
+
+# React Frontend - Status Bar
+msgid "status.scene"
+msgstr "Scene:"
+
+msgid "status.notSelected"
+msgstr "None"
+
+msgid "status.selected"
+msgstr "Selected:"
+
+msgid "status.nodes"
+msgstr "nodes"
+
+msgid "status.ready"
+msgstr "Ready"
+
+# React Frontend - Node Types
+msgid "nodes.start.title"
+msgstr "Start"
+
+msgid "nodes.end.title"
+msgstr "End"
+
+msgid "nodes.sequence.title"
+msgstr "Sequence"
+
+msgid "nodes.dialogue.title"
+msgstr "Dialogue"
+
+msgid "nodes.branch.title"
+msgstr "Branch"
+
+msgid "nodes.changeBackground.title"
+msgstr "Change Background"
+
+msgid "nodes.showCharacter.title"
+msgstr "Show Character"
+
+msgid "nodes.hideCharacter.title"
+msgstr "Hide Character"
+
+msgid "nodes.cameraShake.title"
+msgstr "Camera Shake"
+
+msgid "nodes.fadeScreen.title"
+msgstr "Fade Screen"
+
+msgid "nodes.playBGM.title"
+msgstr "Play BGM"
+
+msgid "nodes.stopBGM.title"
+msgstr "Stop BGM"
+
+msgid "nodes.playSFX.title"
+msgstr "Play SFX"
+
+msgid "nodes.playVoice.title"
+msgstr "Play Voice"
+
+msgid "nodes.setVariable.title"
+msgstr "Set Variable"
+
+msgid "nodes.conditional.title"
+msgstr "Conditional"
+
+msgid "nodes.delay.title"
+msgstr "Delay"
+
+msgid "nodes.conditional.placeholder"
+msgstr "Condition expression"
+
+msgid "nodes.conditional.true"
+msgstr "True"
+
+msgid "nodes.conditional.false"
+msgstr "False"
+
+msgid "nodes.branch.defaultPrompt"
+msgstr "Select:"
+
+msgid "nodes.showCharacter.defaultExpression"
+msgstr "Default"
+
+msgid "nodes.fadeScreen.defaultColor"
+msgstr "Black"
+
+msgid "nodes.sequence.item1"
+msgstr "Item 1"
+
+msgid "nodes.sequence.item2"
+msgstr "Item 2"
+
+msgid "nodes.sequence.item3"
+msgstr "Item 3"
+
+msgid "common.exec"
+msgstr "Exec"
+
+# React Frontend - Shortcuts Page
+msgid "shortcuts.category.file"
+msgstr "File Operations"
+
+msgid "shortcuts.category.edit"
+msgstr "Edit Operations"
+
+msgid "shortcuts.category.tools"
+msgstr "Tools"
+
+msgid "shortcuts.category.window"
+msgstr "Window"
+
+msgid "shortcuts.file.newProject"
+msgstr "New Project"
+
+msgid "shortcuts.file.openProject"
+msgstr "Open Project"
+
+msgid "shortcuts.file.saveProject"
+msgstr "Save Project"
+
+msgid "shortcuts.edit.undo"
+msgstr "Undo"
+
+msgid "shortcuts.edit.redo"
+msgstr "Redo"
+
+msgid "shortcuts.edit.copy"
+msgstr "Copy"
+
+msgid "shortcuts.edit.paste"
+msgstr "Paste"
+
+msgid "shortcuts.edit.cut"
+msgstr "Cut"
+
+msgid "shortcuts.edit.delete"
+msgstr "Delete Selected"
+
+msgid "shortcuts.tools.preferences"
+msgstr "Preferences"
+
+msgid "shortcuts.tools.resetLayout"
+msgstr "Reset Layout"
+
+msgid "shortcuts.window.fullscreen"
+msgstr "Toggle Fullscreen"
+
+# React Frontend - Settings / Preferences
+msgid "settings.general.title"
+msgstr "General Settings"
+
+msgid "settings.general.language"
+msgstr "Language"
+
+msgid "settings.general.language.desc"
+msgstr "Choose interface display language"
+
+msgid "settings.general.theme"
+msgstr "Theme"
+
+msgid "settings.general.theme.desc"
+msgstr "Choose theme mode"
+
+msgid "settings.theme.light"
+msgstr "Light"
+
+msgid "settings.theme.dark"
+msgstr "Dark"
+
+msgid "settings.theme.system"
+msgstr "System"
+
+msgid "preferences.title"
+msgstr "Preferences"
+
+msgid "preferences.sidebar.general"
+msgstr "General"
+
+msgid "preferences.sidebar.editor"
+msgstr "Editor"
+
+msgid "preferences.sidebar.preview"
+msgstr "Preview"
+
+msgid "preferences.sidebar.network"
+msgstr "Network"
+
+msgid "preferences.save"
+msgstr "Save"
+
+msgid "preferences.cancel"
+msgstr "Cancel"
+
+# React Frontend - App
+msgid "app.loadingTranslations"
+msgstr "Loading translations..."
+
+# React Frontend - Panel Labels
+msgid "panel.hierarchy"
+msgstr "Hierarchy"
+
+msgid "panel.properties"
+msgstr "Properties"
+
+msgid "panel.resources"
+msgstr "Resources"
+
+msgid "panel.console"
+msgstr "Console"
+
+msgid "nodePalette.title"
+msgstr "Add Node"
+
+# React Frontend - Toolbar
+msgid "toolbar.undo"
+msgstr "Undo"
+
+msgid "toolbar.redo"
+msgstr "Redo"
+
+msgid "toolbar.copy"
+msgstr "Copy"
+
+msgid "toolbar.paste"
+msgstr "Paste"
+
+msgid "toolbar.delete"
+msgstr "Delete"
+
+msgid "toolbar.play"
+msgstr "Play"
+
+msgid "toolbar.pause"
+msgstr "Pause"
+
+msgid "toolbar.nextFrame"
+msgstr "Next Frame"
