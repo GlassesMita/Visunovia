@@ -18,6 +18,8 @@ import { onMounted, shallowRef } from 'vue'
 import { BaklavaEditor, useBaklava } from '@baklavajs/renderer-vue'
 import { registerAllNodes } from '@/baklava/nodeRegistry'
 import { useLocalizationStore } from '@/stores/useLocalizationStore'
+import { useConnectionColors } from '@/composables/useConnectionColors'
+import { useFixNodeSelection } from '@/composables/useFixNodeSelection'
 import StartNode from '@/components/baklava-nodes/StartNode'
 
 const isInitialized = shallowRef(false)
@@ -28,13 +30,19 @@ onMounted(async () => {
   try {
     // 初始化本地化
     await localizationStore.initialize()
-    
+
     // 使用 useBaklava hook
     const baklavaInstance = useBaklava()
     baklava.value = baklavaInstance
-    
+
     // 注册所有节点
     registerAllNodes(baklavaInstance.editor)
+
+    // 初始化连接线颜色系统
+    useConnectionColors(baklavaInstance.editor)
+
+    // 修复节点选中行为：单击清空其他选择，Ctrl+单击多选
+    useFixNodeSelection(baklavaInstance.editor)
     
     // 创建一个默认 Start 节点
     setTimeout(() => {

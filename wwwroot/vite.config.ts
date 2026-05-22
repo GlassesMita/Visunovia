@@ -23,10 +23,16 @@ export default defineConfig({
     }
   },
   server: {
-    port: 5173,
+    port: 32423,
+    strictPort: true,
+    open: true,
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost'
+    },
     proxy: {
       '/api': {
-        target: 'http://localhost:28478',
+        target: 'http://localhost:32523',
         changeOrigin: true
       }
     }

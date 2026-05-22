@@ -23,22 +23,29 @@ export const useLocalizationStore = defineStore('localization', () => {
   async function loadTranslations(lang: 'en' | 'zh') {
     isLoading.value = true
     error.value = null
-    
+
+    const langMap: Record<string, string> = { 'zh': 'zh-CN', 'en': 'en-US' }
+    const backendLang = langMap[lang] || lang
+
     try {
-      const response = await axios.get(`/api/localization/${lang}`, {
-        timeout: 5000
+      const response = await axios.get('/api/localization/translations', {
+        timeout: 5000,
+        params: { lang: backendLang }
       })
-      
-      if (response.data && typeof response.data === 'object') {
-        translations.value = response.data
+
+      if (response.data?.success && response.data?.data?.translations) {
+        translations.value = response.data.data.translations
+      } else if (response.data && typeof response.data === 'object') {
+        console.warn('Backend returned unexpected translation format, using built-in translations')
+        translations.value = {}
       } else {
         console.warn('Backend returned invalid translations, using built-in translations')
         translations.value = {}
       }
-      
+
       currentLanguage.value = lang
       localStorage.setItem('language', lang)
-      
+
     } catch (err: any) {
       console.error('Failed to load translations from backend:', err)
       error.value = err.message || 'Failed to load translations'
@@ -60,7 +67,6 @@ export const useLocalizationStore = defineStore('localization', () => {
         return i18nValue
       }
     } catch (e) {
-      // i18n 尚未初始化，忽略
     }
     
     return fallback || key

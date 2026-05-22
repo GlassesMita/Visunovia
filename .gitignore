@@ -12,6 +12,7 @@ bld/
 [Ll]ogs/
 dist/
 out/
+www_build/
 
 ## Visual Studio 用户特定文件
 *.suo

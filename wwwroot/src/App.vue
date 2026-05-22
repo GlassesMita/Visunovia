@@ -12,14 +12,11 @@
 import { ref, onMounted } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useLocalizationStore } from '@/stores/useLocalizationStore'
-import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import AppLayout from '@/components/layout/AppLayout.vue'
 
 const { t } = useLocalization()
 const localizationStore = useLocalizationStore()
 const isReady = ref(false)
-
-useKeyboardShortcuts()
 
 onMounted(async () => {
   try {
@@ -48,7 +45,7 @@ onMounted(async () => {
   width: 40px;
   height: 40px;
   border: 3px solid #3e3e42;
-  border-top: 3px solid #007acc;
+  border-top-color: #007acc;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

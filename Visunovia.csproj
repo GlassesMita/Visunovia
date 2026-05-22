@@ -38,6 +38,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.3" />
+    <PackageReference Include="Vite.AspNetCore" Version="2.4.1" />
     <PackageReference Include="YamlDotNet" Version="17.1.0" />
   </ItemGroup>
 
@@ -50,8 +51,9 @@
     <Delete Files="$(PublishDir)Visunovia.staticwebassets.runtime.json" Condition="Exists('$(PublishDir)Visunovia.staticwebassets.runtime.json')" />
   </Target>
 
-  <!-- 在编译前，将 www_build 目录的内容复制到 wwwroot 目录 -->
-  <Target Name="CopyVueBuildToWwwroot" BeforeTargets="PrepareForBuild">
+  <!-- 在编译前（仅 Release 配置），将 www_build 目录的内容复制到 wwwroot 目录 -->
+  <!-- 开发模式下不需要此步骤，因为 Vite.AspNetCore 会直接服务前端源码 -->
+  <Target Name="CopyVueBuildToWwwroot" BeforeTargets="PrepareForBuild" Condition="'$(Configuration)' == 'Release'">
     <Message Text="Checking for www_build directory..." Importance="high" />
     <Message Text="ProjectDir: $(ProjectDir)" Importance="high" />
     
@@ -63,12 +65,10 @@
       <VueBuildFiles Include="$(ProjectDir)www_build\**\*" />
     </ItemGroup>
     
-    <Message Text="VueBuildFiles count: @(VueBuildFiles->Count())" Importance="high" />
+    <Message Text="VueBuildFiles count: @(VueBuildFiles-&gt;Count())" Importance="high" />
     
     <!-- 复制文件到 wwwroot -->
-    <Copy SourceFiles="@(VueBuildFiles)" 
-          DestinationFiles="@(VueBuildFiles->'$(ProjectDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" 
-          Condition="Exists('$(ProjectDir)www_build')" />
+    <Copy SourceFiles="@(VueBuildFiles)" DestinationFiles="@(VueBuildFiles->'$(ProjectDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" Condition="Exists('$(ProjectDir)www_build')" />
           
     <Message Text="Vue build copied to wwwroot" Importance="high" Condition="Exists('$(ProjectDir)www_build')" />
   </Target>

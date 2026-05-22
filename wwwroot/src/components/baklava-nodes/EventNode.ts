@@ -1,47 +1,83 @@
-import { defineDynamicNode } from '@baklavajs/core'
-import { NodeInterface, DynamicNodeDefinition } from '@baklavajs/core'
-import { 
-  SelectInterface, 
-  TextInputInterface, 
-  NumberInterface, 
-  CheckboxInterface 
+import { defineDynamicNode, NodeInterface } from '@baklavajs/core'
+import {
+  SelectInterface,
+  TextInputInterface,
+  NumberInterface,
+  CheckboxInterface
 } from '@baklavajs/renderer-vue'
-import { EventType, eventTypeConfig } from '@/types'
+import { EventType, eventTypeConfig, eventTypeLabels } from '@/types'
+import { useLocalizationStore } from '@/stores/useLocalizationStore'
+import {
+  ARROW_SYMBOL,
+  createExecInPort,
+  createExecOutPort,
+  setNodeI18nTitle,
+} from './BaseNode'
+
+export const NODE_COLOR = '#FF9800'
 
 export default defineDynamicNode({
   type: 'EventNode',
-  title: 'nodes.event',
+  title: 'Event',
   inputs: {
-    execIn: () => new NodeInterface('exec_in', undefined),
-    subType: () => new SelectInterface('sub_type', EventType.PlayBGM, 
-      Object.values(EventType).map(v => ({
-        value: v,
-        text: eventTypeConfig[v].labelKey
-      })) as any
-    )
+    execIn: createExecInPort(ARROW_SYMBOL),
+    subType: () => {
+      const store = useLocalizationStore()
+      return new SelectInterface(
+        store.t('properties.subType', 'Sub Type'),
+        EventType.PlayBGM,
+        Object.values(EventType).map((v) => ({
+          value: v,
+          text: store.t(eventTypeLabels[v as EventType], v)
+        }))
+      )
+    }
   },
   outputs: {
-    execOut: () => new NodeInterface('exec_out', undefined)
+    execOut: createExecOutPort(ARROW_SYMBOL)
+  },
+  onCreate() {
+    setNodeI18nTitle(this, 'nodes.event', 'Event')
   },
   onUpdate({ subType }) {
-    const properties = eventTypeConfig[subType as EventType]?.properties || []
-    const inputs: DynamicNodeDefinition = {}
+    const config = eventTypeConfig[subType as EventType]
+    if (!config) return {}
 
-    properties.forEach((prop: any) => {
-      if (prop.type === 'string' || prop.type === 'resource') {
-        inputs[prop.name] = () => new TextInputInterface(prop.name, prop.defaultValue || '')
-      } else if (prop.type === 'number') {
-        inputs[prop.name] = () => new NumberInterface(prop.name, prop.defaultValue ?? 0)
-      } else if (prop.type === 'boolean') {
-        inputs[prop.name] = () => new CheckboxInterface(prop.name, prop.defaultValue ?? false)
-      } else if (prop.type === 'select' && prop.options) {
-        inputs[prop.name] = () => new SelectInterface(
-          prop.name, 
-          prop.defaultValue || (prop.options.length > 0 ? prop.options[0].value : ''),
-          prop.options.map((o: any) => ({ value: o.value, text: o.label })) as any
-        )
+    const store = useLocalizationStore()
+    const inputs: Record<string, () => NodeInterface<any>> = {}
+
+    for (const prop of config.properties) {
+      const label = store.t(`eventProps.${prop.name}`, prop.name)
+
+      switch (prop.type) {
+        case 'string':
+        case 'resource':
+          inputs[prop.name] = () =>
+            new TextInputInterface(label, prop.defaultValue || '')
+          break
+        case 'number':
+          inputs[prop.name] = () =>
+            new NumberInterface(label, prop.defaultValue ?? 0)
+          break
+        case 'boolean':
+          inputs[prop.name] = () =>
+            new CheckboxInterface(label, prop.defaultValue ?? false)
+          break
+        case 'select':
+          if (prop.options?.length) {
+            inputs[prop.name] = () =>
+              new SelectInterface(
+                label,
+                prop.defaultValue || prop.options![0].value,
+                prop.options!.map((o) => ({
+                  value: o.value,
+                  text: store.t(`eventOptions.${o.value}`, o.label)
+                }))
+              )
+          }
+          break
       }
-    })
+    }
 
     return { inputs }
   }

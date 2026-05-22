@@ -1,49 +1,102 @@
-import { defineDynamicNode } from '@baklavajs/core'
-import { NodeInterface, DynamicNodeDefinition } from '@baklavajs/core'
-import { SelectInterface, TextInputInterface, NumberInterface } from '@baklavajs/renderer-vue'
-import { LogicType, logicTypeConfig } from '@/types'
+import { defineDynamicNode, NodeInterface } from '@baklavajs/core'
+import {
+  SelectInterface,
+  TextInputInterface,
+  NumberInterface
+} from '@baklavajs/renderer-vue'
+import { LogicType, logicTypeConfig, logicTypeLabels } from '@/types'
+import { useLocalizationStore } from '@/stores/useLocalizationStore'
+import {
+  ARROW_SYMBOL,
+  createExecInPort,
+  setNodeI18nTitle,
+} from './BaseNode'
+
+/**
+ * LogicNode 节点颜色常量
+ * 青色系，用于标识逻辑控制类节点
+ */
+export const NODE_COLOR = '#00BCD4'
 
 export default defineDynamicNode({
   type: 'LogicNode',
-  title: 'nodes.logic',
+  title: 'Logic',
+
   inputs: {
-    execIn: () => new NodeInterface('exec_in', undefined),
-    subType: () => new SelectInterface('sub_type', LogicType.SetVariable, 
-      Object.values(LogicType).map(v => ({
-        value: v,
-        text: logicTypeConfig[v].labelKey
-      })) as any
-    )
+    execIn: createExecInPort(ARROW_SYMBOL),
+
+    /**
+     * 子类型选择器
+     * 通过 SelectInterface 展示 LogicType 枚举的所有可选值，
+     * 默认选中 SetVariable（赋值操作），切换时触发 onUpdate 重构端口
+     */
+    subType: () => {
+      const store = useLocalizationStore()
+      return new SelectInterface(
+        store.t('properties.subType', 'Sub Type'),
+        LogicType.SetVariable,
+        Object.values(LogicType).map((v) => ({
+          value: v,
+          text: store.t(logicTypeLabels[v as LogicType], logicTypeLabels[v as LogicType])
+        }))
+      )
+    }
   },
-  outputs: {
-    execOut: () => new NodeInterface('exec_out', undefined),
-    execTrue: () => new NodeInterface('exec_true', undefined),
-    execFalse: () => new NodeInterface('exec_false', undefined)
+
+  onCreate() {
+    setNodeI18nTitle(this, 'nodes.logic', 'Logic')
   },
+
+  /**
+   * 动态更新节点的输入输出端口配置
+   * 根据当前选中的 subType 从 logicTypeConfig 中读取属性定义，
+   * 自动生成对应的输入接口（string / number / select），
+   * 并根据子类型决定输出端口的模式：
+   *   - Conditional（条件分支）：双输出 ✓/✗
+   *   - 其他类型（SetVariable、Delay 等）：单输出 →
+   *
+   * @param params - 当前节点属性快照，至少包含 subType 字段
+   * @returns 动态生成的 inputs 与 outputs 端口映射
+   */
   onUpdate({ subType }) {
-    const properties = logicTypeConfig[subType as LogicType]?.properties || []
-    const inputs: DynamicNodeDefinition = {}
+    const config = logicTypeConfig[subType as LogicType]
+    if (!config) return {}
 
-    properties.forEach((prop: any) => {
-      if (prop.type === 'string') {
-        inputs[prop.name] = () => new TextInputInterface(prop.name, prop.defaultValue || '')
-      } else if (prop.type === 'number') {
-        inputs[prop.name] = () => new NumberInterface(prop.name, prop.defaultValue ?? 0)
-      } else if (prop.type === 'select' && prop.options) {
-        inputs[prop.name] = () => new SelectInterface(
-          prop.name, 
-          prop.defaultValue || (prop.options.length > 0 ? prop.options[0].value : ''),
-          prop.options.map((o: any) => ({ value: o.value, text: o.label })) as any
-        )
+    const properties = config.properties || []
+    const inputs: Record<string, () => NodeInterface<any>> = {}
+
+    for (const prop of properties) {
+      switch (prop.type) {
+        case 'string':
+          inputs[prop.name] = () =>
+            new TextInputInterface(prop.name, prop.defaultValue || '')
+          break
+
+        case 'number':
+          inputs[prop.name] = () =>
+            new NumberInterface(prop.name, prop.defaultValue ?? 0)
+          break
+
+        case 'select':
+          if (prop.options && prop.options.length > 0) {
+            inputs[prop.name] = () =>
+              new SelectInterface(
+                prop.name,
+                prop.defaultValue || prop.options![0].value,
+                prop.options!.map((o) => ({ value: o.value, text: o.label }))
+              )
+          }
+          break
       }
-    })
+    }
 
-    const outputs: DynamicNodeDefinition = {}
+    const outputs: Record<string, () => NodeInterface<any>> = {}
+
     if (subType === LogicType.Conditional) {
-      outputs.execTrue = () => new NodeInterface('exec_true', undefined)
-      outputs.execFalse = () => new NodeInterface('exec_false', undefined)
+      outputs.execTrue = () => new NodeInterface('✓', undefined).setPort(true)
+      outputs.execFalse = () => new NodeInterface('✗', undefined).setPort(true)
     } else {
-      outputs.execOut = () => new NodeInterface('exec_out', undefined)
+      outputs.execOut = () => new NodeInterface(ARROW_SYMBOL, undefined).setPort(true)
     }
 
     return { inputs, outputs }

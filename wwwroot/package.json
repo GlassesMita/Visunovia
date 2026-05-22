@@ -7,13 +7,14 @@
     "dev": "vite",
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
-    "start": "vite build && cd .. && dotnet run --no-newtab",
-    "start:dev": "dotnet run",
+    "start": "vue-tsc && vite build",
+    "start:dev": "dotnet run --no-newtab",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix"
   },
   "dependencies": {
     "@baklavajs/core": "^2.8.1",
     "@baklavajs/engine": "^2.8.1",
+    "@baklavajs/events": "^2.8.0",
     "@baklavajs/interface-types": "^2.8.1",
     "@baklavajs/renderer-vue": "^2.8.1",
     "@baklavajs/themes": "^2.8.1",

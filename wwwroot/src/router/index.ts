@@ -10,12 +10,17 @@ const router = createRouter({
       component: () => import('@/pages/EditorPage.vue')
     },
     {
-      path: '/preferences',
+      path: '/Preferences',
       name: 'preferences',
       component: () => import('@/pages/PreferencesPage.vue')
     },
     {
-      path: '/about',
+      path: '/ProjectSettings',
+      name: 'project-settings',
+      component: () => import('@/pages/ProjectSettingsPage.vue')
+    },
+    {
+      path: '/About',
       name: 'about',
       component: () => import('@/pages/AboutPage.vue')
     }

@@ -140,49 +140,92 @@ export async function switchLanguage(
 export { apiClient }
 
 export const sceneGraphApi = {
-  get: async (sceneId: string) => {
-    const response = await apiClient.get(`/scenegraphs/${sceneId}`)
-    return response
+  get: async (id: string) => {
+    return await apiClient.get(`/scenegraphs/${id}`)
   },
-  
-  save: async (sceneId: string, data: any) => {
-    const serializedData = {
-      id: sceneId,
-      nodes: data.nodes.map((node: any) => ({
-        id: node.id,
-        type: node.type,
-        subType: node.data?.subType,
-        position: node.position,
-        data: node.data
-      })),
-      connections: data.connections
-    }
-    
-    return await apiClient.put(`/scenegraphs/${sceneId}`, serializedData)
+
+  put: async (id: string, data: any) => {
+    return await apiClient.put(`/scenegraphs/${id}`, data)
   },
-  
-  create: async (data: any) => {
+
+  post: async (data: any) => {
     return await apiClient.post('/scenegraphs', data)
   },
-  
-  delete: async (sceneId: string) => {
-    return await apiClient.delete(`/scenegraphs/${sceneId}`)
+
+  delete: async (id: string) => {
+    return await apiClient.delete(`/scenegraphs/${id}`)
   },
-  
+
+  save: async (sceneId: string, data: any) => {
+    return await sceneGraphApi.put(sceneId, data)
+  },
+
+  create: async (data: any) => {
+    return await sceneGraphApi.post(data)
+  },
+
   list: async () => {
     return await apiClient.get('/scenegraphs/list')
   }
 }
 
 export const localizationApi = {
-  get: async (lang: string) => {
-    return await apiClient.get(`/localization/${lang}`)
+  get: async (lang?: string) => {
+    const params = lang ? { lang } : {}
+    return await apiClient.get('/localization/translations', { params })
+  },
+
+  getTranslations: async (lang?: string) => {
+    return await localizationApi.get(lang)
+  },
+
+  setLanguage: async (language: string) => {
+    return await apiClient.post('/localization/language', { language })
+  },
+
+  getLanguages: async () => {
+    return await apiClient.get('/localization/languages')
+  }
+}
+
+export const settingsApi = {
+  get: async () => {
+    return await apiClient.get('/settings')
+  },
+
+  put: async (settings: any) => {
+    return await apiClient.put('/settings', settings)
+  },
+
+  getSettings: async () => {
+    return await settingsApi.get()
+  },
+
+  saveSettings: async (settings: Record<string, unknown>) => {
+    return await settingsApi.put(settings)
+  }
+}
+
+export const projectApi = {
+  openProject: async (projectId: string) => {
+    return await apiClient.get(`/projects/${projectId}`)
+  },
+
+  saveProject: async (projectId: string, data: Record<string, unknown>) => {
+    return await apiClient.put(`/projects/${projectId}`, data)
+  },
+
+  listProjects: async () => {
+    return await apiClient.get('/projects')
   }
 }
 
 export const fileBrowserApi = {
-  list: async (path: string) => {
-    return await apiClient.get(`/files?path=${encodeURIComponent(path)}`)
+  list: async (path?: string) => {
+    if (path) {
+      return await apiClient.get(`/files?path=${encodeURIComponent(path)}`)
+    }
+    return await apiClient.get('/files')
   },
   
   read: async (path: string) => {

@@ -1,63 +1,123 @@
 <template>
   <div class="app-layout">
-    <!-- 顶部菜单栏 -->
     <header class="app-header">
       <MenuBar />
     </header>
-    
-    <!-- 工具栏 -->
+
     <div class="app-toolbar">
       <Toolbar />
     </div>
-    
-    <!-- 主内容区 -->
+
     <div class="app-content">
-      <!-- 左侧面板 -->
-      <aside class="app-left-panel" :class="{ collapsed: leftPanelCollapsed }">
-        <ProjectPanel v-if="!leftPanelCollapsed" />
+      <aside
+        class="app-left-panel"
+        :class="{ collapsed: !uiStore.showProjectPanel }"
+      >
+        <div class="panel-tabs-left">
+          <button
+            :class="{ active: leftActiveTab === 'project' }"
+            :title="t('panels.project')"
+            @click="leftActiveTab = 'project'"
+          >
+            📁
+          </button>
+          <button
+            :class="{ active: leftActiveTab === 'palette' }"
+            :title="t('palette.title') || 'Nodes'"
+            @click="leftActiveTab = 'palette'"
+          >
+            🔷
+          </button>
+        </div>
+        <div v-if="uiStore.showProjectPanel" class="left-panel-content">
+          <ProjectPanel v-if="leftActiveTab === 'project'" />
+          <NodePalette v-else-if="leftActiveTab === 'palette'" />
+        </div>
+        <button
+          class="panel-toggle-btn"
+          :title="uiStore.showProjectPanel ? t('common.close') || 'Close' : t('panels.project')"
+          @click="uiStore.togglePanel('project')"
+        >
+          {{ uiStore.showProjectPanel ? '◀' : '▶' }}
+        </button>
       </aside>
-      
-      <!-- 编辑器区域 -->
+
+      <div
+        v-if="uiStore.showProjectPanel"
+        class="resize-handle resize-handle-left"
+        @mousedown="startResizeLeft"
+      ></div>
+
       <main class="app-editor">
         <BaklavaEditor />
       </main>
-      
-      <!-- 右侧面板 -->
-      <aside class="app-right-panel" :class="{ collapsed: rightPanelCollapsed }">
-        <div class="panel-tabs">
-          <button 
-            :class="{ active: activeRightTab === 'inspector' }"
-            @click="activeRightTab = 'inspector'"
+
+      <div
+        v-if="uiStore.showInspectorPanel || uiStore.showHierarchyPanel"
+        class="resize-handle resize-handle-right"
+        @mousedown="startResizeRight"
+      ></div>
+
+      <aside
+        class="app-right-panel"
+        :class="{ collapsed: !(uiStore.showInspectorPanel || uiStore.showHierarchyPanel) }"
+      >
+        <div class="panel-tabs-right">
+          <button
+            :class="{ active: rightActiveTab === 'inspector' }"
+            :title="t('panels.inspector')"
+            @click="rightActiveTab = 'inspector'; uiStore.showInspectorPanel = true"
           >
             {{ t('panels.inspector') }}
           </button>
-          <button 
-            :class="{ active: activeRightTab === 'hierarchy' }"
-            @click="activeRightTab = 'hierarchy'"
+          <button
+            :class="{ active: rightActiveTab === 'hierarchy' }"
+            :title="t('panels.hierarchy')"
+            @click="rightActiveTab = 'hierarchy'; uiStore.showHierarchyPanel = true"
           >
             {{ t('panels.hierarchy') }}
           </button>
         </div>
-        <InspectorPanel v-if="activeRightTab === 'inspector'" />
-        <HierarchyPanel v-else-if="activeRightTab === 'hierarchy'" />
+        <div v-if="uiStore.showInspectorPanel || uiStore.showHierarchyPanel" class="right-panel-content">
+          <InspectorPanel v-if="rightActiveTab === 'inspector' && uiStore.showInspectorPanel" />
+          <HierarchyPanel v-else-if="rightActiveTab === 'hierarchy' && uiStore.showHierarchyPanel" />
+        </div>
+        <button
+          class="panel-toggle-btn toggle-right"
+          :title="(uiStore.showInspectorPanel || uiStore.showHierarchyPanel) ? (t('common.close') || 'Close') : (t('panels.inspector'))"
+          @click="toggleRightPanel"
+        >
+          {{ (uiStore.showInspectorPanel || uiStore.showHierarchyPanel) ? '▶' : '◀' }}
+        </button>
       </aside>
     </div>
-    
-    <!-- 底部状态栏 -->
+
     <footer class="app-footer">
       <StatusBar />
+      <button
+        class="console-toggle-btn"
+        :class="{ active: uiStore.showConsolePanel }"
+        :title="t('panels.console')"
+        @click="uiStore.togglePanel('console')"
+      >
+        {{ t('panels.console') }}
+      </button>
     </footer>
-    
-    <!-- 控制台面板（可折叠） -->
-    <div class="app-console" :class="{ expanded: consoleExpanded }">
+
+    <div
+      class="app-console"
+      :class="{ expanded: uiStore.showConsolePanel }"
+    >
       <ConsolePanel />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
+import { useUIStore } from '@/stores/useUIStore'
+import { useShortcuts } from '@/composables/useShortcuts'
 import MenuBar from './MenuBar.vue'
 import Toolbar from './Toolbar.vue'
 import StatusBar from './StatusBar.vue'
@@ -65,14 +125,67 @@ import ProjectPanel from '@/components/panels/ProjectPanel.vue'
 import InspectorPanel from '@/components/panels/InspectorPanel.vue'
 import HierarchyPanel from '@/components/panels/HierarchyPanel.vue'
 import ConsolePanel from '@/components/panels/ConsolePanel.vue'
+import NodePalette from '@/components/NodePalette.vue'
 import BaklavaEditor from '@/components/BaklavaEditor.vue'
 
 const { t } = useLocalization()
+const uiStore = useUIStore()
 
-const leftPanelCollapsed = ref(false)
-const rightPanelCollapsed = ref(false)
-const activeRightTab = ref<'inspector' | 'hierarchy'>('inspector')
-const consoleExpanded = ref(false)
+useShortcuts()
+
+const leftActiveTab = ref<'project' | 'palette'>('palette')
+const rightActiveTab = ref<'inspector' | 'hierarchy'>('inspector')
+
+let isResizingLeft = false
+let isResizingRight = false
+
+function startResizeLeft() {
+  isResizingLeft = true
+  document.addEventListener('mousemove', handleResizeLeft)
+  document.addEventListener('mouseup', stopResize)
+}
+
+function startResizeRight() {
+  isResizingRight = true
+  document.addEventListener('mousemove', handleResizeRight)
+  document.addEventListener('mouseup', stopResize)
+}
+
+function handleResizeLeft(e: MouseEvent) {
+  if (!isResizingLeft) return
+  const newWidth = Math.max(200, Math.min(500, e.clientX))
+  document.documentElement.style.setProperty('--left-panel-width', `${newWidth}px`)
+}
+
+function handleResizeRight(e: MouseEvent) {
+  if (!isResizingRight) return
+  const windowWidth = window.innerWidth
+  const newWidth = Math.max(200, Math.min(500, windowWidth - e.clientX))
+  document.documentElement.style.setProperty('--right-panel-width', `${newWidth}px`)
+}
+
+function stopResize() {
+  isResizingLeft = false
+  isResizingRight = false
+  document.removeEventListener('mousemove', handleResizeLeft)
+  document.removeEventListener('mousemove', handleResizeRight)
+  document.removeEventListener('mouseup', stopResize)
+}
+
+function toggleRightPanel() {
+  if (uiStore.showInspectorPanel || uiStore.showHierarchyPanel) {
+    uiStore.showInspectorPanel = false
+    uiStore.showHierarchyPanel = false
+  } else {
+    uiStore.showInspectorPanel = true
+  }
+}
+
+onUnmounted(() => {
+  document.removeEventListener('mousemove', handleResizeLeft)
+  document.removeEventListener('mousemove', handleResizeRight)
+  document.removeEventListener('mouseup', stopResize)
+})
 </script>
 
 <style scoped>
@@ -82,85 +195,216 @@ const consoleExpanded = ref(false)
   width: 100%;
   height: 100vh;
   overflow: hidden;
+  background: #1e1e1e;
 }
 
 .app-header {
-  height: 40px;
+  height: 32px;
+  min-height: 32px;
   background: #252526;
   border-bottom: 1px solid #3e3e42;
+  flex-shrink: 0;
 }
 
 .app-toolbar {
-  height: 48px;
+  height: 40px;
+  min-height: 40px;
   background: #2d2d30;
   border-bottom: 1px solid #3e3e42;
+  flex-shrink: 0;
 }
 
 .app-content {
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 .app-left-panel,
 .app-right-panel {
-  width: 280px;
+  width: var(--left-panel-width, 280px);
   background: #252526;
-  border-right: 1px solid #3e3e42;
+  display: flex;
   overflow: hidden;
-  transition: width 0.2s;
+  transition: width 0.15s ease;
+  flex-shrink: 0;
 }
 
 .app-right-panel {
-  border-right: none;
+  width: var(--right-panel-width, 280px);
   border-left: 1px solid #3e3e42;
 }
 
-.app-left-panel.collapsed,
+.app-left-panel.collapsed {
+  width: 36px;
+  border-right: none;
+}
+
 .app-right-panel.collapsed {
-  width: 40px;
+  width: 36px;
+  border-left: none;
+}
+
+.panel-tabs-left,
+.panel-tabs-right {
+  display: flex;
+  flex-direction: column;
+  width: 32px;
+  background: #2d2d30;
+  border-right: 1px solid #3e3e42;
+  flex-shrink: 0;
+}
+
+.panel-tabs-right {
+  flex-direction: row;
+  width: auto;
+  border-right: none;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.panel-tabs-left button,
+.panel-tabs-right button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  background: transparent;
+  border: none;
+  color: #808080;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+
+.panel-tabs-left button {
+  height: 40px;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.panel-tabs-right button {
+  flex: 1;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.panel-tabs-left button:hover,
+.panel-tabs-right button:hover {
+  color: #cccccc;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.panel-tabs-left button.active,
+.panel-tabs-right button.active {
+  color: #ffffff;
+  background: #094771;
+}
+
+.left-panel-content,
+.right-panel-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-toggle-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 48px;
+  background: #2d2d30;
+  border: 1px solid #3e3e42;
+  color: #808080;
+  cursor: pointer;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.15s;
+}
+
+.panel-toggle-btn:hover {
+  background: #3e3e42;
+  color: #ffffff;
+}
+
+.app-left-panel .panel-toggle-btn {
+  right: 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.toggle-right {
+  left: 0;
+  border-radius: 4px 0 0 4px;
+}
+
+.resize-handle {
+  width: 4px;
+  background: #3e3e42;
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  z-index: 5;
+}
+
+.resize-handle:hover {
+  background: #007acc;
 }
 
 .app-editor {
   flex: 1;
   background: #1e1e1e;
   overflow: hidden;
+  min-width: 0;
 }
 
 .app-footer {
   height: 24px;
+  min-height: 24px;
   background: #007acc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.console-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 2px 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.15s;
+}
+
+.console-toggle-btn:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.console-toggle-btn.active {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .app-console {
   height: 0;
   background: #1e1e1e;
+  border-top: 1px solid #3e3e42;
   overflow: hidden;
-  transition: height 0.2s;
+  transition: height 0.2s ease;
+  flex-shrink: 0;
 }
 
 .app-console.expanded {
   height: 200px;
-}
-
-.panel-tabs {
-  display: flex;
-  background: #2d2d30;
-  border-bottom: 1px solid #3e3e42;
-}
-
-.panel-tabs button {
-  flex: 1;
-  padding: 8px;
-  background: transparent;
-  border: none;
-  color: #cccccc;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.panel-tabs button.active {
-  background: #1e1e1e;
-  color: #ffffff;
 }
 </style>

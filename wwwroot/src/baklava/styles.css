@@ -1,7 +1,95 @@
 @import '@baklavajs/themes/dist/syrup-dark.css';
 
+:root {
+  /* 节点连线颜色 - 根据源节点类型区分 */
+  --connection-start: #2E7D32;
+  --connection-end: #C62828;
+  --connection-event: #E65100;
+  --connection-dialogue: #1565C0;
+  --connection-branch: #6A1B9A;
+  --connection-logic: #00838F;
+  --connection-resource: #4E342E;
+
+  /* 资源类型连线颜色 (ResourceNode 动态) */
+  --resource-image: #E91E63;
+  --resource-audio: #FF5722;
+  --resource-bgm: #795548;
+  --resource-voice: #607D8B;
+  --resource-video: #3F51B5;
+  --resource-scene: #009688;
+  --resource-font: #8BC34A;
+  --resource-data: #9E9E9E;
+}
+
 .baklava-editor {
   width: 100%;
   height: 100%;
   background-color: #1e1e1e;
+}
+
+/* 根据 source 节点类型着色连接线 */
+.baklava-connection[data-source-type="StartNode"] {
+  stroke: var(--connection-start) !important;
+}
+
+.baklava-connection[data-source-type="EndNode"] {
+  stroke: var(--connection-end) !important;
+}
+
+.baklava-connection[data-source-type="EventNode"] {
+  stroke: var(--connection-event) !important;
+}
+
+.baklava-connection[data-source-type="DialogueNode"] {
+  stroke: var(--connection-dialogue) !important;
+}
+
+.baklava-connection[data-source-type="BranchNode"] {
+  stroke: var(--connection-branch) !important;
+}
+
+.baklava-connection[data-source-type="LogicNode"] {
+  stroke: var(--connection-logic) !important;
+}
+
+.baklava-connection[data-source-type="ResourceNode"] {
+  stroke: var(--connection-resource) !important;
+}
+
+.baklava-connection[data-source-type="ChoiceNode"] {
+  stroke: #C2185B !important;
+}
+
+/* ===== 资源类型连线颜色 (ResourceNode 动态) ===== */
+/* 注意：使用 .baklava-connection 选择器（与基础类型保持一致） */
+.baklava-connection[data-resource-type="image"] { stroke: #AD1457 !important; }
+.baklava-connection[data-resource-type="audio"] { stroke: #6A1B9A !important; }
+.baklava-connection[data-resource-type="bgm"] { stroke: #1565C0 !important; }
+.baklava-connection[data-resource-type="voice"] { stroke: #00838F !important; }
+.baklava-connection[data-resource-type="video"] { stroke: #2E7D32 !important; }
+.baklava-connection[data-resource-type="scene"] { stroke: #E65100 !important; }
+.baklava-connection[data-resource-type="font"] { stroke: #4E342E !important; }
+.baklava-connection[data-resource-type="data"] { stroke: #37474F !important; }
+
+/* 资源类型连线端点颜色（圆点） */
+.baklava-connection[data-resource-type="image"] ~ circle,
+.baklava-connection[data-resource-type="image"] + circle { fill: #AD1457 !important; }
+.baklava-connection[data-resource-type="audio"] ~ circle,
+.baklava-connection[data-resource-type="audio"] + circle { fill: #6A1B9A !important; }
+.baklava-connection[data-resource-type="bgm"] ~ circle,
+.baklava-connection[data-resource-type="bgm"] + circle { fill: #1565C0 !important; }
+.baklava-connection[data-resource-type="voice"] ~ circle,
+.baklava-connection[data-resource-type="voice"] + circle { fill: #00838F !important; }
+.baklava-connection[data-resource-type="video"] ~ circle,
+.baklava-connection[data-resource-type="video"] + circle { fill: #2E7D32 !important; }
+.baklava-connection[data-resource-type="scene"] ~ circle,
+.baklava-connection[data-resource-type="scene"] + circle { fill: #E65100 !important; }
+.baklava-connection[data-resource-type="font"] ~ circle,
+.baklava-connection[data-resource-type="font"] + circle { fill: #4E342E !important; }
+.baklava-connection[data-resource-type="data"] ~ circle,
+.baklava-connection[data-resource-type="data"] + circle { fill: #37474F !important; }
+
+/* ===== 隐藏 BaklavaJS 原生侧边栏，使用自定义 InspectorPanel 替代 ===== */
+.baklava-sidebar {
+  display: none !important;
 }

@@ -5,6 +5,7 @@
         v-for="menu in menus" 
         :key="menu.key" 
         class="menu-item"
+        :class="{ active: activeMenu === menu.key }"
         @click="toggleMenu(menu.key)"
       >
         <span class="menu-label">{{ t(menu.labelKey) }}</span>
@@ -14,10 +15,14 @@
             <div 
               v-else
               class="menu-dropdown-item"
-              @click.stop="executeAction(item.action!)"
+              :class="{ disabled: item.disabled }"
+              @click.stop="!item.disabled && executeAction(item.action!)"
             >
-              <span>{{ t(item.labelKey) }}</span>
+              <span class="item-label">{{ t(item.labelKey) }}</span>
               <span v-if="item.shortcut" class="shortcut">{{ item.shortcut }}</span>
+              <span v-if="item.checked !== undefined" class="checkmark">
+                {{ item.checked ? '✓' : '' }}
+              </span>
             </div>
           </template>
         </div>
@@ -27,8 +32,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
+import { useUIStore } from '@/stores/useUIStore'
+import { useEditorStore } from '@/stores/useEditorStore'
+import { useNodeOperations } from '@/composables/useNodeOperations'
 
 interface MenuItem {
   key: string
@@ -36,6 +44,8 @@ interface MenuItem {
   action?: string
   shortcut?: string
   divider?: boolean
+  disabled?: boolean
+  checked?: boolean
 }
 
 interface Menu {
@@ -45,10 +55,13 @@ interface Menu {
 }
 
 const { t } = useLocalization()
+const uiStore = useUIStore()
+const editorStore = useEditorStore()
+const { saveSceneGraph, loadSceneGraph, newGraph } = useNodeOperations()
 
 const activeMenu = ref<string | null>(null)
 
-const menus: Menu[] = [
+const menus = computed<Menu[]>(() => [
   {
     key: 'file',
     labelKey: 'menu.file',
@@ -65,8 +78,8 @@ const menus: Menu[] = [
     key: 'edit',
     labelKey: 'menu.edit',
     items: [
-      { key: 'undo', labelKey: 'menu.undo', action: 'undo', shortcut: 'Ctrl+Z' },
-      { key: 'redo', labelKey: 'menu.redo', action: 'redo', shortcut: 'Ctrl+Y' },
+      { key: 'undo', labelKey: 'menu.undo', action: 'undo', shortcut: 'Ctrl+Z', disabled: !editorStore.canUndo },
+      { key: 'redo', labelKey: 'menu.redo', action: 'redo', shortcut: 'Ctrl+Y', disabled: !editorStore.canRedo },
       { key: 'divider1', labelKey: '', divider: true },
       { key: 'cut', labelKey: 'menu.cut', action: 'cut', shortcut: 'Ctrl+X' },
       { key: 'copy', labelKey: 'menu.copy', action: 'copy', shortcut: 'Ctrl+C' },
@@ -78,6 +91,31 @@ const menus: Menu[] = [
     key: 'view',
     labelKey: 'menu.view',
     items: [
+      { 
+        key: 'project', 
+        labelKey: 'panels.project', 
+        action: 'toggleProject',
+        checked: uiStore.showProjectPanel 
+      },
+      { 
+        key: 'inspector', 
+        labelKey: 'panels.inspector', 
+        action: 'toggleInspector',
+        checked: uiStore.showInspectorPanel 
+      },
+      { 
+        key: 'hierarchy', 
+        labelKey: 'panels.hierarchy', 
+        action: 'toggleHierarchy',
+        checked: uiStore.showHierarchyPanel 
+      },
+      { 
+        key: 'console', 
+        labelKey: 'panels.console', 
+        action: 'toggleConsole',
+        checked: uiStore.showConsolePanel 
+      },
+      { key: 'divider1', labelKey: '', divider: true },
       { key: 'preferences', labelKey: 'menu.preferences', action: 'openPreferences' },
     ],
   },
@@ -88,7 +126,7 @@ const menus: Menu[] = [
       { key: 'about', labelKey: 'menu.about', action: 'showAbout' },
     ],
   },
-]
+])
 
 function toggleMenu(key: string) {
   activeMenu.value = activeMenu.value === key ? null : key
@@ -98,17 +136,72 @@ function executeAction(action: string) {
   activeMenu.value = null
   
   switch (action) {
+    case 'newFile':
+      newGraph()
+      break
+    case 'openFile':
+      // 打开文件：需要通过文件浏览器选择场景 ID 后调用 loadSceneGraph
+      // 当前使用默认场景 ID 作为演示，实际应配合文件浏览器组件使用
+      const openSceneId = prompt('请输入要打开的场景 ID:')
+      if (openSceneId) {
+        loadSceneGraph(openSceneId)
+      }
+      break
     case 'saveFile':
-      console.log('Save file action')
+      if (editorStore.currentFileName && editorStore.currentFileName !== 'Untitled') {
+        saveSceneGraph(editorStore.currentFileName)
+      } else {
+        executeAction('saveFileAs')
+      }
+      break
+    case 'saveFileAs': {
+      const saveAsName = prompt('请输入文件名:', editorStore.currentFileName || 'Untitled')
+      if (saveAsName) {
+        editorStore.currentFileName = saveAsName
+        saveSceneGraph(saveAsName)
+      }
+      break
+    }
+    case 'exitApp':
+      console.log('Exit app')
       break
     case 'undo':
-      console.log('Undo action')
+      editorStore.undo()
       break
     case 'redo':
-      console.log('Redo action')
+      editorStore.redo()
+      break
+    case 'cut':
+      console.log('Cut action')
+      break
+    case 'copy':
+      console.log('Copy action')
+      break
+    case 'paste':
+      console.log('Paste action')
+      break
+    case 'delete':
+      console.log('Delete action')
+      break
+    case 'toggleProject':
+      uiStore.togglePanel('project')
+      break
+    case 'toggleInspector':
+      uiStore.togglePanel('inspector')
+      break
+    case 'toggleHierarchy':
+      uiStore.togglePanel('hierarchy')
+      break
+    case 'toggleConsole':
+      uiStore.togglePanel('console')
       break
     case 'openPreferences':
-      console.log('Open preferences')
+      // 使用 window.open 打开独立的 Preferences 窗口（Popup）
+      window.open('/Preferences', 'Preferences', 'width=800,height=600,scrollbars=yes,resizable=yes')
+      break
+    case 'showAbout':
+      // 使用 window.open 打开独立的 About 窗口（Popup）
+      window.open('/About', 'About', 'width=600,height=500,scrollbars=yes,resizable=yes')
       break
     default:
       console.log('Action not implemented:', action)
@@ -137,56 +230,89 @@ onUnmounted(() => {
   align-items: center;
   height: 100%;
   padding: 0 8px;
+  user-select: none;
 }
 
 .menu-items {
   display: flex;
-  gap: 4px;
+  gap: 2px;
 }
 
 .menu-item {
   position: relative;
-  padding: 4px 12px;
+  padding: 4px 10px;
   color: #cccccc;
   cursor: pointer;
   border-radius: 4px;
+  font-size: 13px;
+  transition: all 0.1s;
 }
 
-.menu-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+.menu-item:hover,
+.menu-item.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.menu-label {
+  white-space: nowrap;
 }
 
 .menu-dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 4px);
   left: 0;
-  min-width: 200px;
+  min-width: 220px;
   background: #252526;
-  border: 1px solid #3e3e42;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid #454545;
+  border-radius: 4px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   z-index: 1000;
+  padding: 4px 0;
 }
 
 .menu-dropdown-item {
   display: flex;
   justify-content: space-between;
-  padding: 8px 16px;
+  align-items: center;
+  padding: 7px 16px;
   color: #cccccc;
   cursor: pointer;
+  font-size: 12px;
+  transition: background 0.1s;
 }
 
-.menu-dropdown-item:hover {
+.menu-dropdown-item:hover:not(.disabled) {
   background: #094771;
+  color: #ffffff;
+}
+
+.menu-dropdown-item.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.item-label {
+  flex: 1;
+}
+
+.shortcut {
+  color: #808080;
+  font-size: 11px;
+  margin-left: 24px;
+}
+
+.checkmark {
+  color: #ffffff;
+  font-size: 12px;
+  margin-left: 8px;
+  width: 16px;
+  text-align: center;
 }
 
 .menu-divider {
   height: 1px;
   background: #3e3e42;
-  margin: 4px 0;
-}
-
-.shortcut {
-  color: #808080;
-  font-size: 12px;
+  margin: 4px 12px;
 }
 </style>

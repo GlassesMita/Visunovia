@@ -1,18 +1,41 @@
 import { defineNode } from '@baklavajs/core'
-import { NodeInterface } from '@baklavajs/core'
 import { TextInputInterface } from '@baklavajs/renderer-vue'
+import { useLocalizationStore } from '@/stores/useLocalizationStore'
+import {
+  ARROW_SYMBOL,
+  createExecInPort,
+  createExecOutPort,
+  setNodeI18nTitle,
+} from './BaseNode'
+
+export const NODE_COLOR = '#2196F3'
 
 export default defineNode({
   type: 'DialogueNode',
-  title: 'nodes.dialogue',
+  title: 'Dialogue',
   inputs: {
-    execIn: () => new NodeInterface('exec_in', undefined),
-    speaker: () => new NodeInterface('speaker', ''),
-    text: () => new TextInputInterface('text', ''),
-    voice: () => new NodeInterface('voice', ''),
-    sprites: () => new NodeInterface('sprites', '')
+    execIn: createExecInPort(ARROW_SYMBOL),
+    speaker: () => {
+      const t = useLocalizationStore().t
+      return new TextInputInterface(t('props.speaker', 'Speaker'), '')
+    },
+    text: () => {
+      const t = useLocalizationStore().t
+      return new TextInputInterface(t('props.text', 'Text'), '')
+    },
+    voice: () => {
+      const t = useLocalizationStore().t
+      return new TextInputInterface(t('props.voice', 'Voice'), '')
+    },
+    sprites: () => {
+      const t = useLocalizationStore().t
+      return new TextInputInterface(t('props.sprites', 'Sprites'), '')
+    },
   },
   outputs: {
-    execOut: () => new NodeInterface('exec_out', undefined)
-  }
+    execOut: createExecOutPort(ARROW_SYMBOL),
+  },
+  onCreate() {
+    setNodeI18nTitle(this, 'nodes.dialogue', 'Dialogue')
+  },
 })
