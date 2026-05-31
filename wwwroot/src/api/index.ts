@@ -202,7 +202,7 @@ export const settingsApi = {
   },
 
   saveSettings: async (settings: Record<string, unknown>) => {
-    return await settingsApi.put(settings)
+    return await apiClient.put('/settings', { settings })
   }
 }
 

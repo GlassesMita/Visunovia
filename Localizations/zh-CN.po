@@ -346,24 +346,57 @@ msgstr "标题"
 msgid "EventParam.NotificationMessage"
 msgstr "正文"
 
-# React Frontend - Menu Bar
+# Vue Frontend - Menu Bar
 msgid "menu.file"
 msgstr "文件"
 
 msgid "menu.edit"
 msgstr "编辑"
 
-msgid "menu.resource"
-msgstr "资源"
-
-msgid "menu.tools"
-msgstr "工具"
-
-msgid "menu.window"
-msgstr "窗口"
+msgid "menu.view"
+msgstr "视图"
 
 msgid "menu.help"
 msgstr "帮助"
+
+msgid "menu.new"
+msgstr "新建"
+
+msgid "menu.open"
+msgstr "打开"
+
+msgid "menu.save"
+msgstr "保存"
+
+msgid "menu.saveAs"
+msgstr "另存为"
+
+msgid "menu.exit"
+msgstr "退出"
+
+msgid "menu.undo"
+msgstr "撤销"
+
+msgid "menu.redo"
+msgstr "重做"
+
+msgid "menu.cut"
+msgstr "剪切"
+
+msgid "menu.copy"
+msgstr "复制"
+
+msgid "menu.paste"
+msgstr "粘贴"
+
+msgid "menu.delete"
+msgstr "删除"
+
+msgid "menu.preferences"
+msgstr "偏好设置"
+
+msgid "menu.about"
+msgstr "关于"
 
 # React Frontend - Status Bar
 msgid "status.scene"
@@ -381,56 +414,68 @@ msgstr "个节点"
 msgid "status.ready"
 msgstr "就绪"
 
-# React Frontend - Node Types
-msgid "nodes.start.title"
+# Vue Frontend - Node Types
+msgid "nodes.start"
 msgstr "开始"
 
-msgid "nodes.end.title"
+msgid "nodes.end"
 msgstr "结束"
 
-msgid "nodes.sequence.title"
+msgid "nodes.sequence"
 msgstr "序列"
 
-msgid "nodes.dialogue.title"
+msgid "nodes.dialogue"
 msgstr "对话"
 
-msgid "nodes.branch.title"
+msgid "nodes.branch"
 msgstr "分支"
 
-msgid "nodes.changeBackground.title"
+msgid "nodes.event"
+msgstr "事件"
+
+msgid "nodes.logic"
+msgstr "逻辑"
+
+msgid "nodes.choice"
+msgstr "选择"
+
+msgid "nodes.resources"
+msgstr "资源"
+
+msgid "nodes.changeBackground"
 msgstr "切换背景"
 
-msgid "nodes.showCharacter.title"
+msgid "nodes.showCharacter"
 msgstr "显示角色"
 
-msgid "nodes.hideCharacter.title"
+msgid "nodes.hideCharacter"
 msgstr "隐藏角色"
 
-msgid "nodes.cameraShake.title"
+msgid "nodes.cameraShake"
 msgstr "镜头震动"
 
-msgid "nodes.fadeScreen.title"
+msgid "nodes.fadeScreen"
 msgstr "屏幕淡入淡出"
 
-msgid "nodes.playBGM.title"
+msgid "nodes.playBGM"
 msgstr "播放音乐"
 
-msgid "nodes.stopBGM.title"
+msgid "nodes.stopBGM"
 msgstr "停止音乐"
 
-msgid "nodes.playSFX.title"
+msgid "nodes.playSFX"
 msgstr "播放音效"
 
-msgid "nodes.playVoice.title"
+msgid "nodes.playVoice"
 msgstr "播放语音"
 
-msgid "nodes.setVariable.title"
+msgid "nodes.setVariable"
 msgstr "设置变量"
 
-msgid "nodes.conditional.title"
+msgid "nodes.conditional"
 msgstr "条件判断"
 
-msgid "nodes.delay.title"
+msgid "nodes.delay"
 msgstr "延迟"
 
 msgid "nodes.conditional.placeholder"
@@ -602,3 +647,603 @@ msgstr "暂停"
 
 msgid "toolbar.nextFrame"
 msgstr "下一帧"
+
+# ============================================================
+# Vue Frontend - Additional keys (auto-generated from TS locale files)
+# ============================================================
+
+# App
+msgid "app.title"
+msgstr "Visunovia 编辑器"
+
+msgid "app.loading"
+msgstr "加载中..."
+
+# Settings / Preferences
+msgid "settings.general"
+msgstr "常规"
+
+msgid "settings.editor"
+msgstr "编辑器"
+
+msgid "settings.preview"
+msgstr "预览"
+
+msgid "settings.network"
+msgstr "网络"
+
+msgid "settings.savedSuccess"
+msgstr "设置保存成功！"
+
+msgid "settings.savedLocal"
+msgstr "设置已本地保存（服务器不可用）"
+
+msgid "settings.resetConfirm"
+msgstr "确定要重置所有设置吗？"
+
+# Vue Frontend - Settings Page
+msgid "settings.title"
+msgstr "偏好设置"
+
+msgid "settings.language"
+msgstr "语言"
+
+msgid "settings.theme"
+msgstr "主题"
+
+msgid "settings.dark"
+msgstr "深色"
+
+msgid "settings.light"
+msgstr "浅色"
+
+msgid "settings.autoSave"
+msgstr "自动保存"
+
+msgid "settings.autoSaveInterval"
+msgstr "自动保存间隔"
+
+msgid "settings.showGrid"
+msgstr "显示网格"
+
+msgid "settings.gridSize"
+msgstr "网格大小"
+
+msgid "settings.snapEnabled"
+msgstr "对齐网格"
+
+msgid "settings.defaultZoom"
+msgstr "默认缩放"
+
+msgid "settings.defaultNodeSize"
+msgstr "默认节点大小"
+
+msgid "settings.previewWidth"
+msgstr "预览宽度"
+
+msgid "settings.previewHeight"
+msgstr "预览高度"
+
+msgid "settings.fullscreenPreview"
+msgstr "全屏预览"
+
+msgid "settings.apiBaseUrl"
+msgstr "API 基础地址"
+
+msgid "settings.requestTimeout"
+msgstr "请求超时"
+
+# Project Settings
+msgid "projectSettings.title"
+msgstr "项目设置"
+
+msgid "projectSettings.project"
+msgstr "项目信息"
+
+msgid "projectSettings.projectName"
+msgstr "项目名称"
+
+msgid "projectSettings.projectNamePlaceholder"
+msgstr "未命名项目"
+
+msgid "projectSettings.video"
+msgstr "视频设置"
+
+msgid "projectSettings.resolution"
+msgstr "默认分辨率"
+
+msgid "projectSettings.audio"
+msgstr "音频设置"
+
+msgid "projectSettings.bgmVolume"
+msgstr "默认 BGM 音量"
+
+msgid "projectSettings.voiceVolume"
+msgstr "默认语音音量"
+
+msgid "projectSettings.bgmLoop"
+msgstr "默认 BGM 循环"
+
+msgid "projectSettings.general"
+msgstr "通用设置"
+
+msgid "projectSettings.language"
+msgstr "默认语言"
+
+msgid "projectSettings.langZh"
+msgstr "中文"
+
+msgid "projectSettings.langEn"
+msgstr "English"
+
+msgid "projectSettings.theme"
+msgstr "默认主题"
+
+msgid "projectSettings.dark"
+msgstr "深色"
+
+msgid "projectSettings.light"
+msgstr "浅色"
+
+msgid "projectSettings.saving"
+msgstr "保存中..."
+
+msgid "projectSettings.reset"
+msgstr "重置"
+
+msgid "projectSettings.savedSuccess"
+msgstr "设置已保存"
+
+msgid "projectSettings.saveFailed"
+msgstr "保存失败"
+
+# Node Palette
+msgid "palette.title"
+msgstr "节点"
+
+msgid "palette.types"
+msgstr "种类型"
+
+msgid "palette.noMatch"
+msgstr "无匹配节点"
+
+# Categories
+msgid "categories.flow"
+msgstr "流程控制"
+
+msgid "categories.event"
+msgstr "事件"
+
+msgid "categories.dialogue"
+msgstr "对话"
+
+msgid "categories.logic"
+msgstr "逻辑"
+
+msgid "categories.resources"
+msgstr "资源"
+
+# Panels
+msgid "panels.project"
+msgstr "项目"
+
+msgid "panels.inspector"
+msgstr "属性"
+
+msgid "panels.hierarchy"
+msgstr "层级"
+
+msgid "panels.console"
+msgstr "控制台"
+
+msgid "panels.preview"
+msgstr "预览"
+
+# Properties
+msgid "properties.title"
+msgstr "属性"
+
+msgid "properties.speaker"
+msgstr "说话者"
+
+msgid "properties.text"
+msgstr "文本"
+
+msgid "properties.voice"
+msgstr "语音"
+
+msgid "properties.sprites"
+msgstr "立绘"
+
+msgid "properties.condition"
+msgstr "条件"
+
+msgid "properties.options"
+msgstr "选项"
+
+msgid "properties.resourcePath"
+msgstr "资源路径"
+
+msgid "properties.bgmPath"
+msgstr "背景音乐路径"
+
+msgid "properties.volume"
+msgstr "音量"
+
+msgid "properties.loop"
+msgstr "循环"
+
+msgid "properties.fadeOutDuration"
+msgstr "淡出时长"
+
+msgid "properties.sfxPath"
+msgstr "音效路径"
+
+msgid "properties.voicePath"
+msgstr "语音路径"
+
+msgid "properties.imagePath"
+msgstr "图片路径"
+
+msgid "properties.transition"
+msgstr "过渡方式"
+
+msgid "properties.duration"
+msgstr "时长"
+
+msgid "properties.characterId"
+msgstr "角色ID"
+
+msgid "properties.expression"
+msgstr "表情"
+
+msgid "properties.position"
+msgstr "位置"
+
+msgid "properties.intensity"
+msgstr "强度"
+
+msgid "properties.mode"
+msgstr "模式"
+
+msgid "properties.fadeType"
+msgstr "淡入淡出类型"
+
+msgid "properties.color"
+msgstr "颜色"
+
+msgid "properties.varName"
+msgstr "变量名"
+
+msgid "properties.value"
+msgstr "值"
+
+msgid "properties.operation"
+msgstr "操作"
+
+msgid "properties.variable"
+msgstr "变量"
+
+msgid "properties.operator"
+msgstr "运算符"
+
+msgid "properties.compareValue"
+msgstr "比较值"
+
+# Inspector
+msgid "inspector.hint"
+msgstr "选择一个节点查看属性"
+
+msgid "inspector.noProperties"
+msgstr "无可编辑属性"
+
+# Hierarchy
+msgid "hierarchy.hint"
+msgstr "从节点面板中添加节点"
+
+# Console
+msgid "console.clear"
+msgstr "清除"
+
+msgid "console.noLogs"
+msgstr "无日志"
+
+# Folders
+msgid "folders.scenes"
+msgstr "场景"
+
+msgid "folders.characters"
+msgstr "角色"
+
+msgid "folders.backgrounds"
+msgstr "背景"
+
+msgid "folders.audio"
+msgstr "音频"
+
+# Common (additional)
+msgid "common.exec"
+msgstr "执行"
+
+msgid "common.exec_in"
+msgstr "执行输入"
+
+msgid "common.exec_out"
+msgstr "执行输出"
+
+msgid "common.exec_true"
+msgstr "真"
+
+msgid "common.exec_false"
+msgstr "假"
+
+msgid "common.apply"
+msgstr "应用"
+
+msgid "common.rename"
+msgstr "重命名"
+
+msgid "common.noResults"
+msgstr "无结果"
+
+msgid "common.noSelection"
+msgstr "未选中任何对象"
+
+msgid "common.noNodes"
+msgstr "无节点"
+
+msgid "common.browse"
+msgstr "浏览..."
+
+msgid "common.close"
+msgstr "关闭"
+
+msgid "common.yes"
+msgstr "是"
+
+msgid "common.no"
+msgstr "否"
+
+msgid "common.cancel"
+msgstr "取消"
+
+msgid "common.save"
+msgstr "保存"
+
+msgid "common.ok"
+msgstr "确认"
+
+msgid "common.modified"
+msgstr "已修改"
+
+msgid "common.nodes"
+msgstr "节点"
+
+# Node Ports
+msgid "nodePorts.execIn"
+msgstr "输入"
+
+msgid "nodePorts.execOut"
+msgstr "输出"
+
+msgid "nodePorts.trueBranch"
+msgstr "真"
+
+msgid "nodePorts.falseBranch"
+msgstr "假"
+
+# Props labels
+msgid "props.speaker"
+msgstr "说话人"
+
+msgid "props.text"
+msgstr "对话文本"
+
+msgid "props.voice"
+msgstr "语音文件"
+
+msgid "props.sprites"
+msgstr "立绘配置"
+
+msgid "props.condition"
+msgstr "条件表达式"
+
+msgid "props.subType"
+msgstr "子类型"
+
+# End Event
+msgid "endEvent.endGame"
+msgstr "结束游戏"
+
+msgid "endEvent.returnToMenu"
+msgstr "返回主菜单"
+
+msgid "endEvent.jumpToScene"
+msgstr "跳转场景"
+
+msgid "endEvent.sceneId"
+msgstr "场景 ID"
+
+# Resource
+msgid "resource.name"
+msgstr "资源"
+
+msgid "resource.selectResource"
+msgstr "选择资源"
+
+msgid "resource.clickToSelect"
+msgstr "点击选择资源..."
+
+msgid "resource.type"
+msgstr "类型"
+
+# Event Types
+msgid "eventTypes.playBgm"
+msgstr "播放音乐"
+
+msgid "eventTypes.stopBgm"
+msgstr "停止音乐"
+
+msgid "eventTypes.playSfx"
+msgstr "播放音效"
+
+msgid "eventTypes.playVoice"
+msgstr "播放语音"
+
+msgid "eventTypes.changeBackground"
+msgstr "切换背景"
+
+msgid "eventTypes.showCharacter"
+msgstr "显示角色"
+
+msgid "eventTypes.hideCharacter"
+msgstr "隐藏角色"
+
+msgid "eventTypes.cameraShake"
+msgstr "镜头震动"
+
+msgid "eventTypes.fadeScreen"
+msgstr "屏幕淡入淡出"
+
+# Event Properties
+msgid "eventProps.bgmPath"
+msgstr "音乐路径"
+
+msgid "eventProps.volume"
+msgstr "音量"
+
+msgid "eventProps.loop"
+msgstr "循环"
+
+msgid "eventProps.fadeOutDuration"
+msgstr "淡出时长"
+
+msgid "eventProps.sfxPath"
+msgstr "音效路径"
+
+msgid "eventProps.voicePath"
+msgstr "语音路径"
+
+msgid "eventProps.imagePath"
+msgstr "图片路径"
+
+msgid "eventProps.transition"
+msgstr "过渡方式"
+
+msgid "eventProps.duration"
+msgstr "时长"
+
+msgid "eventProps.characterId"
+msgstr "角色ID"
+
+msgid "eventProps.expression"
+msgstr "表情"
+
+msgid "eventProps.position"
+msgstr "位置"
+
+msgid "eventProps.intensity"
+msgstr "强度"
+
+msgid "eventProps.mode"
+msgstr "模式"
+
+msgid "eventProps.fadeType"
+msgstr "淡入淡出类型"
+
+msgid "eventProps.color"
+msgstr "颜色"
+
+# Event Options
+msgid "eventOptions.instant"
+msgstr "立即"
+
+msgid "eventOptions.fade"
+msgstr "淡入"
+
+msgid "eventOptions.slide"
+msgstr "滑动"
+
+msgid "eventOptions.left"
+msgstr "左侧"
+
+msgid "eventOptions.center"
+msgstr "居中"
+
+msgid "eventOptions.right"
+msgstr "右侧"
+
+msgid "eventOptions.shake"
+msgstr "震动"
+
+msgid "eventOptions.wobble"
+msgstr "摇晃"
+
+msgid "eventOptions.in"
+msgstr "淡入"
+
+msgid "eventOptions.out"
+msgstr "淡出"
+
+# Logic Types
+msgid "logicTypes.setVariable"
+msgstr "设置变量"
+
+msgid "logicTypes.conditional"
+msgstr "条件判断"
+
+msgid "logicTypes.delay"
+msgstr "延迟"
+
+# Logic Options
+msgid "logicOptions.set"
+msgstr "设置"
+
+msgid "logicOptions.add"
+msgstr "增加"
+
+msgid "logicOptions.subtract"
+msgstr "减少"
+
+msgid "logicOptions.=="
+msgstr "等于"
+
+msgid "logicOptions.!="
+msgstr "不等于"
+
+msgid "logicOptions.>"
+msgstr "大于"
+
+msgid "logicOptions.<"
+msgstr "小于"
+
+msgid "logicOptions.>="
+msgstr "大于等于"
+
+msgid "logicOptions.<="
+msgstr "小于等于"
+
+# Resource Types
+msgid "resourceTypes.image"
+msgstr "图片"
+
+msgid "resourceTypes.audio"
+msgstr "音频"
+
+msgid "resourceTypes.bgm"
+msgstr "背景音乐"
+
+msgid "resourceTypes.voice"
+msgstr "语音"
+
+msgid "resourceTypes.video"
+msgstr "视频"
+
+msgid "resourceTypes.scene"
+msgstr "场景"
+
+msgid "resourceTypes.font"
+msgstr "字体"
+
+msgid "resourceTypes.data"
+msgstr "数据"

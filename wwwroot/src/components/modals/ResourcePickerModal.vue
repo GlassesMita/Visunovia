@@ -57,7 +57,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useLocalization } from '@/composables/useLocalization'
 import { RESOURCE_TYPE_EXTENSIONS, type ResourceType } from '@/stores/useResourceRegistry'
 
 const props = defineProps<{
@@ -73,7 +73,7 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-const { t } = useI18n()
+const { t } = useLocalization()
 const selectedPath = ref('')
 
 /** 图片类型的资源类型集合 */

@@ -6,7 +6,7 @@ import {
   CheckboxInterface
 } from '@baklavajs/renderer-vue'
 import { EventType, eventTypeConfig, eventTypeLabels } from '@/types'
-import { useLocalizationStore } from '@/stores/useLocalizationStore'
+import { tSync } from '@/services/translationService'
 import {
   ARROW_SYMBOL,
   createExecInPort,
@@ -21,17 +21,14 @@ export default defineDynamicNode({
   title: 'Event',
   inputs: {
     execIn: createExecInPort(ARROW_SYMBOL),
-    subType: () => {
-      const store = useLocalizationStore()
-      return new SelectInterface(
-        store.t('properties.subType', 'Sub Type'),
-        EventType.PlayBGM,
-        Object.values(EventType).map((v) => ({
-          value: v,
-          text: store.t(eventTypeLabels[v as EventType], v)
-        }))
-      )
-    }
+    subType: () => new SelectInterface(
+      tSync('props.subType', 'Sub Type'),
+      EventType.PlayBGM,
+      Object.values(EventType).map((v) => ({
+        value: v,
+        text: tSync(eventTypeLabels[v as EventType] ?? '', v)
+      }))
+    )
   },
   outputs: {
     execOut: createExecOutPort(ARROW_SYMBOL)
@@ -43,11 +40,10 @@ export default defineDynamicNode({
     const config = eventTypeConfig[subType as EventType]
     if (!config) return {}
 
-    const store = useLocalizationStore()
     const inputs: Record<string, () => NodeInterface<any>> = {}
 
     for (const prop of config.properties) {
-      const label = store.t(`eventProps.${prop.name}`, prop.name)
+      const label = tSync(`eventProps.${prop.name}`, prop.name)
 
       switch (prop.type) {
         case 'string':
@@ -71,7 +67,7 @@ export default defineDynamicNode({
                 prop.defaultValue || prop.options![0].value,
                 prop.options!.map((o) => ({
                   value: o.value,
-                  text: store.t(`eventOptions.${o.value}`, o.label)
+                  text: tSync(`eventOptions.${o.value}`, o.label)
                 }))
               )
           }

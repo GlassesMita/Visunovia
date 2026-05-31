@@ -131,103 +131,132 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// 在开发模式下启用 Vite 开发服务器中间件
-// 该中间件会自动启动 Vite 并代理前端请求，实现"一个 dotnet run 命令启动前后端"
-if (app.Environment.IsDevelopment())
-{
-    Console.WriteLine("[Vite] 开发模式：启用 Vite 开发服务器中间件");
-    Console.WriteLine("[Vite] 前端源码将被实时转换并服务到浏览器");
+// 服务静态文件 — 在 Vite 中间件之前注册
+// 规则：
+// - 构建产物（/assets/*）始终由静态文件中间件提供，绕过 Vite
+// - Vite 只处理源码请求（/src/*）和 SPA 路由
+// - Vite 不可用时（开发/生产）：使用预构建的静态文件提供 SPA 回退
+var wwwrootPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
+var wwwBuildPath = Path.Combine(builder.Environment.ContentRootPath, "www_build");
 
-    // 启用 Vite 开发服务器（true 表示使用集成中间件模式）
-    // 所有非 API 请求将被自动代理到 Vite 开发服务器
-    app.UseViteDevelopmentServer(true);
+// 检查 www_build 目录是否存在有效的构建产物
+var wwwBuildExists = Directory.Exists(Path.Combine(wwwBuildPath, "assets"));
+var wwwrootAssetsExists = Directory.Exists(Path.Combine(wwwrootPath, "assets"));
+
+// 优先使用 www_build（独立构建产物），其次是 wwwroot
+string staticFilesPath;
+if (wwwBuildExists)
+{
+    staticFilesPath = wwwBuildPath;
+}
+else if (wwwrootAssetsExists)
+{
+    staticFilesPath = wwwrootPath;
+}
+else
+{
+    staticFilesPath = wwwBuildPath;
 }
 
-// 在非 Development 模式下（非 Vite 开发服务器），服务静态文件
-// 规则：
-// - dotnet run（Development）：Vite 开发服务器处理，使用 www_build 目录中的预构建产物
-// - dotnet publish/build release（非 Development）：使用 wwwroot 目录（发布时会将 wwwroot 内容复制到输出）
-if (!app.Environment.IsDevelopment())
+Console.WriteLine($"[StaticFiles] ContentRootPath: {builder.Environment.ContentRootPath}");
+Console.WriteLine($"[StaticFiles] Environment: {app.Environment.EnvironmentName}");
+Console.WriteLine($"[StaticFiles] www_build exists: {wwwBuildExists}");
+Console.WriteLine($"[StaticFiles] wwwroot assets exists: {wwwrootAssetsExists}");
+Console.WriteLine($"[StaticFiles] Static files path: {staticFilesPath}");
+
+// 构建产物静态文件服务 — 必须在 Vite 中间件之前注册
+// 这样 /assets/* 请求会被直接处理，不会到达 Vite 中间件
+bool hasStaticAssets = Directory.Exists(staticFilesPath) && Directory.Exists(Path.Combine(staticFilesPath, "assets"));
+if (hasStaticAssets)
 {
-    // 优先检查 www_build 目录（dotnet run 时使用）
-    var wwwrootPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
-    var wwwBuildPath = Path.Combine(builder.Environment.ContentRootPath, "www_build");
-    var useWwwBuild = Directory.Exists(Path.Combine(wwwBuildPath, "assets"));
-    var staticFilesPath = useWwwBuild ? wwwBuildPath : wwwrootPath;
-
-    Console.WriteLine($"[StaticFiles] ContentRootPath: {builder.Environment.ContentRootPath}");
-    Console.WriteLine($"[StaticFiles] Environment: {app.Environment.EnvironmentName}");
-    Console.WriteLine($"[StaticFiles] Static files path: {staticFilesPath}");
-    Console.WriteLine($"[StaticFiles] Using www_build: {useWwwBuild}");
-    Console.WriteLine($"[StaticFiles] Static files exists: {Directory.Exists(staticFilesPath)}");
-
-    if (Directory.Exists(staticFilesPath))
+    app.UseStaticFiles(new StaticFileOptions
     {
-        // SPA 路由处理：所有非 API 请求返回 index.html，由 Vue Router 处理路由
-        app.Use(async (context, next) =>
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(staticFilesPath),
+        RequestPath = "",
+        OnPrepareResponse = ctx =>
         {
-            var path = context.Request.Path.Value ?? "";
+            var headers = ctx.Context.Response.Headers;
+            headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            headers["Pragma"] = "no-cache";
+            headers["Expires"] = "0";
+        }
+    });
+}
 
-            // API 请求直接处理
-            if (path.StartsWith("/api"))
-            {
-                await next();
-                return;
-            }
+// Vite 开发服务器中间件 — 默认禁用
+// Vite 中间件会导致 API 请求被代理到 Vite 服务器，再代理回后端，形成循环
+// 使用预构建产物代替 Vite 开发服务器，确保 API 请求直接由后端处理
+bool viteServerAvailable = false;
 
-            // 静态资源直接返回
-            if (path.StartsWith("/assets") ||
-                path.StartsWith("/css/") ||
-                path.StartsWith("/js/") ||
-                path.StartsWith("/fonts/") ||
-                path.StartsWith("/lib/") ||
-                path.EndsWith(".js") ||
-                path.EndsWith(".css") ||
-                path.EndsWith(".woff") ||
-                path.EndsWith(".woff2") ||
-                path.EndsWith(".ttf") ||
-                path.EndsWith(".svg") ||
-                path.EndsWith(".png") ||
-                path.EndsWith(".jpg") ||
-                path.EndsWith(".ico"))
-            {
-                await next();
-                return;
-            }
-
-            // 对于所有其他路由（包括 /Preferences, /About, /ProjectSettings），返回 index.html
-            var indexPath = Path.Combine(staticFilesPath, "index.html");
-            if (File.Exists(indexPath))
-            {
-                var htmlContent = await File.ReadAllTextAsync(indexPath);
-                // 将相对路径 ./assets/ 替换为绝对路径 /assets/
-                htmlContent = htmlContent.Replace("./assets/", "/assets/");
-                context.Response.ContentType = "text/html; charset=utf-8";
-                await context.Response.WriteAsync(htmlContent);
-                return;
-            }
-
-            await next();
-        });
-
-        app.UseStaticFiles(new StaticFileOptions
-        {
-            FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(staticFilesPath),
-            RequestPath = "",
-            OnPrepareResponse = ctx =>
-            {
-                var headers = ctx.Context.Response.Headers;
-                headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
-                headers["Pragma"] = "no-cache";
-                headers["Expires"] = "0";
-            }
-        });
-    }
-    else
+// 如果需要启用 Vite 开发服务器，请取消下面的注释
+// 注意：启用后 API 请求可能会超时，因为请求会经过 Vite 代理循环
+/*
+if (app.Environment.IsDevelopment())
+{
+    Console.WriteLine("[Vite] 开发模式：尝试启用 Vite 开发服务器中间件");
+    try
     {
-        Console.WriteLine($"[StaticFiles] Warning: Static files directory not found at {staticFilesPath}");
-        Console.WriteLine($"[StaticFiles] Hint: Run 'npm run build' in wwwroot/ then use 'dotnet publish' for full deployment");
+        app.UseViteDevelopmentServer(true);
+        viteServerAvailable = true;
+        Console.WriteLine("[Vite] Vite 开发服务器中间件已注册");
     }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Vite] Warning: Vite 开发服务器启动失败: {ex.Message}");
+    }
+}
+*/
+
+Console.WriteLine($"[StaticFiles] Vite server available: {viteServerAvailable}");
+
+// SPA 路由回退 — 所有未匹配的非 API、非静态文件请求返回 index.html
+// 始终注册此中间件，作为 Vite 不可用时的回退
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value ?? "";
+
+    // API 直接放行
+    if (path.StartsWith("/api"))
+    {
+        await next();
+        return;
+    }
+
+    // 有扩展名的文件请求直接放行（静态文件中间件已处理）
+    if (path.Contains('.'))
+    {
+        await next();
+        return;
+    }
+
+    // Vite 开发服务器可用时，让 Vite 处理 SPA 路由
+    if (viteServerAvailable && app.Environment.IsDevelopment())
+    {
+        await next();
+        return;
+    }
+
+    // Vite 不可用时：为所有路由提供 index.html
+    if (hasStaticAssets)
+    {
+        var indexPath = Path.Combine(staticFilesPath, "index.html");
+        if (File.Exists(indexPath))
+        {
+            var htmlContent = await File.ReadAllTextAsync(indexPath);
+            htmlContent = htmlContent.Replace("./assets/", "/assets/");
+            context.Response.ContentType = "text/html; charset=utf-8";
+            await context.Response.WriteAsync(htmlContent);
+            return;
+        }
+    }
+
+    await next();
+});
+
+if (!hasStaticAssets)
+{
+    Console.WriteLine($"[StaticFiles] Warning: Static files directory not found at {staticFilesPath}");
+    Console.WriteLine($"[StaticFiles] Hint: Run 'npm run build' in wwwroot/ then restart the application");
 }
 
 app.UseRouting();

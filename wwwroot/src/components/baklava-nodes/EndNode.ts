@@ -1,5 +1,6 @@
 import { defineNode } from '@baklavajs/core'
 import { SelectInterface, TextInputInterface } from '@baklavajs/renderer-vue'
+import { tSync } from '@/services/translationService'
 import {
   ARROW_SYMBOL,
   createExecInPort,
@@ -23,15 +24,15 @@ export default defineNode({
   inputs: {
     execIn: createExecInPort(ARROW_SYMBOL),
     eventType: () => new SelectInterface(
-      'Event Type',
+      tSync('props.subType', 'Event Type'),
       'end_game',
       [
-        { value: 'end_game', text: '结束游戏' },
-        { value: 'return_to_menu', text: '返回主菜单' },
-        { value: 'jump_to_scene', text: '跳转场景' },
+        { value: 'end_game', text: tSync('endEvent.endGame', 'End Game') },
+        { value: 'return_to_menu', text: tSync('endEvent.returnToMenu', 'Return to Main Menu') },
+        { value: 'jump_to_scene', text: tSync('endEvent.jumpToScene', 'Jump to Scene') },
       ]
     ),
-    sceneId: () => new TextInputInterface('Scene ID', ''),
+    sceneId: () => new TextInputInterface(tSync('endEvent.sceneId', 'Scene ID'), ''),
   },
   onCreate() {
     setNodeI18nTitle(this, 'nodes.end', 'End')

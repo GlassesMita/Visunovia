@@ -94,6 +94,13 @@ export interface ApiResponse<T> {
   error?: string
 }
 
+/** 后端语言列表 API 返回的语言信息 */
+export interface LanguageInfo {
+  code: string
+  displayName: string
+  isCurrent: boolean
+}
+
 export interface PaginatedResponse<T> {
   items: T[]
   total: number

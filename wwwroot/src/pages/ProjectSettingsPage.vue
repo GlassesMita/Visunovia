@@ -126,9 +126,9 @@
 
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useLocalization } from '@/composables/useLocalization'
 
-const { t } = useI18n()
+const { t } = useLocalization()
 
 // 设置存储键名
 const SETTINGS_STORAGE_KEY = 'visunovia-project-settings'

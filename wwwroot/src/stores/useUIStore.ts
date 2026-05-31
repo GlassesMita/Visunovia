@@ -7,6 +7,7 @@ export const useUIStore = defineStore('ui', () => {
   const showConsolePanel = ref(false)
   const showPreviewPanel = ref(false)
   const showHierarchyPanel = ref(true)
+  const showProjectPopup = ref(false)
   const activePanel = ref<string | null>(null)
   const theme = ref<'light' | 'dark'>('dark')
 
@@ -42,17 +43,28 @@ export const useUIStore = defineStore('ui', () => {
     theme.value = theme.value === 'light' ? 'dark' : 'light'
   }
 
+  function openProjectPopup() {
+    showProjectPopup.value = true
+  }
+
+  function closeProjectPopup() {
+    showProjectPopup.value = false
+  }
+
   return {
     showProjectPanel,
     showInspectorPanel,
     showConsolePanel,
     showPreviewPanel,
     showHierarchyPanel,
+    showProjectPopup,
     activePanel,
     theme,
     togglePanel,
     setActivePanel,
     setTheme,
-    toggleTheme
+    toggleTheme,
+    openProjectPopup,
+    closeProjectPopup
   }
 })

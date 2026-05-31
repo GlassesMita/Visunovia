@@ -1,94 +1,155 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import axios from 'axios'
-import { i18n } from '@/i18n'
+import { apiClient } from '@/api'
+import * as translationService from '@/services/translationService'
+import type { LanguageInfo } from '@/types'
 
+/**
+ * 本地化状态管理 Store
+ *
+ * 所有翻译来自后端 PO 文件，通过 /api/currentLang?msgId= 获取。
+ * 不再使用任何前端 TS 本地化文件或 vue-i18n。
+ * 翻译结果在本地内存中缓存，切换语言时清空并重新加载。
+ */
 export const useLocalizationStore = defineStore('localization', () => {
-  const translations = ref<Record<string, string>>({})
-  const currentLanguage = ref<'en' | 'zh'>('zh')
+  const currentLanguage = ref<string>('zh-CN')
+  const availableLanguages = ref<LanguageInfo[]>([])
   const isLoading = ref(false)
   const isReady = ref(false)
   const error = ref<string | null>(null)
+  let initPromise: Promise<void> | null = null
 
+  /**
+   * 初始化本地化服务
+   * 使用 Promise 锁防止并发调用导致重复请求
+   */
   async function initialize() {
+    // 如果已经初始化完成，直接返回
     if (isReady.value) return
-    
-    const savedLang = localStorage.getItem('language') as 'en' | 'zh' | null
-    const lang = savedLang || currentLanguage.value
-    
-    await loadTranslations(lang)
-    isReady.value = true
+
+    // 如果正在初始化，等待现有的初始化完成
+    if (initPromise) {
+      await initPromise
+      return
+    }
+
+    // 创建新的初始化 Promise
+    initPromise = _doInitialize()
+
+    try {
+      await initPromise
+    } finally {
+      initPromise = null
+    }
   }
 
-  async function loadTranslations(lang: 'en' | 'zh') {
+  /**
+   * 实际执行初始化的内部函数
+   */
+  async function _doInitialize() {
     isLoading.value = true
     error.value = null
 
-    const langMap: Record<string, string> = { 'zh': 'zh-CN', 'en': 'en-US' }
-    const backendLang = langMap[lang] || lang
-
     try {
-      const response = await axios.get('/api/localization/translations', {
-        timeout: 5000,
-        params: { lang: backendLang }
-      })
+      // 并行加载语言列表和翻译
+      const results = await Promise.allSettled([
+        fetchAvailableLanguages(),
+        translationService.initTranslations(),
+      ])
 
-      if (response.data?.success && response.data?.data?.translations) {
-        translations.value = response.data.data.translations
-      } else if (response.data && typeof response.data === 'object') {
-        console.warn('Backend returned unexpected translation format, using built-in translations')
-        translations.value = {}
-      } else {
-        console.warn('Backend returned invalid translations, using built-in translations')
-        translations.value = {}
+      const [languagesResult, translationsResult] = results
+
+      // 处理语言列表加载失败的情况
+      if (languagesResult.status === 'rejected') {
+        console.warn('[LocalizationStore] Language list load failed:', languagesResult.reason)
       }
 
-      currentLanguage.value = lang
-      localStorage.setItem('language', lang)
+      // 处理翻译加载失败的情况
+      if (translationsResult.status === 'rejected') {
+        console.error('[LocalizationStore] Translation load failed:', translationsResult.reason)
+        error.value = 'Failed to load translations'
+      }
 
+      currentLanguage.value = translationService.getCurrentLanguage()
+      isReady.value = true
     } catch (err: any) {
-      console.error('Failed to load translations from backend:', err)
-      error.value = err.message || 'Failed to load translations'
-      translations.value = {}
-      currentLanguage.value = lang
+      console.error('[LocalizationStore] Initialization failed:', err)
+      error.value = err.message || 'Failed to initialize localization'
+      // 即使失败也标记为 ready，避免无限阻塞 UI
+      isReady.value = true
     } finally {
       isLoading.value = false
     }
   }
 
-  function t(key: string, fallback?: string): string {
-    if (translations.value && translations.value[key]) {
-      return translations.value[key]
-    }
-    
+  /**
+   * 从后端获取可用语言列表
+   * 使用统一的 apiClient 实例
+   */
+  async function fetchAvailableLanguages(): Promise<void> {
     try {
-      const i18nValue = i18n.global.t(key)
-      if (i18nValue !== key) {
-        return i18nValue
+      const response = await apiClient.get('/localization/languages', { timeout: 5000 })
+      if (response.data?.success && Array.isArray(response.data?.data)) {
+        availableLanguages.value = response.data.data
       }
-    } catch (e) {
+    } catch (err) {
+      console.warn('[LocalizationStore] Failed to fetch language list:', err)
+      throw err
     }
-    
-    return fallback || key
   }
 
-  async function setLanguage(lang: 'en' | 'zh') {
-    await loadTranslations(lang)
-    
-    if (i18n.global.locale) {
-      (i18n.global.locale as any).value = lang
+  /**
+   * 切换语言 — 通知后端切换，然后重新加载所有翻译到本地缓存
+   */
+  async function setLanguage(lang: string) {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      // 通知后端切换语言（持久化偏好）
+      try {
+        await apiClient.post('/localization/language', { language: lang }, { timeout: 5000 })
+      } catch {
+        // 后端不可用时继续
+      }
+
+      // 重新加载翻译（清空缓存 + 批量获取）
+      await translationService.setLanguage(lang)
+      currentLanguage.value = lang
+    } catch (err: any) {
+      console.error('[LocalizationStore] Failed to set language:', err)
+      error.value = err.message || 'Failed to change language'
+    } finally {
+      isLoading.value = false
     }
+  }
+
+  /**
+   * 翻译函数 — 异步版本
+   * 优先从缓存读取，缓存未命中则调用后端 API
+   */
+  async function t(msgId: string): Promise<string> {
+    return translationService.t(msgId)
+  }
+
+  /**
+   * 翻译函数 — 同步版本（仅从缓存）
+   * 用于模板中已预加载的场景
+   */
+  function tSync(msgId: string): string {
+    return translationService.tSync(msgId)
   }
 
   return {
-    translations,
     currentLanguage,
+    availableLanguages,
     isLoading,
     isReady,
     error,
     initialize,
-    loadTranslations,
+    fetchAvailableLanguages,
+    setLanguage,
     t,
-    setLanguage
+    tSync,
   }
 })

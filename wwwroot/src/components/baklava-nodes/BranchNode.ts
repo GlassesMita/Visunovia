@@ -1,7 +1,7 @@
 import { defineNode } from '@baklavajs/core'
 import { NodeInterface } from '@baklavajs/core'
 import { TextInputInterface } from '@baklavajs/renderer-vue'
-import { useLocalizationStore } from '@/stores/useLocalizationStore'
+import { tSync } from '@/services/translationService'
 import {
   ARROW_SYMBOL,
   createExecInPort,
@@ -15,10 +15,7 @@ export default defineNode({
   title: 'Branch',
   inputs: {
     execIn: createExecInPort(ARROW_SYMBOL),
-    condition: () => {
-      const store = useLocalizationStore()
-      return new TextInputInterface(store.t('props.condition', 'Condition'), '')
-    }
+    condition: () => new TextInputInterface(tSync('props.condition', 'Condition'), '')
   },
 
   outputs: {

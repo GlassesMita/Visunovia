@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useLocalization } from '@/composables/useLocalization'
 
 type LogLevel = 'info' | 'warning' | 'error' | 'success'
 
@@ -55,7 +55,7 @@ interface LogEntry {
   type: LogLevel
 }
 
-const { t } = useI18n()
+const { t } = useLocalization()
 const consoleContentRef = ref<HTMLElement | null>(null)
 
 // 日志数据

@@ -9,49 +9,12 @@
     </div>
 
     <div class="app-content">
-      <aside
-        class="app-left-panel"
-        :class="{ collapsed: !uiStore.showProjectPanel }"
-      >
-        <div class="panel-tabs-left">
-          <button
-            :class="{ active: leftActiveTab === 'project' }"
-            :title="t('panels.project')"
-            @click="leftActiveTab = 'project'"
-          >
-            📁
-          </button>
-          <button
-            :class="{ active: leftActiveTab === 'palette' }"
-            :title="t('palette.title') || 'Nodes'"
-            @click="leftActiveTab = 'palette'"
-          >
-            🔷
-          </button>
-        </div>
-        <div v-if="uiStore.showProjectPanel" class="left-panel-content">
-          <ProjectPanel v-if="leftActiveTab === 'project'" />
-          <NodePalette v-else-if="leftActiveTab === 'palette'" />
-        </div>
-        <button
-          class="panel-toggle-btn"
-          :title="uiStore.showProjectPanel ? t('common.close') || 'Close' : t('panels.project')"
-          @click="uiStore.togglePanel('project')"
-        >
-          {{ uiStore.showProjectPanel ? '◀' : '▶' }}
-        </button>
-      </aside>
-
-      <div
-        v-if="uiStore.showProjectPanel"
-        class="resize-handle resize-handle-left"
-        @mousedown="startResizeLeft"
-      ></div>
-
-      <main class="app-editor">
+      <!-- 主编辑区域 -->
+      <main class="app-editor" @click="closeProjectPanel">
         <BaklavaEditor />
       </main>
 
+      <!-- 右侧面板（Inspector / Hierarchy） -->
       <div
         v-if="uiStore.showInspectorPanel || uiStore.showHierarchyPanel"
         class="resize-handle resize-handle-right"
@@ -110,6 +73,23 @@
     >
       <ConsolePanel />
     </div>
+
+    <!-- Project 面板 — 右侧弹出模态框 -->
+    <Transition name="slide-fade">
+      <div
+        v-if="uiStore.showProjectPopup"
+        class="project-popup-overlay"
+        @click.self="closeProjectPanel"
+      >
+        <aside class="project-popup" @click.stop>
+          <div class="popup-header">
+            <h3>{{ t('panels.project') }}</h3>
+            <button class="popup-close-btn" @click="closeProjectPanel">✕</button>
+          </div>
+          <ProjectPanel />
+        </aside>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -125,7 +105,6 @@ import ProjectPanel from '@/components/panels/ProjectPanel.vue'
 import InspectorPanel from '@/components/panels/InspectorPanel.vue'
 import HierarchyPanel from '@/components/panels/HierarchyPanel.vue'
 import ConsolePanel from '@/components/panels/ConsolePanel.vue'
-import NodePalette from '@/components/NodePalette.vue'
 import BaklavaEditor from '@/components/BaklavaEditor.vue'
 
 const { t } = useLocalization()
@@ -133,28 +112,18 @@ const uiStore = useUIStore()
 
 useShortcuts()
 
-const leftActiveTab = ref<'project' | 'palette'>('palette')
 const rightActiveTab = ref<'inspector' | 'hierarchy'>('inspector')
 
-let isResizingLeft = false
 let isResizingRight = false
 
-function startResizeLeft() {
-  isResizingLeft = true
-  document.addEventListener('mousemove', handleResizeLeft)
-  document.addEventListener('mouseup', stopResize)
+function closeProjectPanel() {
+  uiStore.closeProjectPopup()
 }
 
 function startResizeRight() {
   isResizingRight = true
   document.addEventListener('mousemove', handleResizeRight)
   document.addEventListener('mouseup', stopResize)
-}
-
-function handleResizeLeft(e: MouseEvent) {
-  if (!isResizingLeft) return
-  const newWidth = Math.max(200, Math.min(500, e.clientX))
-  document.documentElement.style.setProperty('--left-panel-width', `${newWidth}px`)
 }
 
 function handleResizeRight(e: MouseEvent) {
@@ -165,9 +134,7 @@ function handleResizeRight(e: MouseEvent) {
 }
 
 function stopResize() {
-  isResizingLeft = false
   isResizingRight = false
-  document.removeEventListener('mousemove', handleResizeLeft)
   document.removeEventListener('mousemove', handleResizeRight)
   document.removeEventListener('mouseup', stopResize)
 }
@@ -182,7 +149,6 @@ function toggleRightPanel() {
 }
 
 onUnmounted(() => {
-  document.removeEventListener('mousemove', handleResizeLeft)
   document.removeEventListener('mousemove', handleResizeRight)
   document.removeEventListener('mouseup', stopResize)
 })
@@ -406,5 +372,80 @@ onUnmounted(() => {
 
 .app-console.expanded {
   height: 200px;
+}
+
+/* Project 弹出模态框 */
+.project-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.project-popup {
+  width: 320px;
+  height: 100%;
+  background: #252526;
+  border-left: 1px solid #3e3e42;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #2d2d30;
+  border-bottom: 1px solid #3e3e42;
+  flex-shrink: 0;
+}
+
+.popup-header h3 {
+  margin: 0;
+  font-size: 13px;
+  color: #cccccc;
+  font-weight: 500;
+}
+
+.popup-close-btn {
+  background: transparent;
+  border: none;
+  color: #808080;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: all 0.15s;
+}
+
+.popup-close-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 滑入滑出动画 */
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.slide-fade-enter-active .project-popup,
+.slide-fade-leave-active .project-popup {
+  transition: transform 0.2s ease;
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  opacity: 0;
+}
+
+.slide-fade-enter-from .project-popup,
+.slide-fade-leave-to .project-popup {
+  transform: translateX(100%);
 }
 </style>

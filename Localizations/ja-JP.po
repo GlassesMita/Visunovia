@@ -346,24 +346,57 @@ msgstr "タイトル"
 msgid "EventParam.NotificationMessage"
 msgstr "本文"
 
-# React Frontend - Menu Bar
+# Vue Frontend - Menu Bar
 msgid "menu.file"
 msgstr "ファイル"
 
 msgid "menu.edit"
 msgstr "編集"
 
-msgid "menu.resource"
-msgstr "リソース"
-
-msgid "menu.tools"
-msgstr "ツール"
-
-msgid "menu.window"
-msgstr "ウィンドウ"
+msgid "menu.view"
+msgstr "表示"
 
 msgid "menu.help"
 msgstr "ヘルプ"
+
+msgid "menu.new"
+msgstr "新規"
+
+msgid "menu.open"
+msgstr "開く"
+
+msgid "menu.save"
+msgstr "保存"
+
+msgid "menu.saveAs"
+msgstr "名前を付けて保存"
+
+msgid "menu.exit"
+msgstr "終了"
+
+msgid "menu.undo"
+msgstr "元に戻す"
+
+msgid "menu.redo"
+msgstr "やり直し"
+
+msgid "menu.cut"
+msgstr "切り取り"
+
+msgid "menu.copy"
+msgstr "コピー"
+
+msgid "menu.paste"
+msgstr "貼り付け"
+
+msgid "menu.delete"
+msgstr "削除"
+
+msgid "menu.preferences"
+msgstr "設定"
+
+msgid "menu.about"
+msgstr "について"
 
 # React Frontend - Status Bar
 msgid "status.scene"
@@ -382,56 +415,69 @@ msgid "status.ready"
 msgstr "準備完了"
 
 # React Frontend - Node Types
-msgid "nodes.start.title"
+msgid "nodes.start"
 msgstr "開始"
 
-msgid "nodes.end.title"
+msgid "nodes.end"
 msgstr "終了"
 
-msgid "nodes.sequence.title"
+msgid "nodes.sequence"
 msgstr "シーケンス"
 
-msgid "nodes.dialogue.title"
+msgid "nodes.dialogue"
 msgstr "会話"
 
-msgid "nodes.branch.title"
+msgid "nodes.branch"
 msgstr "分岐"
 
-msgid "nodes.changeBackground.title"
+msgid "nodes.changeBackground"
 msgstr "背景変更"
 
-msgid "nodes.showCharacter.title"
+msgid "nodes.showCharacter"
 msgstr "キャラクター表示"
 
-msgid "nodes.hideCharacter.title"
+msgid "nodes.hideCharacter"
 msgstr "キャラクター非表示"
 
-msgid "nodes.cameraShake.title"
+msgid "nodes.cameraShake"
 msgstr "カメラシェイク"
 
-msgid "nodes.fadeScreen.title"
+msgid "nodes.fadeScreen"
 msgstr "画面フェード"
 
-msgid "nodes.playBGM.title"
+msgid "nodes.playBGM"
 msgstr "BGM 再生"
 
-msgid "nodes.stopBGM.title"
+msgid "nodes.stopBGM"
 msgstr "BGM 停止"
 
-msgid "nodes.playSFX.title"
+msgid "nodes.playSFX"
 msgstr "効果音再生"
 
-msgid "nodes.playVoice.title"
+msgid "nodes.playVoice"
 msgstr "ボイス再生"
 
-msgid "nodes.setVariable.title"
+msgid "nodes.setVariable"
 msgstr "変数設定"
 
-msgid "nodes.conditional.title"
+msgid "nodes.conditional"
 msgstr "条件分岐"
 
-msgid "nodes.delay.title"
+msgid "nodes.delay"
 msgstr "遅延"
+
+msgid "nodes.event"
+msgstr "事件"
+
+msgid "nodes.logic"
+msgstr "逻辑"
+
+msgid "nodes.choice"
+msgstr "选择"
+
+msgid "nodes.resources"
+msgstr "资源"
+
 
 msgid "nodes.conditional.placeholder"
 msgstr "条件式"
@@ -602,3 +648,603 @@ msgstr "一時停止"
 
 msgid "toolbar.nextFrame"
 msgstr "次のフレーム"
+
+# ============================================================
+# Vue Frontend - Additional keys (auto-generated from TS locale files)
+# ============================================================
+
+# App
+msgid "app.title"
+msgstr "Visunovia エディタ"
+
+msgid "app.loading"
+msgstr "読み込み中..."
+
+# Settings / Preferences
+msgid "settings.general"
+msgstr "一般"
+
+msgid "settings.editor"
+msgstr "エディタ"
+
+msgid "settings.preview"
+msgstr "プレビュー"
+
+msgid "settings.network"
+msgstr "ネットワーク"
+
+msgid "settings.savedSuccess"
+msgstr "設定を保存しました！"
+
+msgid "settings.savedLocal"
+msgstr "設定をローカルに保存しました（サーバー利用不可）"
+
+msgid "settings.resetConfirm"
+msgstr "すべての設定をリセットしてもよろしいですか？"
+
+# Vue Frontend - Settings Page
+msgid "settings.title"
+msgstr "設定"
+
+msgid "settings.language"
+msgstr "言語"
+
+msgid "settings.theme"
+msgstr "テーマ"
+
+msgid "settings.dark"
+msgstr "ダーク"
+
+msgid "settings.light"
+msgstr "ライト"
+
+msgid "settings.autoSave"
+msgstr "自動保存"
+
+msgid "settings.autoSaveInterval"
+msgstr "自動保存間隔"
+
+msgid "settings.showGrid"
+msgstr "グリッド表示"
+
+msgid "settings.gridSize"
+msgstr "グリッドサイズ"
+
+msgid "settings.snapEnabled"
+msgstr "グリッドにスナップ"
+
+msgid "settings.defaultZoom"
+msgstr "デフォルトズーム"
+
+msgid "settings.defaultNodeSize"
+msgstr "デフォルトノードサイズ"
+
+msgid "settings.previewWidth"
+msgstr "プレビュー幅"
+
+msgid "settings.previewHeight"
+msgstr "プレビュー高さ"
+
+msgid "settings.fullscreenPreview"
+msgstr "フルスクリーンプレビュー"
+
+msgid "settings.apiBaseUrl"
+msgstr "APIベースURL"
+
+msgid "settings.requestTimeout"
+msgstr "リクエストタイムアウト"
+
+# Project Settings
+msgid "projectSettings.title"
+msgstr "プロジェクト設定"
+
+msgid "projectSettings.project"
+msgstr "プロジェクト情報"
+
+msgid "projectSettings.projectName"
+msgstr "プロジェクト名"
+
+msgid "projectSettings.projectNamePlaceholder"
+msgstr "無題のプロジェクト"
+
+msgid "projectSettings.video"
+msgstr "ビデオ設定"
+
+msgid "projectSettings.resolution"
+msgstr "デフォルト解像度"
+
+msgid "projectSettings.audio"
+msgstr "オーディオ設定"
+
+msgid "projectSettings.bgmVolume"
+msgstr "デフォルト BGM 音量"
+
+msgid "projectSettings.voiceVolume"
+msgstr "デフォルト音声音量"
+
+msgid "projectSettings.bgmLoop"
+msgstr "デフォルト BGM ループ"
+
+msgid "projectSettings.general"
+msgstr "一般設定"
+
+msgid "projectSettings.language"
+msgstr "デフォルト言語"
+
+msgid "projectSettings.langZh"
+msgstr "中国語"
+
+msgid "projectSettings.langEn"
+msgstr "英語"
+
+msgid "projectSettings.theme"
+msgstr "デフォルトテーマ"
+
+msgid "projectSettings.dark"
+msgstr "ダーク"
+
+msgid "projectSettings.light"
+msgstr "ライト"
+
+msgid "projectSettings.saving"
+msgstr "保存中..."
+
+msgid "projectSettings.reset"
+msgstr "リセット"
+
+msgid "projectSettings.savedSuccess"
+msgstr "設定を保存しました"
+
+msgid "projectSettings.saveFailed"
+msgstr "保存に失敗しました"
+
+# Node Palette
+msgid "palette.title"
+msgstr "ノード"
+
+msgid "palette.types"
+msgstr "種類"
+
+msgid "palette.noMatch"
+msgstr "検索に一致するノードがありません"
+
+# Categories
+msgid "categories.flow"
+msgstr "フロー制御"
+
+msgid "categories.event"
+msgstr "イベント"
+
+msgid "categories.dialogue"
+msgstr "ダイアログ"
+
+msgid "categories.logic"
+msgstr "ロジック"
+
+msgid "categories.resources"
+msgstr "リソース"
+
+# Panels
+msgid "panels.project"
+msgstr "プロジェクト"
+
+msgid "panels.inspector"
+msgstr "インスペクタ"
+
+msgid "panels.hierarchy"
+msgstr "階層"
+
+msgid "panels.console"
+msgstr "コンソール"
+
+msgid "panels.preview"
+msgstr "プレビュー"
+
+# Properties
+msgid "properties.title"
+msgstr "プロパティ"
+
+msgid "properties.speaker"
+msgstr "話者"
+
+msgid "properties.text"
+msgstr "テキスト"
+
+msgid "properties.voice"
+msgstr "音声"
+
+msgid "properties.sprites"
+msgstr "スプライト"
+
+msgid "properties.condition"
+msgstr "条件"
+
+msgid "properties.options"
+msgstr "オプション"
+
+msgid "properties.resourcePath"
+msgstr "リソースパス"
+
+msgid "properties.bgmPath"
+msgstr "BGM パス"
+
+msgid "properties.volume"
+msgstr "音量"
+
+msgid "properties.loop"
+msgstr "ループ"
+
+msgid "properties.fadeOutDuration"
+msgstr "フェードアウト時間"
+
+msgid "properties.sfxPath"
+msgstr "効果音パス"
+
+msgid "properties.voicePath"
+msgstr "音声パス"
+
+msgid "properties.imagePath"
+msgstr "画像パス"
+
+msgid "properties.transition"
+msgstr "トランジション"
+
+msgid "properties.duration"
+msgstr "期間"
+
+msgid "properties.characterId"
+msgstr "キャラクターID"
+
+msgid "properties.expression"
+msgstr "表情"
+
+msgid "properties.position"
+msgstr "位置"
+
+msgid "properties.intensity"
+msgstr "強度"
+
+msgid "properties.mode"
+msgstr "モード"
+
+msgid "properties.fadeType"
+msgstr "フェードタイプ"
+
+msgid "properties.color"
+msgstr "色"
+
+msgid "properties.varName"
+msgstr "変数名"
+
+msgid "properties.value"
+msgstr "値"
+
+msgid "properties.operation"
+msgstr "操作"
+
+msgid "properties.variable"
+msgstr "変数"
+
+msgid "properties.operator"
+msgstr "演算子"
+
+msgid "properties.compareValue"
+msgstr "比較値"
+
+# Inspector
+msgid "inspector.hint"
+msgstr "ノードを選択してプロパティを表示"
+
+msgid "inspector.noProperties"
+msgstr "編集可能なプロパティがありません"
+
+# Hierarchy
+msgid "hierarchy.hint"
+msgstr "パレットからノードを追加"
+
+# Console
+msgid "console.clear"
+msgstr "クリア"
+
+msgid "console.noLogs"
+msgstr "ログなし"
+
+# Folders
+msgid "folders.scenes"
+msgstr "シーン"
+
+msgid "folders.characters"
+msgstr "キャラクター"
+
+msgid "folders.backgrounds"
+msgstr "背景"
+
+msgid "folders.audio"
+msgstr "オーディオ"
+
+# Common (additional)
+msgid "common.exec"
+msgstr "実行"
+
+msgid "common.exec_in"
+msgstr "実行入力"
+
+msgid "common.exec_out"
+msgstr "実行出力"
+
+msgid "common.exec_true"
+msgstr "真"
+
+msgid "common.exec_false"
+msgstr "偽"
+
+msgid "common.apply"
+msgstr "適用"
+
+msgid "common.rename"
+msgstr "名前変更"
+
+msgid "common.noResults"
+msgstr "結果なし"
+
+msgid "common.noSelection"
+msgstr "未選択"
+
+msgid "common.noNodes"
+msgstr "ノードなし"
+
+msgid "common.browse"
+msgstr "参照..."
+
+msgid "common.close"
+msgstr "閉じる"
+
+msgid "common.yes"
+msgstr "はい"
+
+msgid "common.no"
+msgstr "いいえ"
+
+msgid "common.cancel"
+msgstr "キャンセル"
+
+msgid "common.save"
+msgstr "保存"
+
+msgid "common.ok"
+msgstr "OK"
+
+msgid "common.modified"
+msgstr "変更済み"
+
+msgid "common.nodes"
+msgstr "ノード"
+
+# Node Ports
+msgid "nodePorts.execIn"
+msgstr "入力"
+
+msgid "nodePorts.execOut"
+msgstr "出力"
+
+msgid "nodePorts.trueBranch"
+msgstr "真"
+
+msgid "nodePorts.falseBranch"
+msgstr "偽"
+
+# Props labels
+msgid "props.speaker"
+msgstr "話者"
+
+msgid "props.text"
+msgstr "テキスト"
+
+msgid "props.voice"
+msgstr "音声"
+
+msgid "props.sprites"
+msgstr "スプライト"
+
+msgid "props.condition"
+msgstr "条件"
+
+msgid "props.subType"
+msgstr "サブタイプ"
+
+# End Event
+msgid "endEvent.endGame"
+msgstr "ゲーム終了"
+
+msgid "endEvent.returnToMenu"
+msgstr "メインメニューに戻る"
+
+msgid "endEvent.jumpToScene"
+msgstr "シーンにジャンプ"
+
+msgid "endEvent.sceneId"
+msgstr "シーンID"
+
+# Resource
+msgid "resource.name"
+msgstr "リソース"
+
+msgid "resource.selectResource"
+msgstr "リソースを選択"
+
+msgid "resource.clickToSelect"
+msgstr "クリックして選択..."
+
+msgid "resource.type"
+msgstr "タイプ"
+
+# Event Types
+msgid "eventTypes.playBgm"
+msgstr "BGM再生"
+
+msgid "eventTypes.stopBgm"
+msgstr "BGM停止"
+
+msgid "eventTypes.playSfx"
+msgstr "効果音再生"
+
+msgid "eventTypes.playVoice"
+msgstr "ボイス再生"
+
+msgid "eventTypes.changeBackground"
+msgstr "背景変更"
+
+msgid "eventTypes.showCharacter"
+msgstr "キャラ表示"
+
+msgid "eventTypes.hideCharacter"
+msgstr "キャラ非表示"
+
+msgid "eventTypes.cameraShake"
+msgstr "カメラシェイク"
+
+msgid "eventTypes.fadeScreen"
+msgstr "フェード"
+
+# Event Properties
+msgid "eventProps.bgmPath"
+msgstr "BGMパス"
+
+msgid "eventProps.volume"
+msgstr "音量"
+
+msgid "eventProps.loop"
+msgstr "ループ"
+
+msgid "eventProps.fadeOutDuration"
+msgstr "フェードアウト時間"
+
+msgid "eventProps.sfxPath"
+msgstr "効果音パス"
+
+msgid "eventProps.voicePath"
+msgstr "ボイスパス"
+
+msgid "eventProps.imagePath"
+msgstr "画像パス"
+
+msgid "eventProps.transition"
+msgstr "トランジション"
+
+msgid "eventProps.duration"
+msgstr "時間"
+
+msgid "eventProps.characterId"
+msgstr "キャラID"
+
+msgid "eventProps.expression"
+msgstr "表情"
+
+msgid "eventProps.position"
+msgstr "位置"
+
+msgid "eventProps.intensity"
+msgstr "強度"
+
+msgid "eventProps.mode"
+msgstr "モード"
+
+msgid "eventProps.fadeType"
+msgstr "フェードタイプ"
+
+msgid "eventProps.color"
+msgstr "色"
+
+# Event Options
+msgid "eventOptions.instant"
+msgstr "即座"
+
+msgid "eventOptions.fade"
+msgstr "フェード"
+
+msgid "eventOptions.slide"
+msgstr "スライド"
+
+msgid "eventOptions.left"
+msgstr "左"
+
+msgid "eventOptions.center"
+msgstr "中央"
+
+msgid "eventOptions.right"
+msgstr "右"
+
+msgid "eventOptions.shake"
+msgstr "シェイク"
+
+msgid "eventOptions.wobble"
+msgstr "揺れ"
+
+msgid "eventOptions.in"
+msgstr "フェードイン"
+
+msgid "eventOptions.out"
+msgstr "フェードアウト"
+
+# Logic Types
+msgid "logicTypes.setVariable"
+msgstr "変数設定"
+
+msgid "logicTypes.conditional"
+msgstr "条件分岐"
+
+msgid "logicTypes.delay"
+msgstr "遅延"
+
+# Logic Options
+msgid "logicOptions.set"
+msgstr "設定"
+
+msgid "logicOptions.add"
+msgstr "加算"
+
+msgid "logicOptions.subtract"
+msgstr "減算"
+
+msgid "logicOptions.=="
+msgstr "等しい"
+
+msgid "logicOptions.!="
+msgstr "等しくない"
+
+msgid "logicOptions.>"
+msgstr "より大きい"
+
+msgid "logicOptions.<"
+msgstr "より小さい"
+
+msgid "logicOptions.>="
+msgstr "以上"
+
+msgid "logicOptions.<="
+msgstr "以下"
+
+# Resource Types
+msgid "resourceTypes.image"
+msgstr "画像"
+
+msgid "resourceTypes.audio"
+msgstr "音声"
+
+msgid "resourceTypes.bgm"
+msgstr "BGM"
+
+msgid "resourceTypes.voice"
+msgstr "ボイス"
+
+msgid "resourceTypes.video"
+msgstr "動画"
+
+msgid "resourceTypes.scene"
+msgstr "シーン"
+
+msgid "resourceTypes.font"
+msgstr "フォント"
+
+msgid "resourceTypes.data"
+msgstr "データ"

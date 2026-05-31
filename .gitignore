@@ -13,6 +13,7 @@ bld/
 dist/
 out/
 www_build/
+[Pp]ublish/
 
 ## Visual Studio 用户特定文件
 *.suo

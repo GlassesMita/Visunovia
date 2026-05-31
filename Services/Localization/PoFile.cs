@@ -94,7 +94,7 @@ public class PoFile
 
         foreach (var entry in Entries)
         {
-            if (entry.MsgId == msgid)
+            if (string.Equals(entry.MsgId, msgid, StringComparison.OrdinalIgnoreCase))
             {
                 return entry;
             }
@@ -119,7 +119,7 @@ public class PoFile
 
         foreach (var entry in Entries)
         {
-            if (entry.GetKey() == searchKey)
+            if (string.Equals(entry.GetKey(), searchKey, StringComparison.OrdinalIgnoreCase))
             {
                 return entry;
             }

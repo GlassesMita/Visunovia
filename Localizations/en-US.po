@@ -346,24 +346,57 @@ msgstr "Title"
 msgid "EventParam.NotificationMessage"
 msgstr "Message"
 
-# React Frontend - Menu Bar
+# Vue Frontend - Menu Bar
 msgid "menu.file"
 msgstr "File"
 
 msgid "menu.edit"
 msgstr "Edit"
 
-msgid "menu.resource"
-msgstr "Resource"
-
-msgid "menu.tools"
-msgstr "Tools"
-
-msgid "menu.window"
-msgstr "Window"
+msgid "menu.view"
+msgstr "View"
 
 msgid "menu.help"
 msgstr "Help"
+
+msgid "menu.new"
+msgstr "New"
+
+msgid "menu.open"
+msgstr "Open"
+
+msgid "menu.save"
+msgstr "Save"
+
+msgid "menu.saveAs"
+msgstr "Save As"
+
+msgid "menu.exit"
+msgstr "Exit"
+
+msgid "menu.undo"
+msgstr "Undo"
+
+msgid "menu.redo"
+msgstr "Redo"
+
+msgid "menu.cut"
+msgstr "Cut"
+
+msgid "menu.copy"
+msgstr "Copy"
+
+msgid "menu.paste"
+msgstr "Paste"
+
+msgid "menu.delete"
+msgstr "Delete"
+
+msgid "menu.preferences"
+msgstr "Preferences"
+
+msgid "menu.about"
+msgstr "About"
 
 # React Frontend - Status Bar
 msgid "status.scene"
@@ -382,56 +415,69 @@ msgid "status.ready"
 msgstr "Ready"
 
 # React Frontend - Node Types
-msgid "nodes.start.title"
+msgid "nodes.start"
 msgstr "Start"
 
-msgid "nodes.end.title"
+msgid "nodes.end"
 msgstr "End"
 
-msgid "nodes.sequence.title"
+msgid "nodes.sequence"
 msgstr "Sequence"
 
-msgid "nodes.dialogue.title"
+msgid "nodes.dialogue"
 msgstr "Dialogue"
 
-msgid "nodes.branch.title"
+msgid "nodes.branch"
 msgstr "Branch"
 
-msgid "nodes.changeBackground.title"
+msgid "nodes.changeBackground"
 msgstr "Change Background"
 
-msgid "nodes.showCharacter.title"
+msgid "nodes.showCharacter"
 msgstr "Show Character"
 
-msgid "nodes.hideCharacter.title"
+msgid "nodes.hideCharacter"
 msgstr "Hide Character"
 
-msgid "nodes.cameraShake.title"
+msgid "nodes.cameraShake"
 msgstr "Camera Shake"
 
-msgid "nodes.fadeScreen.title"
+msgid "nodes.fadeScreen"
 msgstr "Fade Screen"
 
-msgid "nodes.playBGM.title"
+msgid "nodes.playBGM"
 msgstr "Play BGM"
 
-msgid "nodes.stopBGM.title"
+msgid "nodes.stopBGM"
 msgstr "Stop BGM"
 
-msgid "nodes.playSFX.title"
+msgid "nodes.playSFX"
 msgstr "Play SFX"
 
-msgid "nodes.playVoice.title"
+msgid "nodes.playVoice"
 msgstr "Play Voice"
 
-msgid "nodes.setVariable.title"
+msgid "nodes.setVariable"
 msgstr "Set Variable"
 
-msgid "nodes.conditional.title"
+msgid "nodes.conditional"
 msgstr "Conditional"
 
-msgid "nodes.delay.title"
+msgid "nodes.delay"
 msgstr "Delay"
+
+msgid "nodes.event"
+msgstr "事件"
+
+msgid "nodes.logic"
+msgstr "逻辑"
+
+msgid "nodes.choice"
+msgstr "选择"
+
+msgid "nodes.resources"
+msgstr "资源"
+
 
 msgid "nodes.conditional.placeholder"
 msgstr "Condition expression"
@@ -602,3 +648,603 @@ msgstr "Pause"
 
 msgid "toolbar.nextFrame"
 msgstr "Next Frame"
+
+# ============================================================
+# Vue Frontend - Additional keys (auto-generated from TS locale files)
+# ============================================================
+
+# App
+msgid "app.title"
+msgstr "Visunovia Editor"
+
+msgid "app.loading"
+msgstr "Loading..."
+
+# Settings / Preferences
+msgid "settings.general"
+msgstr "General"
+
+msgid "settings.editor"
+msgstr "Editor"
+
+msgid "settings.preview"
+msgstr "Preview"
+
+msgid "settings.network"
+msgstr "Network"
+
+msgid "settings.savedSuccess"
+msgstr "Settings saved successfully!"
+
+msgid "settings.savedLocal"
+msgstr "Settings saved locally (server unavailable)"
+
+msgid "settings.resetConfirm"
+msgstr "Are you sure you want to reset all settings?"
+
+# Vue Frontend - Settings Page
+msgid "settings.title"
+msgstr "Preferences"
+
+msgid "settings.language"
+msgstr "Language"
+
+msgid "settings.theme"
+msgstr "Theme"
+
+msgid "settings.dark"
+msgstr "Dark"
+
+msgid "settings.light"
+msgstr "Light"
+
+msgid "settings.autoSave"
+msgstr "Auto Save"
+
+msgid "settings.autoSaveInterval"
+msgstr "Auto Save Interval"
+
+msgid "settings.showGrid"
+msgstr "Show Grid"
+
+msgid "settings.gridSize"
+msgstr "Grid Size"
+
+msgid "settings.snapEnabled"
+msgstr "Snap to Grid"
+
+msgid "settings.defaultZoom"
+msgstr "Default Zoom"
+
+msgid "settings.defaultNodeSize"
+msgstr "Default Node Size"
+
+msgid "settings.previewWidth"
+msgstr "Preview Width"
+
+msgid "settings.previewHeight"
+msgstr "Preview Height"
+
+msgid "settings.fullscreenPreview"
+msgstr "Fullscreen Preview"
+
+msgid "settings.apiBaseUrl"
+msgstr "API Base URL"
+
+msgid "settings.requestTimeout"
+msgstr "Request Timeout"
+
+# Project Settings
+msgid "projectSettings.title"
+msgstr "Project Settings"
+
+msgid "projectSettings.project"
+msgstr "Project Info"
+
+msgid "projectSettings.projectName"
+msgstr "Project Name"
+
+msgid "projectSettings.projectNamePlaceholder"
+msgstr "Untitled Project"
+
+msgid "projectSettings.video"
+msgstr "Video Settings"
+
+msgid "projectSettings.resolution"
+msgstr "Default Resolution"
+
+msgid "projectSettings.audio"
+msgstr "Audio Settings"
+
+msgid "projectSettings.bgmVolume"
+msgstr "Default BGM Volume"
+
+msgid "projectSettings.voiceVolume"
+msgstr "Default Voice Volume"
+
+msgid "projectSettings.bgmLoop"
+msgstr "Default BGM Loop"
+
+msgid "projectSettings.general"
+msgstr "General Settings"
+
+msgid "projectSettings.language"
+msgstr "Default Language"
+
+msgid "projectSettings.langZh"
+msgstr "Chinese"
+
+msgid "projectSettings.langEn"
+msgstr "English"
+
+msgid "projectSettings.theme"
+msgstr "Default Theme"
+
+msgid "projectSettings.dark"
+msgstr "Dark"
+
+msgid "projectSettings.light"
+msgstr "Light"
+
+msgid "projectSettings.saving"
+msgstr "Saving..."
+
+msgid "projectSettings.reset"
+msgstr "Reset"
+
+msgid "projectSettings.savedSuccess"
+msgstr "Settings saved"
+
+msgid "projectSettings.saveFailed"
+msgstr "Save failed"
+
+# Node Palette
+msgid "palette.title"
+msgstr "Nodes"
+
+msgid "palette.types"
+msgstr "types"
+
+msgid "palette.noMatch"
+msgstr "No nodes match your search"
+
+# Categories
+msgid "categories.flow"
+msgstr "Flow Control"
+
+msgid "categories.event"
+msgstr "Events"
+
+msgid "categories.dialogue"
+msgstr "Dialogue"
+
+msgid "categories.logic"
+msgstr "Logic"
+
+msgid "categories.resources"
+msgstr "Resources"
+
+# Panels
+msgid "panels.project"
+msgstr "Project"
+
+msgid "panels.inspector"
+msgstr "Inspector"
+
+msgid "panels.hierarchy"
+msgstr "Hierarchy"
+
+msgid "panels.console"
+msgstr "Console"
+
+msgid "panels.preview"
+msgstr "Preview"
+
+# Properties
+msgid "properties.title"
+msgstr "Properties"
+
+msgid "properties.speaker"
+msgstr "Speaker"
+
+msgid "properties.text"
+msgstr "Text"
+
+msgid "properties.voice"
+msgstr "Voice"
+
+msgid "properties.sprites"
+msgstr "Sprites"
+
+msgid "properties.condition"
+msgstr "Condition"
+
+msgid "properties.options"
+msgstr "Options"
+
+msgid "properties.resourcePath"
+msgstr "Resource Path"
+
+msgid "properties.bgmPath"
+msgstr "BGM Path"
+
+msgid "properties.volume"
+msgstr "Volume"
+
+msgid "properties.loop"
+msgstr "Loop"
+
+msgid "properties.fadeOutDuration"
+msgstr "Fade Out Duration"
+
+msgid "properties.sfxPath"
+msgstr "SFX Path"
+
+msgid "properties.voicePath"
+msgstr "Voice Path"
+
+msgid "properties.imagePath"
+msgstr "Image Path"
+
+msgid "properties.transition"
+msgstr "Transition"
+
+msgid "properties.duration"
+msgstr "Duration"
+
+msgid "properties.characterId"
+msgstr "Character ID"
+
+msgid "properties.expression"
+msgstr "Expression"
+
+msgid "properties.position"
+msgstr "Position"
+
+msgid "properties.intensity"
+msgstr "Intensity"
+
+msgid "properties.mode"
+msgstr "Mode"
+
+msgid "properties.fadeType"
+msgstr "Fade Type"
+
+msgid "properties.color"
+msgstr "Color"
+
+msgid "properties.varName"
+msgstr "Variable Name"
+
+msgid "properties.value"
+msgstr "Value"
+
+msgid "properties.operation"
+msgstr "Operation"
+
+msgid "properties.variable"
+msgstr "Variable"
+
+msgid "properties.operator"
+msgstr "Operator"
+
+msgid "properties.compareValue"
+msgstr "Compare Value"
+
+# Inspector
+msgid "inspector.hint"
+msgstr "Select a node to view properties"
+
+msgid "inspector.noProperties"
+msgstr "No editable properties"
+
+# Hierarchy
+msgid "hierarchy.hint"
+msgstr "Add nodes from the palette"
+
+# Console
+msgid "console.clear"
+msgstr "Clear"
+
+msgid "console.noLogs"
+msgstr "No logs"
+
+# Folders
+msgid "folders.scenes"
+msgstr "Scenes"
+
+msgid "folders.characters"
+msgstr "Characters"
+
+msgid "folders.backgrounds"
+msgstr "Backgrounds"
+
+msgid "folders.audio"
+msgstr "Audio"
+
+# Common (additional)
+msgid "common.exec"
+msgstr "Exec"
+
+msgid "common.exec_in"
+msgstr "Exec In"
+
+msgid "common.exec_out"
+msgstr "Exec Out"
+
+msgid "common.exec_true"
+msgstr "True"
+
+msgid "common.exec_false"
+msgstr "False"
+
+msgid "common.apply"
+msgstr "Apply"
+
+msgid "common.rename"
+msgstr "Rename"
+
+msgid "common.noResults"
+msgstr "No results"
+
+msgid "common.noSelection"
+msgstr "No selection"
+
+msgid "common.noNodes"
+msgstr "No nodes"
+
+msgid "common.browse"
+msgstr "Browse..."
+
+msgid "common.close"
+msgstr "Close"
+
+msgid "common.yes"
+msgstr "Yes"
+
+msgid "common.no"
+msgstr "No"
+
+msgid "common.cancel"
+msgstr "Cancel"
+
+msgid "common.save"
+msgstr "Save"
+
+msgid "common.ok"
+msgstr "OK"
+
+msgid "common.modified"
+msgstr "Modified"
+
+msgid "common.nodes"
+msgstr "nodes"
+
+# Node Ports
+msgid "nodePorts.execIn"
+msgstr "Input"
+
+msgid "nodePorts.execOut"
+msgstr "Output"
+
+msgid "nodePorts.trueBranch"
+msgstr "True"
+
+msgid "nodePorts.falseBranch"
+msgstr "False"
+
+# Props labels
+msgid "props.speaker"
+msgstr "Speaker"
+
+msgid "props.text"
+msgstr "Text"
+
+msgid "props.voice"
+msgstr "Voice"
+
+msgid "props.sprites"
+msgstr "Sprites"
+
+msgid "props.condition"
+msgstr "Condition"
+
+msgid "props.subType"
+msgstr "Sub Type"
+
+# End Event
+msgid "endEvent.endGame"
+msgstr "End Game"
+
+msgid "endEvent.returnToMenu"
+msgstr "Return to Main Menu"
+
+msgid "endEvent.jumpToScene"
+msgstr "Jump to Scene"
+
+msgid "endEvent.sceneId"
+msgstr "Scene ID"
+
+# Resource
+msgid "resource.name"
+msgstr "Resource"
+
+msgid "resource.selectResource"
+msgstr "Select Resource"
+
+msgid "resource.clickToSelect"
+msgstr "Click to select..."
+
+msgid "resource.type"
+msgstr "Type"
+
+# Event Types
+msgid "eventTypes.playBgm"
+msgstr "Play BGM"
+
+msgid "eventTypes.stopBgm"
+msgstr "Stop BGM"
+
+msgid "eventTypes.playSfx"
+msgstr "Play SFX"
+
+msgid "eventTypes.playVoice"
+msgstr "Play Voice"
+
+msgid "eventTypes.changeBackground"
+msgstr "Change Background"
+
+msgid "eventTypes.showCharacter"
+msgstr "Show Character"
+
+msgid "eventTypes.hideCharacter"
+msgstr "Hide Character"
+
+msgid "eventTypes.cameraShake"
+msgstr "Camera Shake"
+
+msgid "eventTypes.fadeScreen"
+msgstr "Fade Screen"
+
+# Event Properties
+msgid "eventProps.bgmPath"
+msgstr "BGM Path"
+
+msgid "eventProps.volume"
+msgstr "Volume"
+
+msgid "eventProps.loop"
+msgstr "Loop"
+
+msgid "eventProps.fadeOutDuration"
+msgstr "Fade Out Duration"
+
+msgid "eventProps.sfxPath"
+msgstr "SFX Path"
+
+msgid "eventProps.voicePath"
+msgstr "Voice Path"
+
+msgid "eventProps.imagePath"
+msgstr "Image Path"
+
+msgid "eventProps.transition"
+msgstr "Transition"
+
+msgid "eventProps.duration"
+msgstr "Duration"
+
+msgid "eventProps.characterId"
+msgstr "Character ID"
+
+msgid "eventProps.expression"
+msgstr "Expression"
+
+msgid "eventProps.position"
+msgstr "Position"
+
+msgid "eventProps.intensity"
+msgstr "Intensity"
+
+msgid "eventProps.mode"
+msgstr "Mode"
+
+msgid "eventProps.fadeType"
+msgstr "Fade Type"
+
+msgid "eventProps.color"
+msgstr "Color"
+
+# Event Options
+msgid "eventOptions.instant"
+msgstr "Instant"
+
+msgid "eventOptions.fade"
+msgstr "Fade"
+
+msgid "eventOptions.slide"
+msgstr "Slide"
+
+msgid "eventOptions.left"
+msgstr "Left"
+
+msgid "eventOptions.center"
+msgstr "Center"
+
+msgid "eventOptions.right"
+msgstr "Right"
+
+msgid "eventOptions.shake"
+msgstr "Shake"
+
+msgid "eventOptions.wobble"
+msgstr "Wobble"
+
+msgid "eventOptions.in"
+msgstr "Fade In"
+
+msgid "eventOptions.out"
+msgstr "Fade Out"
+
+# Logic Types
+msgid "logicTypes.setVariable"
+msgstr "Set Variable"
+
+msgid "logicTypes.conditional"
+msgstr "Conditional"
+
+msgid "logicTypes.delay"
+msgstr "Delay"
+
+# Logic Options
+msgid "logicOptions.set"
+msgstr "Set"
+
+msgid "logicOptions.add"
+msgstr "Add"
+
+msgid "logicOptions.subtract"
+msgstr "Subtract"
+
+msgid "logicOptions.=="
+msgstr "Equals"
+
+msgid "logicOptions.!="
+msgstr "Not Equals"
+
+msgid "logicOptions.>"
+msgstr "Greater Than"
+
+msgid "logicOptions.<"
+msgstr "Less Than"
+
+msgid "logicOptions.>="
+msgstr "Greater Or Equal"
+
+msgid "logicOptions.<="
+msgstr "Less Or Equal"
+
+# Resource Types
+msgid "resourceTypes.image"
+msgstr "Image"
+
+msgid "resourceTypes.audio"
+msgstr "Audio"
+
+msgid "resourceTypes.bgm"
+msgstr "BGM"
+
+msgid "resourceTypes.voice"
+msgstr "Voice"
+
+msgid "resourceTypes.video"
+msgstr "Video"
+
+msgid "resourceTypes.scene"
+msgstr "Scene"
+
+msgid "resourceTypes.font"
+msgstr "Font"
+
+msgid "resourceTypes.data"
+msgstr "Data"

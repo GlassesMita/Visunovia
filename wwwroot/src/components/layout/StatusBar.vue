@@ -26,13 +26,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useLocalizationStore } from '@/stores/useLocalizationStore'
+import { useLocalization } from '@/composables/useLocalization'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
 import { useEditorStore } from '@/stores/useEditorStore'
 
-const { t, locale } = useI18n()
-const localizationStore = useLocalizationStore()
+const { t, currentLanguage, changeLanguage } = useLocalization()
 const nodeGraphStore = useNodeGraphStore()
 const editorStore = useEditorStore()
 
@@ -42,18 +40,19 @@ const statusMessage = computed(() => {
   return t('status.ready') || 'Ready'
 })
 
-const currentLanguageLabel = computed(() => 
-  locale.value === 'zh' ? '中文' : 'EN'
-)
+const currentLanguageLabel = computed(() => {
+  const lang = currentLanguage.value
+  return lang.startsWith('zh') ? '中文' : lang.startsWith('ja') ? '日本語' : 'EN'
+})
 
 const zoomLevel = computed(() => 100)
 const nodeCount = computed(() => nodeGraphStore.nodeCount)
 const connectionCount = computed(() => nodeGraphStore.connectionCount)
 
-function toggleLanguage() {
-  const newLocale = locale.value === 'zh' ? 'en' : 'zh'
-  locale.value = newLocale
-  localizationStore.setLanguage(newLocale)
+async function toggleLanguage() {
+  const current = currentLanguage.value
+  const newLang = current.startsWith('zh') ? 'en-US' : 'zh-CN'
+  await changeLanguage(newLang)
 }
 </script>
 

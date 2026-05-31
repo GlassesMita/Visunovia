@@ -1,206 +1,288 @@
 <template>
-  <div class="preferences-page">
-    <div class="preferences-container">
-      <h1>{{ t('settings.title') }}</h1>
-      
-      <!-- 通用设置 -->
-      <div class="settings-section">
-        <h2>{{ t('settings.general') }}</h2>
-        
-        <!-- 语言选择（核心功能） -->
-        <div class="setting-item">
-          <label>{{ t('settings.language') }}</label>
-          <select 
-            v-model="settings.language" 
-            @change="onLanguageChange"
-            :disabled="localizationStore.isLoading"
-          >
-            <option value="zh">中文</option>
-            <option value="en">English</option>
-          </select>
-          <span v-if="localizationStore.isLoading" class="loading-indicator">
-            {{ t('app.loading') }}...
-          </span>
-        </div>
-        
-        <!-- 主题选择 -->
-        <div class="setting-item">
-          <label>{{ t('settings.theme') }}</label>
-          <select v-model="settings.theme" @change="onThemeChange">
-            <option value="dark">{{ t('settings.dark') }}</option>
-            <option value="light">{{ t('settings.light') }}</option>
-          </select>
-        </div>
-
-        <!-- 自动保存开关 -->
-        <div class="setting-item">
-          <label>{{ t('settings.autoSave') }}</label>
-          <input type="checkbox" v-model="settings.autoSave" />
-        </div>
-
-        <!-- 自动保存间隔（仅当自动保存开启时显示） -->
-        <div class="setting-item" v-if="settings.autoSave">
-          <label>{{ t('settings.autoSaveInterval') }}</label>
-          <input 
-            type="number" 
-            v-model="settings.autoSaveInterval" 
-            min="10" 
-            max="300" 
-            step="10" 
-          />
-        </div>
+  <div class="preferences-root">
+    <!-- 左侧分类导航 -->
+    <nav class="prefs-sidebar">
+      <div class="sidebar-header">
+        <Settings2 :size="20" />
+        <span>{{ t('settings.title') || 'Preferences' }}</span>
       </div>
-      
-      <!-- 编辑器设置 -->
-      <div class="settings-section">
-        <h2>{{ t('settings.editor') }}</h2>
-        
-        <!-- 网格大小 -->
-        <div class="setting-item">
-          <label>{{ t('settings.gridSize') }}</label>
-          <input 
-            type="number" 
-            v-model="settings.gridSize" 
-            min="10" 
-            max="50" 
-            step="5" 
-          />
-        </div>
-        
-        <!-- 显示网格 -->
-        <div class="setting-item">
-          <label>{{ t('settings.showGrid') }}</label>
-          <input type="checkbox" v-model="settings.showGrid" />
-        </div>
-        
-        <!-- 启用吸附 -->
-        <div class="setting-item">
-          <label>{{ t('settings.snapEnabled') }}</label>
-          <input type="checkbox" v-model="settings.snapToGrid" />
+      <div
+        v-for="cat in categories"
+        :key="cat.key"
+        class="sidebar-item"
+        :class="{ active: activeCategory === cat.key }"
+        @click="activeCategory = cat.key"
+      >
+        <component :is="cat.icon" :size="18" />
+        <span>{{ cat.label }}</span>
+      </div>
+    </nav>
+
+    <!-- 右侧内容区 -->
+    <main class="prefs-content">
+      <!-- General -->
+      <div v-show="activeCategory === 'general'" class="category-panel">
+        <h2 class="category-title">{{ t('settings.general') || 'General' }}</h2>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.language') || 'Language' }}</label>
+            <p class="setting-desc">界面显示语言</p>
+          </div>
+          <div class="setting-control">
+            <select v-model="settings.language" @change="onLanguageChange">
+              <option
+                v-for="lang in availableLanguages"
+                :key="lang.code"
+                :value="lang.code"
+              >
+                {{ lang.displayName }}
+              </option>
+            </select>
+          </div>
         </div>
 
-        <!-- 默认缩放级别 -->
-        <div class="setting-item">
-          <label>{{ t('settings.defaultZoom') }}</label>
-          <select v-model="settings.defaultZoom">
-            <option value="0.5">{{ t('settings.zoom50') }}</option>
-            <option value="0.75">{{ t('settings.zoom75') }}</option>
-            <option value="1">{{ t('settings.zoom100') }}</option>
-            <option value="1.25">{{ t('settings.zoom125') }}</option>
-            <option value="1.5">{{ t('settings.zoom150') }}</option>
-          </select>
-        </div>
-
-        <!-- 默认节点大小 -->
-        <div class="setting-item">
-          <label>{{ t('settings.defaultNodeSize') }}</label>
-          <input 
-            type="number" 
-            v-model="settings.defaultNodeSize" 
-            min="100" 
-            max="400" 
-            step="50" 
-          />
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.theme') || 'Theme' }}</label>
+            <p class="setting-desc">编辑器配色方案</p>
+          </div>
+          <div class="setting-control">
+            <select v-model="settings.theme" @change="onThemeChange">
+              <option value="dark">{{ t('settings.dark') || 'Dark' }}</option>
+              <option value="light">{{ t('settings.light') || 'Light' }}</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <!-- 预览设置 -->
-      <div class="settings-section">
-        <h2>{{ t('settings.preview') }}</h2>
-        
-        <!-- 预览宽度 -->
-        <div class="setting-item">
-          <label>{{ t('settings.previewWidth') }}</label>
-          <input 
-            type="number" 
-            v-model="settings.previewWidth" 
-            min="640" 
-            max="3840" 
-            step="320" 
-          />
+      <!-- Editor -->
+      <div v-show="activeCategory === 'editor'" class="category-panel">
+        <h2 class="category-title">{{ t('settings.editor') || 'Editor' }}</h2>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.autosave') || 'Auto Save' }}</label>
+            <p class="setting-desc">自动保存当前场景</p>
+          </div>
+          <div class="setting-control">
+            <label class="toggle-switch">
+              <input type="checkbox" v-model="settings.autoSave" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
         </div>
 
-        <!-- 预览高度 -->
-        <div class="setting-item">
-          <label>{{ t('settings.previewHeight') }}</label>
-          <input 
-            type="number" 
-            v-model="settings.previewHeight" 
-            min="360" 
-            max="2160" 
-            step="180" 
-          />
+        <div class="setting-row" v-if="settings.autoSave">
+          <div class="setting-label">
+            <label>{{ t('settings.autosaveinterval') || 'Auto Save Interval' }}</label>
+            <p class="setting-desc">自动保存间隔（秒）</p>
+          </div>
+          <div class="setting-control">
+            <input type="number" v-model.number="settings.autoSaveInterval" min="10" max="300" step="10" />
+          </div>
         </div>
 
-        <!-- 全屏预览 -->
-        <div class="setting-item">
-          <label>{{ t('settings.fullscreenPreview') }}</label>
-          <input type="checkbox" v-model="settings.fullscreenPreview" />
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.showgrid') || 'Show Grid' }}</label>
+            <p class="setting-desc">在编辑器中显示网格线</p>
+          </div>
+          <div class="setting-control">
+            <label class="toggle-switch">
+              <input type="checkbox" v-model="settings.showGrid" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.gridsize') || 'Grid Size' }}</label>
+            <p class="setting-desc">网格单元格大小（像素）</p>
+          </div>
+          <div class="setting-control">
+            <input type="number" v-model.number="settings.gridSize" min="10" max="50" step="5" />
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.snapenabled') || 'Snap to Grid' }}</label>
+            <p class="setting-desc">节点移动时对齐到网格</p>
+          </div>
+          <div class="setting-control">
+            <label class="toggle-switch">
+              <input type="checkbox" v-model="settings.snapToGrid" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.defaultzoom') || 'Default Zoom' }}</label>
+            <p class="setting-desc">新建场景的默认缩放级别</p>
+          </div>
+          <div class="setting-control">
+            <select v-model="settings.defaultZoom">
+              <option value="0.5">50%</option>
+              <option value="0.75">75%</option>
+              <option value="1">100%</option>
+              <option value="1.25">125%</option>
+              <option value="1.5">150%</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.defaultnodesize') || 'Default Node Size' }}</label>
+            <p class="setting-desc">新建节点的默认宽度</p>
+          </div>
+          <div class="setting-control">
+            <input type="number" v-model.number="settings.defaultNodeSize" min="100" max="400" step="50" />
+          </div>
         </div>
       </div>
 
-      <!-- 网络设置（开发用） -->
-      <div class="settings-section">
-        <h2>{{ t('settings.network') }}</h2>
-        
-        <!-- API 地址 -->
-        <div class="setting-item">
-          <label>{{ t('settings.apiBaseUrl') }}</label>
-          <input 
-            type="text" 
-            v-model="settings.apiBaseUrl" 
-            placeholder="/api" 
-          />
+      <!-- Preview -->
+      <div v-show="activeCategory === 'preview'" class="category-panel">
+        <h2 class="category-title">{{ t('settings.preview') || 'Preview' }}</h2>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.previewwidth') || 'Preview Width' }}</label>
+            <p class="setting-desc">预览窗口宽度（像素）</p>
+          </div>
+          <div class="setting-control">
+            <input type="number" v-model.number="settings.previewWidth" min="640" max="3840" step="320" />
+          </div>
         </div>
 
-        <!-- 请求超时 -->
-        <div class="setting-item">
-          <label>{{ t('settings.requestTimeout') }}</label>
-          <input 
-            type="number" 
-            v-model="settings.requestTimeout" 
-            min="5000" 
-            max="120000" 
-            step="5000" 
-          />
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.previewheight') || 'Preview Height' }}</label>
+            <p class="setting-desc">预览窗口高度（像素）</p>
+          </div>
+          <div class="setting-control">
+            <input type="number" v-model.number="settings.previewHeight" min="360" max="2160" step="180" />
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.fullscreenpreview') || 'Fullscreen Preview' }}</label>
+            <p class="setting-desc">默认以全屏模式预览</p>
+          </div>
+          <div class="setting-control">
+            <label class="toggle-switch">
+              <input type="checkbox" v-model="settings.fullscreenPreview" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
         </div>
       </div>
-      
-      <!-- 操作按钮区域 -->
-      <div class="settings-actions">
-        <button class="btn-primary" @click="saveSettings">
-          {{ t('common.save') }}
-        </button>
-        <button class="btn-secondary" @click="resetSettings">
-          {{ t('common.cancel') }}
-        </button>
+
+      <!-- Network -->
+      <div v-show="activeCategory === 'network'" class="category-panel">
+        <h2 class="category-title">{{ t('settings.network') || 'Network' }}</h2>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.allowremotesession') || 'Allow Remote Access' }}</label>
+            <p class="setting-desc">{{ t('settings.allowremotesessionhint') || 'Allow LAN devices to connect. Requires restart.' }}</p>
+          </div>
+          <div class="setting-control">
+            <label class="toggle-switch">
+              <input type="checkbox" v-model="settings.allowRemoteSession" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.apibaseurl') || 'API Base URL' }}</label>
+            <p class="setting-desc">后端 API 服务地址</p>
+          </div>
+          <div class="setting-control">
+            <input type="text" v-model="settings.apiBaseUrl" placeholder="/api" />
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.requesttimeout') || 'Request Timeout' }}</label>
+            <p class="setting-desc">HTTP 请求超时时间（毫秒）</p>
+          </div>
+          <div class="setting-control">
+            <input type="number" v-model.number="settings.requestTimeout" min="5000" max="120000" step="5000" />
+          </div>
+        </div>
+
+        <div v-if="settings.allowRemoteSession" class="setting-row setting-warning">
+          <div class="setting-label">
+            <label class="warning-label">⚠️ {{ t('settings.remotesessionlocked') || 'Remote access enabled' }}</label>
+            <p class="setting-desc warning-desc">启用远程访问后，局域网内的其他设备可以连接到本应用。请确保网络安全。</p>
+          </div>
+        </div>
       </div>
 
-      <!-- 保存状态消息 -->
-      <div v-if="saveMessage" class="save-message" :class="{ error: saveError }">
-        {{ saveMessage }}
+      <!-- 底部操作栏 -->
+      <div class="prefs-footer">
+        <div v-if="saveMessage" class="save-toast" :class="{ error: saveError }">
+          {{ saveMessage }}
+        </div>
+        <div class="footer-actions">
+          <button class="btn-reset" @click="resetSettings">
+            {{ t('common.cancel') || 'Cancel' }}
+          </button>
+          <button class="btn-save" @click="saveSettings">
+            {{ t('common.save') || 'Save' }}
+          </button>
+        </div>
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { reactive, ref, computed, onMounted, markRaw } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useLocalizationStore } from '@/stores/useLocalizationStore'
 import { settingsApi } from '@/api'
+import {
+  Settings2,
+  Palette,
+  Eye,
+  Wifi,
+} from 'lucide-vue-next'
+import type { Component } from 'vue'
 
-const { t, changeLanguage } = useLocalization()
-const { locale } = useI18n()
+const { t, changeLanguage, availableLanguages } = useLocalization()
 const localizationStore = useLocalizationStore()
 
-// 设置存储键名
 const SETTINGS_STORAGE_KEY = 'visunovia-settings'
 
-// 使用 reactive 统一管理所有设置项
+// 分类定义（Unity Preferences 风格）
+interface Category {
+  key: string
+  label: string
+  icon: Component
+}
+
+const categories = computed<Category[]>(() => [
+  { key: 'general', label: t('settings.general').value, icon: markRaw(Settings2) },
+  { key: 'editor', label: t('settings.editor').value, icon: markRaw(Palette) },
+  { key: 'preview', label: t('settings.preview').value, icon: markRaw(Eye) },
+  { key: 'network', label: t('settings.network').value, icon: markRaw(Wifi) },
+])
+
+const activeCategory = ref('general')
+
 const settings = reactive({
-  language: 'zh',
+  language: 'zh-CN',
   theme: 'dark' as 'dark' | 'light',
   autoSave: false,
   autoSaveInterval: 60,
@@ -214,78 +296,23 @@ const settings = reactive({
   fullscreenPreview: false,
   apiBaseUrl: '/api',
   requestTimeout: 30000,
+  allowRemoteSession: false,
 })
 
 const saveMessage = ref('')
 const saveError = ref(false)
 
+// 同步加载设置（无异步等待，立即渲染）
 onMounted(() => {
   loadSettings()
+  applyTheme(settings.theme)
 })
 
-/**
- * 语言切换处理函数
- * 核心功能：切换语言时会触发以下操作：
- * 1. 调用 composable 的 changeLanguage 更新 i18n locale
- * 2. 通过 localizationStore 加载后端翻译
- * 3. 所有使用 t() 的组件会响应式更新（包括 InspectorPanel 子类型名称）
- */
-async function onLanguageChange() {
-  const newLang = settings.language as 'en' | 'zh'
-  
-  try {
-    // 调用 composable 的 changeLanguage 方法
-    // 该方法会同时更新 vue-i18n 的 locale 和 localizationStore
-    await changeLanguage(newLang)
-    
-    // 同步更新 localizationStore 的当前语言状态
-    // 确保 store 与 UI 设置保持一致
-    if (localizationStore.currentLanguage !== newLang) {
-      await localizationStore.setLanguage(newLang)
-    }
-    
-    console.log(`[PreferencesPage] Language changed to: ${newLang}`)
-  } catch (error) {
-    // 异常来源：后端 API 不可用或网络错误
-    // 处理方法：使用内置 i18n 翻译作为降级方案
-    console.error('[PreferencesPage] Failed to change language:', error)
-    
-    // 即使后端失败，仍然强制更新前端 locale
-    // 保证 UI 至少显示内置翻译
-    locale.value = newLang
-  }
-}
-
-/**
- * 主题切换处理函数
- * 通过修改 data-theme 属性实现深色/浅色主题切换
- */
-function onThemeChange() {
-  applyTheme(settings.theme)
-}
-
-/**
- * 应用主题到 DOM
- * @param theme - 目标主题 ('dark' | 'light')
- */
-function applyTheme(theme: 'dark' | 'light') {
-  document.documentElement.setAttribute('data-theme', theme)
-}
-
-/**
- * 从 localStorage 加载已保存的设置
- * 页面初始化时调用，恢复用户之前的配置
- */
 function loadSettings() {
-  const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY)
-  
-  if (!savedSettings) return
-  
+  const saved = localStorage.getItem(SETTINGS_STORAGE_KEY)
+  if (!saved) return
   try {
-    const parsed = JSON.parse(savedSettings)
-    
-    // 使用 Object.assign 合并保存的设置到当前 settings 对象
-    // 仅覆盖已存在的属性，保持默认值作为兜底
+    const parsed = JSON.parse(saved)
     Object.assign(settings, {
       language: parsed.language || settings.language,
       theme: parsed.theme || settings.theme,
@@ -301,75 +328,66 @@ function loadSettings() {
       fullscreenPreview: parsed.fullscreenPreview ?? settings.fullscreenPreview,
       apiBaseUrl: parsed.apiBaseUrl || settings.apiBaseUrl,
       requestTimeout: parsed.requestTimeout ?? settings.requestTimeout,
+      allowRemoteSession: parsed.allowRemoteSession ?? settings.allowRemoteSession,
     })
-    
-    // 恢复已保存的主题
-    applyTheme(settings.theme as 'dark' | 'light')
-    
-    console.log('[PreferencesPage] Settings loaded from localStorage')
-  } catch (error) {
-    // 异常来源：localStorage 数据格式损坏
-    // 处理方法：忽略错误数据，使用默认设置
-    console.error('[PreferencesPage] Failed to parse saved settings:', error)
+  } catch (e) {
+    console.error('[Preferences] Failed to parse settings:', e)
   }
 }
 
-/**
- * 保存设置到 localStorage 和后端服务器
- * 优先本地存储保证用户体验，后端同步为可选
- * 在 Popup 模式下保存后关闭 Popup 并刷新父窗口
- */
-async function saveSettings() {
-  // 序列化当前设置对象
-  const settingsData = { ...settings }
-  
-  // 持久化到 localStorage（始终执行）
-  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settingsData))
-  
+async function onLanguageChange() {
+  const lang = settings.language
   try {
-    // 尝试同步到后端 API
-    await settingsApi.saveSettings(settingsData)
-    saveMessage.value = t('settings.savedSuccess')
-    saveError.value = false
-    
-    console.log('[PreferencesPage] Settings saved to server successfully')
-  } catch (error) {
-    // 异常来源：后端服务不可用或网络连接问题
-    // 处理方法：提示用户设置已本地保存，不影响使用
-    console.warn('[PreferencesPage] Server save failed, using local fallback:', error)
-    saveMessage.value = t('settings.savedLocal')
-    saveError.value = false
+    await changeLanguage(lang)
+    if (localizationStore.currentLanguage !== lang) {
+      await localizationStore.setLanguage(lang)
+    }
+  } catch {
+    // ignore
   }
-
-  // 如果在 Popup 窗口中，保存后关闭并刷新父窗口
-  if (window.opener) {
-    // 延迟关闭以确保用户看到保存成功消息
-    setTimeout(() => {
-      try {
-        // 刷新父窗口（主编辑器页面）以应用新设置
-        window.opener.location.reload()
-      } catch (e) {
-        // 如果跨域无法访问父窗口，忽略错误
-        console.warn('[PreferencesPage] Cannot access parent window:', e)
-      }
-      // 关闭当前 Popup 窗口
-      window.close()
-    }, 1000)
-  }
-
-  // 3 秒后自动清除提示消息
-  setTimeout(() => {
-    saveMessage.value = ''
-  }, 3000)
 }
 
-/**
- * 重置所有设置为默认值
- * 会立即保存并应用默认配置
- */
+function onThemeChange() {
+  applyTheme(settings.theme)
+}
+
+function applyTheme(theme: 'dark' | 'light') {
+  document.documentElement.setAttribute('data-theme', theme)
+}
+
+async function saveSettings() {
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ ...settings }))
+
+  const backendSettings: Record<string, unknown> = {
+    language: settings.language,
+    theme: settings.theme,
+    autoSaveInterval: settings.autoSaveInterval,
+    previewWidth: settings.previewWidth,
+    previewHeight: settings.previewHeight,
+    allowRemoteSession: settings.allowRemoteSession,
+  }
+
+  try {
+    await settingsApi.saveSettings(backendSettings)
+    saveMessage.value = t('settings.savedsuccess').value
+    saveError.value = false
+  } catch {
+    saveMessage.value = t('settings.savedlocal').value
+    saveError.value = false
+  }
+
+  if (window.opener) {
+    setTimeout(() => {
+      try { window.opener.location.reload() } catch {}
+      window.close()
+    }, 800)
+  }
+
+  setTimeout(() => { saveMessage.value = '' }, 3000)
+}
+
 function resetSettings() {
-  // 重置各设置项为默认值
-  settings.language = 'zh'
+  settings.language = 'zh-CN'
   settings.theme = 'dark'
   settings.autoSave = false
   settings.autoSaveInterval = 60
@@ -383,213 +401,334 @@ function resetSettings() {
   settings.fullscreenPreview = false
   settings.apiBaseUrl = '/api'
   settings.requestTimeout = 30000
-  
-  // 应用默认主题
+  settings.allowRemoteSession = false
+
   applyTheme('dark')
-  
-  // 重置时也触发语言切换以恢复默认语言
-  changeLanguage('zh').catch(console.error)
-  
-  // 立即保存重置后的设置
-  saveSettings()
+  changeLanguage('zh-CN').catch(() => {})
 }
 </script>
 
 <style scoped>
-.preferences-page {
+/* ========== Root Layout ========== */
+.preferences-root {
   display: flex;
-  justify-content: center;
-  padding: 40px;
+  height: 100vh;
   background: #1e1e1e;
-  min-height: 100vh;
-  box-sizing: border-box;
+  color: #cccccc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
 }
 
-.preferences-container {
-  width: 100%;
-  max-width: 700px;
+/* ========== Sidebar ========== */
+.prefs-sidebar {
+  width: 200px;
+  min-width: 200px;
   background: #252526;
-  border-radius: 8px;
-  padding: 24px;
-  box-sizing: border-box;
+  border-right: 1px solid #3e3e42;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow-y: auto;
 }
 
-/* 页面标题样式 */
-h1 {
-  margin: 0 0 24px;
-  font-size: 24px;
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 16px 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: #ffffff;
+  color: #e0e0e0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #3e3e42;
+  margin-bottom: 4px;
 }
 
-/* 设置分组容器 */
-.settings-section {
-  margin-bottom: 32px;
-  padding-bottom: 24px;
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #bbbbbb;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  border-left: 3px solid transparent;
+  user-select: none;
+}
+
+.sidebar-item:hover {
+  background: #2a2d2e;
+  color: #e0e0e0;
+}
+
+.sidebar-item.active {
+  background: #37373d;
+  color: #ffffff;
+  border-left-color: #007acc;
+}
+
+/* ========== Content Area ========== */
+.prefs-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.category-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+}
+
+.category-title {
+  margin: 0 0 24px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #e0e0e0;
+  padding-bottom: 12px;
   border-bottom: 1px solid #3e3e42;
 }
 
-.settings-section:last-of-type {
-  border-bottom: none;
-  margin-bottom: 0;
-}
-
-/* 分组标题样式 */
-.settings-section h2 {
-  margin: 0 0 16px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #cccccc;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* 单个设置项布局 */
-.setting-item {
+/* ========== Setting Row ========== */
+.setting-row {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #2d2d30;
+  gap: 24px;
 }
 
-.setting-item:last-child {
-  margin-bottom: 0;
+.setting-row:last-child {
+  border-bottom: none;
 }
 
-/* 设置项标签 */
-.setting-item label {
-  color: #ffffff;
+.setting-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.setting-label label {
+  display: block;
   font-size: 14px;
+  font-weight: 500;
+  color: #cccccc;
+  margin-bottom: 2px;
+}
+
+.setting-desc {
+  margin: 0;
+  font-size: 12px;
+  color: #888888;
+  line-height: 1.4;
+}
+
+.setting-control {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
   min-width: 160px;
+  justify-content: flex-end;
 }
 
-/* 输入框统一样式（文本、数字、下拉框） */
-.setting-item input[type="text"],
-.setting-item input[type="number"],
-.setting-item select {
-  padding: 6px 12px;
+/* ========== Form Controls ========== */
+.setting-control input[type="text"],
+.setting-control input[type="number"],
+.setting-control select {
+  padding: 6px 10px;
   background: #3c3c3c;
-  border: 1px solid #3e3e42;
-  border-radius: 4px;
-  color: #ffffff;
-  font-size: 14px;
-  min-width: 180px;
-  max-width: 250px;
-  transition: border-color 0.15s ease;
+  border: 1px solid #555555;
+  border-radius: 3px;
+  color: #e0e0e0;
+  font-size: 13px;
+  width: 160px;
+  transition: border-color 0.15s;
   box-sizing: border-box;
 }
 
-.setting-item input[type="text"]:focus,
-.setting-item input[type="number"]:focus,
-.setting-item select:focus {
+.setting-control input[type="text"]:focus,
+.setting-control input[type="number"]:focus,
+.setting-control select:focus {
   outline: none;
   border-color: #007acc;
 }
 
-/* 数字输入框隐藏微调按钮（保持视觉一致性） */
-.setting-item input[type="number"]::-webkit-inner-spin-button,
-.setting-item input[type="number"]::-webkit-outer-spin-button {
-  opacity: 0.5;
+.setting-control select {
+  cursor: pointer;
 }
 
-/* 下拉框箭头颜色修复 */
-.setting-item select option {
-  background: #3c3c3c;
-  color: #ffffff;
+.setting-control select option {
+  background: #2d2d30;
+  color: #e0e0e0;
 }
 
-/* 复选框样式 */
-.setting-item input[type="checkbox"] {
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: #555555;
+  border-radius: 22px;
+  transition: background 0.2s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
   width: 18px;
   height: 18px;
-  cursor: pointer;
-  accent-color: #007acc;
+  left: 2px;
+  bottom: 2px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s;
 }
 
-/* 语言加载指示器 */
-.loading-indicator {
-  font-size: 12px;
-  color: #007acc;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-/* 操作按钮区域 */
-.settings-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid #3e3e42;
-}
-
-/* 主要按钮样式 */
-.btn-primary {
-  padding: 8px 24px;
+.toggle-switch input:checked + .toggle-slider {
   background: #007acc;
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(18px);
+}
+
+/* ========== Footer ========== */
+.prefs-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 32px;
+  background: #252526;
+  border-top: 1px solid #3e3e42;
+  flex-shrink: 0;
+}
+
+.footer-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.btn-save,
+.btn-reset {
+  padding: 7px 20px;
   border: none;
-  border-radius: 4px;
-  color: #ffffff;
-  font-size: 14px;
+  border-radius: 3px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.15s;
 }
 
-.btn-primary:hover {
-  background: #1177bb;
-}
-
-.btn-primary:active {
-  background: #0e639c;
-}
-
-/* 次要按钮样式 */
-.btn-secondary {
-  padding: 8px 24px;
-  background: #3c3c3c;
-  border: none;
-  border-radius: 4px;
+.btn-save {
+  background: #007acc;
   color: #ffffff;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.2s ease;
 }
 
-.btn-secondary:hover {
-  background: #4c4c4c;
+.btn-save:hover {
+  background: #1a8ad4;
 }
 
-.btn-secondary:active {
-  background: #555555;
+.btn-reset {
+  background: #3c3c3c;
+  color: #cccccc;
 }
 
-/* 保存状态消息 */
-.save-message {
-  margin-top: 16px;
-  padding: 12px;
-  background: #1a472e;
-  border-radius: 4px;
+.btn-reset:hover {
+  background: #4a4a4a;
+}
+
+.save-toast {
+  font-size: 13px;
   color: #89d185;
-  font-size: 14px;
-  text-align: center;
-  animation: fadeIn 0.2s ease;
+  padding: 4px 0;
 }
 
-.save-message.error {
-  background: #5a1d1d;
+.save-toast.error {
   color: #f48771;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+/* ========== Warning Row ========== */
+.setting-warning {
+  background: #3c2a00;
+  border: 1px solid #664d00;
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin-top: 8px;
+}
+
+.setting-warning .setting-label {
+  flex: 1;
+}
+
+.setting-warning .setting-desc {
+  margin: 0;
+}
+
+.warning-label {
+  color: #ffcc00 !important;
+  font-weight: 600;
+}
+
+.warning-desc {
+  color: #cc9900 !important;
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 640px) {
+  .prefs-sidebar {
+    width: 56px;
+    min-width: 56px;
+  }
+
+  .sidebar-header span,
+  .sidebar-item span {
+    display: none;
+  }
+
+  .sidebar-item {
+    justify-content: center;
+    padding: 10px;
+  }
+
+  .sidebar-header {
+    justify-content: center;
+    padding: 12px 8px;
+  }
+
+  .category-panel {
+    padding: 16px;
+  }
+
+  .setting-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .setting-control {
+    justify-content: flex-start;
+    min-width: auto;
+  }
+
+  .prefs-footer {
+    padding: 12px 16px;
+  }
 }
 </style>

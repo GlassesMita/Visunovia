@@ -95,7 +95,7 @@ const menus = computed<Menu[]>(() => [
         key: 'project', 
         labelKey: 'panels.project', 
         action: 'toggleProject',
-        checked: uiStore.showProjectPanel 
+        checked: uiStore.showProjectPopup
       },
       { 
         key: 'inspector', 
@@ -184,7 +184,11 @@ function executeAction(action: string) {
       console.log('Delete action')
       break
     case 'toggleProject':
-      uiStore.togglePanel('project')
+      if (uiStore.showProjectPopup) {
+        uiStore.closeProjectPopup()
+      } else {
+        uiStore.openProjectPopup()
+      }
       break
     case 'toggleInspector':
       uiStore.togglePanel('inspector')

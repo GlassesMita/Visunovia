@@ -1,6 +1,7 @@
 import { defineNode } from '@baklavajs/core'
 import { SelectInterface, TextInputInterface } from '@baklavajs/renderer-vue'
 import { type ResourceType, RESOURCE_TYPE_COLORS } from '@/stores/useResourceRegistry'
+import { tSync } from '@/services/translationService'
 import {
   ARROW_SYMBOL,
   createExecOutPort,
@@ -14,20 +15,20 @@ export default defineNode({
   title: 'Resources',
   inputs: {
     resourceType: () => new SelectInterface(
-      'Type',
+      tSync('resource.type', 'Type'),
       'image',
       [
-        { value: 'image', text: '图片' },
-        { value: 'audio', text: '音效' },
-        { value: 'bgm', text: 'BGM' },
-        { value: 'voice', text: '语音' },
-        { value: 'video', text: '视频' },
-        { value: 'scene', text: '场景' },
-        { value: 'font', text: '字体' },
-        { value: 'data', text: '数据' },
+        { value: 'image', text: tSync('resourceTypes.image', 'Image') },
+        { value: 'audio', text: tSync('resourceTypes.audio', 'Audio') },
+        { value: 'bgm', text: tSync('resourceTypes.bgm', 'BGM') },
+        { value: 'voice', text: tSync('resourceTypes.voice', 'Voice') },
+        { value: 'video', text: tSync('resourceTypes.video', 'Video') },
+        { value: 'scene', text: tSync('resourceTypes.scene', 'Scene') },
+        { value: 'font', text: tSync('resourceTypes.font', 'Font') },
+        { value: 'data', text: tSync('resourceTypes.data', 'Data') },
       ]
     ),
-    resourcePath: () => new TextInputInterface('Path', ''),
+    resourcePath: () => new TextInputInterface(tSync('properties.resourcePath', 'Path'), ''),
   },
   outputs: {
     resourceOut: createExecOutPort(ARROW_SYMBOL),

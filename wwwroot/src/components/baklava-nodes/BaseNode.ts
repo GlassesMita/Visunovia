@@ -1,5 +1,5 @@
 import { NodeInterface } from '@baklavajs/core'
-import { useLocalizationStore } from '@/stores/useLocalizationStore'
+import { tSync } from '@/services/translationService'
 
 /**
  * 节点类型 → 颜色映射表
@@ -53,6 +53,5 @@ export function setNodeI18nTitle(
   i18nKey: string,
   fallback: string
 ): void {
-  const store = useLocalizationStore()
-  node.title = store.t(i18nKey, fallback)
+  node.title = tSync(i18nKey, fallback)
 }

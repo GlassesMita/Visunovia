@@ -24,25 +24,6 @@ public class LocalizationController : ControllerBase
     private readonly ILogger<LocalizationController> _logger;
 
     /// <summary>
-    /// 预定义的语言元数据映射表
-    /// 为已知语言提供标准化的名称和本地化名称
-    /// 优先使用此映射表，未知语言则回退到 LocalizationService.GetLanguageDisplayName()
-    /// </summary>
-    private static readonly Dictionary<string, (string Name, string NativeName)> KnownLanguages = new(StringComparer.OrdinalIgnoreCase)
-    {
-        { "zh-CN", ("中文（简体）", "中文（简体）") },
-        { "en-US", ("English (US)", "English (US)") },
-        { "ja-JP", ("日本語", "日本語") },
-        { "zh-TW", ("中文（繁體）", "中文（繁體）") },
-        { "ko-KR", ("한국어", "한국어") },
-        { "fr-FR", ("Français", "Français") },
-        { "de-DE", ("Deutsch", "Deutsch") },
-        { "es-ES", ("Español", "Español") },
-        { "ru-RU", ("Русский", "Русский") },
-        { "pt-BR", ("Português (Brasil)", "Português (Brasil)") }
-    };
-
-    /// <summary>
     /// 初始化 LocalizationController 实例
     /// </summary>
     /// <param name="localizationService">本地化服务（通过依赖注入提供）</param>
@@ -230,12 +211,13 @@ public class LocalizationController : ControllerBase
                 }
 
                 // 提取所有翻译条目（跳过 msgId 为空的头部条目）
-                var translations = new Dictionary<string, string>();
+                // 键转换为小写以匹配前端使用的 key 格式（如 "app.title" 对应 PO 中的 "App.Title"）
+                var translations = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var entry in poFile.Entries)
                 {
                     if (!string.IsNullOrWhiteSpace(entry.MsgId) && entry.HasTranslation)
                     {
-                        translations[entry.MsgId] = entry.MsgStr;
+                        translations[entry.MsgId.ToLowerInvariant()] = entry.MsgStr;
                     }
                 }
 
@@ -276,6 +258,41 @@ public class LocalizationController : ControllerBase
             _logger.LogError(ex, "[LocalizationController] 获取翻译时发生意外错误: {Language}", lang);
             return StatusCode(500, ApiResponseDto<AllTranslationsResponseDto>.ErrorResponse(
                 "INTERNAL_ERROR", "获取翻译时发生内部错误"));
+        }
+    }
+
+    /// <summary>
+    /// 获取当前语言的单条翻译（简化版，直接返回翻译字符串）
+    /// 前端每次需要翻译时调用此接口，后端从 PO 文件中查找并返回 msgstr。
+    /// 若找不到翻译则返回原始 msgId 作为回退。
+    /// 此接口设计为轻量级、高频调用的前端翻译入口，
+    /// 前端应自行缓存翻译结果以减少请求次数。
+    /// </summary>
+    /// <param name="msgId">要翻译的键（如 "app.title"、"common.ok"）</param>
+    /// <returns>纯文本翻译结果，Content-Type: text/plain</returns>
+    /// <response code="200">成功返回翻译结果（纯文本）</response>
+    /// <response code="400">msgId 参数缺失或为空</response>
+    [HttpGet("currentLang")]
+    [Produces("text/plain")]
+    [ProducesResponseType(typeof(string), 200)]
+    [ProducesResponseType(400)]
+    public IActionResult GetCurrentLangTranslation([FromQuery] string msgId)
+    {
+        if (string.IsNullOrWhiteSpace(msgId))
+        {
+            return BadRequest("msgId is required");
+        }
+
+        try
+        {
+            var translation = _localizationService.GetString(msgId.Trim());
+            return Content(translation, "text/plain; charset=utf-8");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[LocalizationController] 翻译查询失败: {MsgId}", msgId);
+            // 回退：返回原始 msgId
+            return Content(msgId, "text/plain; charset=utf-8");
         }
     }
 
@@ -420,6 +437,116 @@ public class LocalizationController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// 获取指定语言的嵌套格式翻译消息（vue-i18n 兼容格式）
+    /// 将 PO 文件中的扁平键（如 "App.Title"、"Common.Ok"）转换为嵌套对象格式
+    /// { app: { title: "..." }, common: { ok: "..." } }，供前端 vue-i18n 直接使用。
+    /// 前端在初始化时调用此接口，将返回的消息合并到 vue-i18n 的 messages 中，
+    /// 使得所有通过 useI18n() 获取的 t() 函数都能使用后端 PO 文件的翻译。
+    /// </summary>
+    /// <param name="lang">目标语言代码（如 zh-CN、en-US），若为空则使用当前语言</param>
+    /// <returns>嵌套格式的翻译消息对象</returns>
+    /// <response code="200">成功获取嵌套翻译消息</response>
+    /// <response code="404">目标语言的 PO 文件不存在</response>
+    [HttpGet("messages")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ApiResponseDto<Dictionary<string, object>>), 200)]
+    [ProducesResponseType(typeof(ApiResponseDto<Dictionary<string, object>>), 404)]
+    public IActionResult GetMessages([FromQuery] string? lang = null)
+    {
+        try
+        {
+            var targetLanguage = !string.IsNullOrWhiteSpace(lang)
+                ? lang.Trim()
+                : _localizationService.CurrentLanguage;
+
+            if (string.IsNullOrWhiteSpace(targetLanguage))
+            {
+                return BadRequest(ApiResponseDto<Dictionary<string, object>>.ErrorResponse(
+                    "INVALID_LANGUAGE", "语言代码不能为空"));
+            }
+
+            if (!_localizationService.IsLanguageAvailable(targetLanguage))
+            {
+                return NotFound(ApiResponseDto<Dictionary<string, object>>.ErrorResponse(
+                    "LANGUAGE_NOT_FOUND", $"语言 '{targetLanguage}' 不支持"));
+            }
+
+            var poFile = _localizationService.LoadLanguage(targetLanguage);
+            if (poFile == null)
+            {
+                return NotFound(ApiResponseDto<Dictionary<string, object>>.ErrorResponse(
+                    "LANGUAGE_LOAD_FAILED", $"无法加载语言 '{targetLanguage}' 的翻译文件"));
+            }
+
+            // 将扁平键转换为嵌套对象
+            // 例如 "App.Title" -> { app: { title: "..." } }
+            // 例如 "Common.Ok" -> { common: { ok: "..." } }
+            var messages = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            foreach (var entry in poFile.Entries)
+            {
+                if (string.IsNullOrWhiteSpace(entry.MsgId) || !entry.HasTranslation)
+                    continue;
+
+                var key = entry.MsgId;
+                var value = entry.MsgStr;
+
+                // 跳过头部条目
+                if (key == "")
+                    continue;
+
+                // 将 "App.Title" 转换为嵌套路径 ["App", "Title"]
+                var parts = key.Split('.');
+                if (parts.Length == 1)
+                {
+                    // 无嵌套，直接作为顶级键（转为小写）
+                    messages[key.ToLowerInvariant()] = value;
+                }
+                else
+                {
+                    // 构建嵌套对象
+                    var current = (IDictionary<string, object>)messages;
+                    for (var i = 0; i < parts.Length - 1; i++)
+                    {
+                        var partKey = ToCamelCase(parts[i]);
+                        if (!current.ContainsKey(partKey))
+                        {
+                            current[partKey] = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                        }
+                        current = (IDictionary<string, object>)current[partKey];
+                    }
+                    var lastKey = ToCamelCase(parts[parts.Length - 1]);
+                    current[lastKey] = value;
+                }
+            }
+
+            _logger.LogInformation(
+                "[LocalizationController] 获取嵌套翻译消息: {Language}, {Count} 条",
+                targetLanguage, poFile.Entries.Count(e => !string.IsNullOrWhiteSpace(e.MsgId) && e.HasTranslation));
+
+            return Ok(ApiResponseDto<Dictionary<string, object>>.SuccessResponse(messages));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[LocalizationController] 获取嵌套翻译消息失败: {Language}", lang);
+            return StatusCode(500, ApiResponseDto<Dictionary<string, object>>.ErrorResponse(
+                "INTERNAL_ERROR", "获取翻译消息时发生内部错误"));
+        }
+    }
+
+    /// <summary>
+    /// 将 PascalCase 键名转换为 camelCase（vue-i18n 约定）
+    /// 例如 "App" -> "app", "Title" -> "title", "OK" -> "ok"
+    /// </summary>
+    private static string ToCamelCase(string key)
+    {
+        if (string.IsNullOrEmpty(key))
+            return key;
+        if (key.Length == 1)
+            return key.ToLowerInvariant();
+        return char.ToLowerInvariant(key[0]) + key.Substring(1);
+    }
+
     #region 私有辅助方法
 
     /// <summary>
@@ -431,17 +558,9 @@ public class LocalizationController : ControllerBase
     /// <returns>包含完整信息的 LanguageInfoDto 实例</returns>
     private LanguageInfoDto BuildLanguageInfo(string languageCode)
     {
-        // 优先从预定义映射表获取显示名称，未知语言则回退到 LocalizationService
-        string displayName;
-        if (KnownLanguages.TryGetValue(languageCode, out var known))
-        {
-            displayName = known.Name;
-        }
-        else
-        {
-            // 从 PO 文件读取 "Common.LanguageDisplayName" 条目
-            displayName = _localizationService.GetLanguageDisplayName(languageCode);
-        }
+        // 从 PO 文件的 Common.LanguageDisplayName 条目读取语言名称
+        // 每个 PO 文件第 19-21 行内置了该语言的本地化名称
+        var displayName = _localizationService.GetLanguageDisplayName(languageCode);
 
         return new LanguageInfoDto
         {

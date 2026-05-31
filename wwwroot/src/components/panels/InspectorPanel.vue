@@ -20,7 +20,7 @@
       <div v-if="selectedNode.type === 'EventNode'" class="property-group subtype-selector">
         <label>
           <span class="label-icon">⚡</span>
-          {{ t('properties.subType') || 'Event Type' }}
+          {{ t('props.subType') || 'Event Type' }}
         </label>
         <select 
           v-model="eventSubType" 
@@ -41,7 +41,7 @@
       <div v-if="selectedNode.type === 'LogicNode'" class="property-group subtype-selector">
         <label>
           <span class="label-icon">🔧</span>
-          {{ t('properties.subType') || 'Logic Type' }}
+          {{ t('props.subType') || 'Logic Type' }}
         </label>
         <select 
           v-model="logicSubType" 
@@ -172,7 +172,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useLocalization } from '@/composables/useLocalization'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
 import { 
@@ -187,7 +187,7 @@ import {
 import ResourcePickerModal from '@/components/modals/ResourcePickerModal.vue'
 import { type ResourceType } from '@/stores/useResourceRegistry'
 
-const { t } = useI18n()
+const { t } = useLocalization()
 const editorStore = useEditorStore()
 const nodeGraphStore = useNodeGraphStore()
 

@@ -9,7 +9,7 @@ export default defineConfig({
       '@': resolve(__dirname, 'src')
     }
   },
-  base: './',
+  base: '/',
   build: {
     outDir: '../www_build',
     emptyOutDir: true,
@@ -17,15 +17,15 @@ export default defineConfig({
       output: {
         manualChunks: {
           'baklavajs': ['@baklavajs/core', '@baklavajs/engine', '@baklavajs/renderer-vue'],
-          'vue-vendor': ['vue', 'vue-router', 'pinia', 'vue-i18n'],
+          'vue-vendor': ['vue', 'vue-router', 'pinia'],
         }
       }
     }
   },
   server: {
     port: 32423,
-    strictPort: true,
-    open: true,
+    strictPort: false,
+    open: false,
     hmr: {
       protocol: 'ws',
       host: 'localhost'
@@ -33,7 +33,8 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:32523',
-        changeOrigin: true
+        changeOrigin: true,
+        secure: false
       }
     }
   }

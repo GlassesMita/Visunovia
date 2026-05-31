@@ -34,11 +34,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useLocalization } from '@/composables/useLocalization'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
 import { useEditorStore } from '@/stores/useEditorStore'
 
-const { t } = useI18n()
+const { t } = useLocalization()
 const nodeGraphStore = useNodeGraphStore()
 const editorStore = useEditorStore()
 

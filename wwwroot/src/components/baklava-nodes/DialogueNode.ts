@@ -1,6 +1,6 @@
 import { defineNode } from '@baklavajs/core'
 import { TextInputInterface } from '@baklavajs/renderer-vue'
-import { useLocalizationStore } from '@/stores/useLocalizationStore'
+import { tSync } from '@/services/translationService'
 import {
   ARROW_SYMBOL,
   createExecInPort,
@@ -15,22 +15,10 @@ export default defineNode({
   title: 'Dialogue',
   inputs: {
     execIn: createExecInPort(ARROW_SYMBOL),
-    speaker: () => {
-      const t = useLocalizationStore().t
-      return new TextInputInterface(t('props.speaker', 'Speaker'), '')
-    },
-    text: () => {
-      const t = useLocalizationStore().t
-      return new TextInputInterface(t('props.text', 'Text'), '')
-    },
-    voice: () => {
-      const t = useLocalizationStore().t
-      return new TextInputInterface(t('props.voice', 'Voice'), '')
-    },
-    sprites: () => {
-      const t = useLocalizationStore().t
-      return new TextInputInterface(t('props.sprites', 'Sprites'), '')
-    },
+    speaker: () => new TextInputInterface(tSync('props.speaker', 'Speaker'), ''),
+    text: () => new TextInputInterface(tSync('props.text', 'Text'), ''),
+    voice: () => new TextInputInterface(tSync('props.voice', 'Voice'), ''),
+    sprites: () => new TextInputInterface(tSync('props.sprites', 'Sprites'), ''),
   },
   outputs: {
     execOut: createExecOutPort(ARROW_SYMBOL),

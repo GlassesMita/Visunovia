@@ -5,7 +5,7 @@ import {
   NumberInterface
 } from '@baklavajs/renderer-vue'
 import { LogicType, logicTypeConfig, logicTypeLabels } from '@/types'
-import { useLocalizationStore } from '@/stores/useLocalizationStore'
+import { tSync } from '@/services/translationService'
 import {
   ARROW_SYMBOL,
   createExecInPort,
@@ -30,17 +30,14 @@ export default defineDynamicNode({
      * 通过 SelectInterface 展示 LogicType 枚举的所有可选值，
      * 默认选中 SetVariable（赋值操作），切换时触发 onUpdate 重构端口
      */
-    subType: () => {
-      const store = useLocalizationStore()
-      return new SelectInterface(
-        store.t('properties.subType', 'Sub Type'),
-        LogicType.SetVariable,
-        Object.values(LogicType).map((v) => ({
-          value: v,
-          text: store.t(logicTypeLabels[v as LogicType], logicTypeLabels[v as LogicType])
-        }))
-      )
-    }
+    subType: () => new SelectInterface(
+      tSync('props.subType', 'Sub Type'),
+      LogicType.SetVariable,
+      Object.values(LogicType).map((v) => ({
+        value: v,
+        text: tSync(logicTypeLabels[v as LogicType] ?? '', logicTypeLabels[v as LogicType] ?? v)
+      }))
+    )
   },
 
   onCreate() {
@@ -66,24 +63,29 @@ export default defineDynamicNode({
     const inputs: Record<string, () => NodeInterface<any>> = {}
 
     for (const prop of properties) {
+      const label = tSync(`properties.${prop.name}`, prop.name)
+
       switch (prop.type) {
         case 'string':
           inputs[prop.name] = () =>
-            new TextInputInterface(prop.name, prop.defaultValue || '')
+            new TextInputInterface(label, prop.defaultValue || '')
           break
 
         case 'number':
           inputs[prop.name] = () =>
-            new NumberInterface(prop.name, prop.defaultValue ?? 0)
+            new NumberInterface(label, prop.defaultValue ?? 0)
           break
 
         case 'select':
           if (prop.options && prop.options.length > 0) {
             inputs[prop.name] = () =>
               new SelectInterface(
-                prop.name,
+                label,
                 prop.defaultValue || prop.options![0].value,
-                prop.options!.map((o) => ({ value: o.value, text: o.label }))
+                prop.options!.map((o) => ({
+                  value: o.value,
+                  text: tSync(`logicOptions.${o.value}`, o.label)
+                }))
               )
           }
           break

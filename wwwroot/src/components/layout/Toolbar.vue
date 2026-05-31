@@ -3,17 +3,17 @@
     <div class="toolbar-group">
       <button
         class="toolbar-button"
+        :title="t('panels.project')"
+        @click="uiStore.openProjectPopup()"
+      >
+        <FolderOpen :size="18" />
+      </button>
+      <button
+        class="toolbar-button"
         :title="t('menu.new')"
         @click="handleNew"
       >
         <FilePlus :size="18" />
-      </button>
-      <button
-        class="toolbar-button"
-        :title="t('menu.open')"
-        @click="handleOpen"
-      >
-        <FolderOpen :size="18" />
       </button>
       <button
         class="toolbar-button"
@@ -89,11 +89,13 @@
 import { computed } from 'vue'
 import { FilePlus, FolderOpen, Save, Undo2, Redo2, Scissors, Copy, Clipboard, Trash2 } from 'lucide-vue-next'
 import { useLocalization } from '@/composables/useLocalization'
+import { useUIStore } from '@/stores/useUIStore'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useUndoRedoStore } from '@/stores/useUndoRedoStore'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
 
 const { t } = useLocalization()
+const uiStore = useUIStore()
 const editorStore = useEditorStore()
 const undoRedoStore = useUndoRedoStore()
 const nodeGraphStore = useNodeGraphStore()
@@ -107,10 +109,6 @@ function handleNew() {
     undoRedoStore.clear()
     editorStore.selectNode(null)
   }
-}
-
-function handleOpen() {
-  console.log('Open file')
 }
 
 function handleSave() {
