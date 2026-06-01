@@ -30,9 +30,12 @@ export const translationVersion: Ref<number> = ref(0)
  * 优先从缓存读取，缓存未命中则调用后端 API
  */
 export async function t(msgId: string): Promise<string> {
-  // 缓存命中
   if (cache.has(msgId)) {
     return cache.get(msgId)!
+  }
+  const lowerMsgId = msgId.toLowerCase()
+  if (cache.has(lowerMsgId)) {
+    return cache.get(lowerMsgId)!
   }
 
   try {
@@ -42,11 +45,10 @@ export async function t(msgId: string): Promise<string> {
       responseType: 'text',
     })
     const translation = typeof response.data === 'string' ? response.data : String(response.data)
-    cache.set(msgId, translation)
+    cache.set(lowerMsgId, translation)
     return translation
   } catch {
-    // API 失败时回退到原始 key
-    cache.set(msgId, msgId)
+    cache.set(lowerMsgId, msgId)
     return msgId
   }
 }
@@ -58,7 +60,14 @@ export async function t(msgId: string): Promise<string> {
  * @param fallback - 缓存未命中时的回退文本，默认返回 msgId 本身
  */
 export function tSync(msgId: string, fallback?: string): string {
-  return cache.get(msgId) ?? fallback ?? msgId
+  if (cache.has(msgId)) {
+    return cache.get(msgId)!
+  }
+  const lowerMsgId = msgId.toLowerCase()
+  if (cache.has(lowerMsgId)) {
+    return cache.get(lowerMsgId)!
+  }
+  return fallback ?? msgId
 }
 
 /**

@@ -44,6 +44,9 @@ onMounted(async () => {
     // 修复节点选中行为：单击清空其他选择，Ctrl+单击多选
     useFixNodeSelection(baklavaInstance.editor)
     
+    // 将 editor 实例暴露到 window，供 useNodeOperations 和 useLorImport 使用
+    ;(window as any).__editor = baklavaInstance.editor
+
     // 创建一个默认 Start 节点
     setTimeout(() => {
       if (baklavaInstance.editor && baklavaInstance.editor.graph.nodes.length === 0) {

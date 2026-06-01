@@ -120,7 +120,7 @@ public class EditorController : ControllerBase
 
             var scene = editor.CurrentProject.Scenes[request.SceneIndex];
 
-            var dialogue = new VNDialogue();
+            var dialogue = new VNDialogue { Uuid = System.Guid.NewGuid().ToString() };
             if (Enum.TryParse<VNDialogueType>(request.Type, true, out var dialogueType))
             {
                 dialogue.Type = dialogueType;

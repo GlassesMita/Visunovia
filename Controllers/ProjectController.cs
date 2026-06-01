@@ -1,244 +1,288 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Xml.Linq;
-using Visunovia.Models.Engine;
-using Visunovia.Services;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Visunovia.Controllers;
 
-/// <summary>
-/// 项目管理 API，处理项目的创建、打开、保存及状态查询
-/// </summary>
 [ApiController]
-[Route("api/project")]
+[Route("api/[controller]")]
 public class ProjectController : ControllerBase
 {
-    private readonly EditorSessionService _sessionService;
+    private readonly ILogger<ProjectController> _logger;
 
-    public ProjectController(EditorSessionService sessionService)
+    public ProjectController(ILogger<ProjectController> logger)
     {
-        _sessionService = sessionService;
+        _logger = logger;
     }
 
     /// <summary>
-    /// 创建新项目
+    /// 导入项目：从 .tlor 文件中读取剧本配置
     /// </summary>
-    /// <param name="request">包含项目名称和保存路径的请求体</param>
-    [HttpPost("new")]
-    public async Task<IActionResult> NewProject([FromBody] NewProjectRequest request)
+    /// <param name="request">包含项目路径的请求</param>
+    /// <returns>剧本内容列表</returns>
+    [HttpPost("import")]
+    public async Task<IActionResult> ImportProject([FromBody] ImportProjectRequest request)
     {
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+        {
+            return BadRequest(new { success = false, error = "项目路径不能为空" });
+        }
+
         try
         {
-            if (string.IsNullOrWhiteSpace(request.Name))
-                return BadRequest(new { error = "项目名称不能为空" });
-
-            _sessionService.ResetEditor();
-            var editor = _sessionService.GetEditor();
-            editor.NewProject(request.Name, request.Path);
-            var xml = await editor.ExportProjectToXmlAsync();
-            return Content(xml, "application/xml");
+            var result = await ParseProjectAsync(request.ProjectPath);
+            return Ok(new { success = true, data = result });
         }
         catch (Exception ex)
         {
-            return BadRequest(new { error = $"创建项目失败: {ex.Message}" });
+            _logger.LogError(ex, "导入项目失败: {Path}", request.ProjectPath);
+            return StatusCode(500, new { success = false, error = ex.Message });
         }
     }
 
     /// <summary>
-    /// 从上传的 .tlor 文件打开项目
+    /// 解析项目：读取 .tlor 文件并返回剧本列表
     /// </summary>
-    /// <param name="uploadedFile">上传的 .tlor 项目文件</param>
-    /// <param name="projectPath">可选：项目目录路径（用于直接访问项目文件而非临时目录）</param>
-    [HttpPost("open")]
-    public async Task<IActionResult> OpenProject(IFormFile uploadedFile, [FromQuery] string? projectPath = null)
+    private async Task<ProjectParseResult> ParseProjectAsync(string projectPath)
     {
-        try
+        var result = new ProjectParseResult();
+
+        // 查找 .tlor 文件
+        var tlorFiles = Directory.GetFiles(projectPath, "*.tlor", SearchOption.AllDirectories);
+        
+        foreach (var tlorFile in tlorFiles)
         {
-            if (uploadedFile == null || uploadedFile.Length == 0)
-                return BadRequest(new { error = "未提供文件" });
-
-            string tempPath;
-            string effectiveProjectRoot;
-
-            if (!string.IsNullOrEmpty(projectPath) && System.IO.Directory.Exists(projectPath))
+            var scene = await ParseTlorFileAsync(tlorFile);
+            if (scene != null)
             {
-                var tlorPath = System.IO.Path.Combine(projectPath, "Project.tlor");
-                if (System.IO.File.Exists(tlorPath))
+                result.Scenes.Add(scene);
+            }
+        }
+
+        // 如果没找到 .tlor 文件，尝试扫描 Scripts/Main 目录下的 .lor 文件
+        if (result.Scenes.Count == 0)
+        {
+            var scriptsMainPath = Path.Combine(projectPath, "Scripts", "Main");
+            if (Directory.Exists(scriptsMainPath))
+            {
+                var lorFiles = Directory.GetFiles(scriptsMainPath, "*.lor");
+                foreach (var lorFile in lorFiles)
                 {
-                    tempPath = tlorPath;
-                    effectiveProjectRoot = projectPath;
+                    var scene = new SceneInfo
+                    {
+                        Id = Path.GetFileNameWithoutExtension(lorFile),
+                        LorFilePath = lorFile,
+                        Content = await System.IO.File.ReadAllTextAsync(lorFile)
+                    };
+                    result.Scenes.Add(scene);
                 }
-                else
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 解析单个 .tlor XML 文件
+    /// </summary>
+    private async Task<SceneInfo?> ParseTlorFileAsync(string tlorFilePath)
+    {
+        var xml = await System.IO.File.ReadAllTextAsync(tlorFilePath);
+        var doc = XDocument.Parse(xml);
+
+        // 尝试多种可能的 XML 命名空间和元素名称
+        var projectElement = doc.Root;
+        if (projectElement == null) return null;
+
+        // 尝试查找场景列表
+        XElement? scenesElement = null;
+
+        // 尝试不同的元素名称
+        var possibleNames = new[] { "scenes", "scene", "Scenes", "Scene", "scripts", "Scripts" };
+        foreach (var name in possibleNames)
+        {
+            scenesElement = projectElement.Element(name);
+            if (scenesElement != null) break;
+        }
+
+        if (scenesElement == null)
+        {
+            // 如果找不到明确的场景列表，检查根元素是否包含场景信息
+            var firstScenePath = projectElement.Element("path")?.Value 
+                ?? projectElement.Element("Path")?.Value
+                ?? projectElement.Attribute("entry")?.Value;
+
+            if (firstScenePath != null)
+            {
+                var lorPath = Path.Combine(Path.GetDirectoryName(tlorFilePath)!, firstScenePath);
+                if (System.IO.File.Exists(lorPath))
                 {
-                    return BadRequest(new { error = "项目路径中未找到 Project.tlor 文件" });
+                    return new SceneInfo
+                    {
+                        Id = Path.GetFileNameWithoutExtension(lorPath),
+                        LorFilePath = lorPath,
+                        Content = await System.IO.File.ReadAllTextAsync(lorPath)
+                    };
                 }
+            }
+
+            return null;
+        }
+
+        // 解析场景列表
+        var sceneElements = scenesElement.Elements("scene")
+            .Concat(scenesElement.Elements("Scene"))
+            .ToList();
+
+        if (sceneElements.Count == 0)
+        {
+            return null;
+        }
+
+        // 返回第一个场景（或配置中指定的默认场景）
+        var defaultScene = sceneElements.FirstOrDefault(s => 
+            s.Attribute("default")?.Value == "true" ||
+            s.Attribute("Default")?.Value == "true");
+
+        var targetScene = defaultScene ?? sceneElements.First();
+
+        var lorPathElement = targetScene.Element("path") ?? targetScene.Element("Path");
+        var lorFileName = targetScene.Attribute("id")?.Value ?? targetScene.Attribute("Id")?.Value;
+
+        if (lorPathElement == null && lorFileName == null)
+        {
+            return null;
+        }
+
+        string? lorFilePath = null;
+        string? content = null;
+
+        if (lorPathElement != null)
+        {
+            lorFilePath = Path.Combine(Path.GetDirectoryName(tlorFilePath)!, lorPathElement.Value);
+        }
+        else if (lorFileName != null)
+        {
+            // 尝试从 Scripts/Main 目录查找
+            var scriptsMainPath = Path.Combine(Path.GetDirectoryName(tlorFilePath)!, "Scripts", "Main");
+            var potentialPath = Path.Combine(scriptsMainPath, $"{lorFileName}.lor");
+            
+            if (System.IO.File.Exists(potentialPath))
+            {
+                lorFilePath = potentialPath;
             }
             else
             {
-                var tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "Visunovia", Guid.NewGuid().ToString());
-                System.IO.Directory.CreateDirectory(tempDir);
-                tempPath = System.IO.Path.Combine(tempDir, uploadedFile.FileName);
-                effectiveProjectRoot = tempDir;
-
-                using (var stream = new System.IO.FileStream(tempPath, System.IO.FileMode.Create))
+                // 尝试在项目根目录查找
+                potentialPath = Path.Combine(Path.GetDirectoryName(tlorFilePath)!, $"{lorFileName}.lor");
+                if (System.IO.File.Exists(potentialPath))
                 {
-                    await uploadedFile.CopyToAsync(stream);
+                    lorFilePath = potentialPath;
                 }
             }
+        }
 
-            _sessionService.ResetEditor();
-            var editor = _sessionService.GetEditor();
-            var success = await editor.LoadProjectAsync(tempPath, effectiveProjectRoot);
+        if (lorFilePath != null && System.IO.File.Exists(lorFilePath))
+        {
+            content = await System.IO.File.ReadAllTextAsync(lorFilePath);
+        }
 
-            if (!success)
-                return BadRequest(new { error = "无法加载项目文件" });
+        var sceneId = targetScene.Attribute("id")?.Value 
+            ?? targetScene.Attribute("Id")?.Value
+            ?? lorFileName
+            ?? Path.GetFileNameWithoutExtension(tlorFilePath);
 
-            var xml = await editor.ExportProjectToXmlAsync();
-            return Content(xml, "application/xml");
+        return new SceneInfo
+        {
+            Id = sceneId,
+            LorFilePath = lorFilePath ?? string.Empty,
+            Content = content ?? string.Empty
+        };
+    }
+
+    /// <summary>
+    /// 获取项目的场景列表（不包含完整内容）
+    /// </summary>
+    [HttpGet("scenes")]
+    public async Task<IActionResult> GetScenes([FromQuery] string projectPath)
+    {
+        if (string.IsNullOrWhiteSpace(projectPath))
+        {
+            return BadRequest(new { success = false, error = "项目路径不能为空" });
+        }
+
+        try
+        {
+            var result = await ParseProjectAsync(projectPath);
+            var sceneList = result.Scenes.Select(s => new
+            {
+                id = s.Id,
+                lorFilePath = s.LorFilePath
+            }).ToList();
+
+            return Ok(new { success = true, data = sceneList });
         }
         catch (Exception ex)
         {
-            return BadRequest(new { error = $"打开项目失败: {ex.Message}" });
+            _logger.LogError(ex, "获取场景列表失败: {Path}", projectPath);
+            return StatusCode(500, new { success = false, error = ex.Message });
         }
     }
 
     /// <summary>
-    /// 保存当前项目并返回 .tlor 文件下载
+    /// 读取指定剧本文件的内容
     /// </summary>
-    [HttpPost("save")]
-    public async Task<IActionResult> SaveProject()
+    [HttpGet("scene")]
+    public async Task<IActionResult> GetScene([FromQuery] string path)
     {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return BadRequest(new { success = false, error = "文件路径不能为空" });
+        }
+
         try
         {
-            var editor = _sessionService.GetEditor();
-            if (editor.CurrentProject == null)
-                return BadRequest(new { error = "没有打开的项目" });
-
-            using var reader = new StreamReader(Request.Body);
-            var xml = await reader.ReadToEndAsync();
-
-            if (string.IsNullOrWhiteSpace(xml))
+            if (!System.IO.File.Exists(path))
             {
-                return BadRequest(new { error = "未提供 XML 数据" });
+                return NotFound(new { success = false, error = "文件不存在" });
             }
 
-            var success = await editor.SaveProjectFromXmlAsync(xml);
-            if (!success)
-                return BadRequest(new { error = "保存项目失败" });
+            var content = await System.IO.File.ReadAllTextAsync(path);
+            var sceneId = Path.GetFileNameWithoutExtension(path);
 
-            return Ok(new { message = "项目已保存" });
+            return Ok(new { success = true, data = new { id = sceneId, content } });
         }
         catch (Exception ex)
         {
-            return BadRequest(new { error = $"保存项目失败: {ex.Message}" });
-        }
-    }
-
-    /// <summary>
-    /// 获取当前项目状态
-    /// </summary>
-    /// <param name="activeSceneIndex">当前激活的场景索引（可选）</param>
-    /// <param name="selectedDialogueIndex">当前选中的对话索引（可选）</param>
-    [HttpGet("current")]
-    public async Task<IActionResult> GetCurrentProject([FromQuery] int? activeSceneIndex, [FromQuery] int? selectedDialogueIndex)
-    {
-        try
-        {
-            var editor = _sessionService.GetEditor();
-            if (editor.CurrentProject == null)
-                return NotFound(new { error = "没有打开的项目" });
-
-            var xml = await editor.ExportProjectToXmlAsync();
-            return Content(xml, "application/xml");
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = $"获取项目状态失败: {ex.Message}" });
-        }
-    }
-
-    /// <summary>
-    /// 上传 .tlor 项目文件并解析返回项目 JSON
-    /// </summary>
-    /// <param name="uploadedFile">上传的 .tlor 项目文件</param>
-    /// <param name="projectPath">可选：项目目录路径（用于直接访问项目文件而非临时目录）</param>
-    [HttpPost("upload")]
-    public async Task<IActionResult> UploadProject(IFormFile uploadedFile, [FromQuery] string? projectPath = null)
-    {
-        try
-        {
-            if (uploadedFile == null || uploadedFile.Length == 0)
-                return BadRequest(new { error = "未提供文件" });
-
-            string tempPath;
-            string effectiveProjectRoot;
-
-            if (!string.IsNullOrEmpty(projectPath))
-            {
-                Console.WriteLine($"[DEBUG] UploadProject: projectPath={projectPath}");
-                Console.WriteLine($"[DEBUG] Directory.Exists={System.IO.Directory.Exists(projectPath)}");
-                Console.WriteLine($"[DEBUG] IsPathRooted={System.IO.Path.IsPathRooted(projectPath)}");
-
-                if (System.IO.Directory.Exists(projectPath))
-                {
-                    var tlorPath = System.IO.Path.Combine(projectPath, "Project.tlor");
-                    if (System.IO.File.Exists(tlorPath))
-                    {
-                        tempPath = tlorPath;
-                        effectiveProjectRoot = projectPath;
-                        Console.WriteLine($"[DEBUG] 使用原始项目路径: {projectPath}");
-                    }
-                    else
-                    {
-                        return BadRequest(new { error = "项目路径中未找到 Project.tlor 文件" });
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"[DEBUG] 项目路径不存在或无效，使用临时目录");
-                    var tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "Visunovia", Guid.NewGuid().ToString());
-                    System.IO.Directory.CreateDirectory(tempDir);
-                    tempPath = System.IO.Path.Combine(tempDir, uploadedFile.FileName);
-                    effectiveProjectRoot = tempDir;
-
-                    using (var stream = new System.IO.FileStream(tempPath, System.IO.FileMode.Create))
-                    {
-                        await uploadedFile.CopyToAsync(stream);
-                    }
-                }
-            }
-            else
-            {
-                var tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "Visunovia", Guid.NewGuid().ToString());
-                System.IO.Directory.CreateDirectory(tempDir);
-                tempPath = System.IO.Path.Combine(tempDir, uploadedFile.FileName);
-                effectiveProjectRoot = tempDir;
-
-                using (var stream = new System.IO.FileStream(tempPath, System.IO.FileMode.Create))
-                {
-                    await uploadedFile.CopyToAsync(stream);
-                }
-            }
-
-            _sessionService.ResetEditor();
-            var editor = _sessionService.GetEditor();
-            var success = await editor.LoadProjectAsync(tempPath, effectiveProjectRoot);
-
-            if (!success)
-                return BadRequest(new { error = "无法解析项目文件" });
-
-            var xml = await editor.ExportProjectToXmlAsync();
-            return Content(xml, "application/xml");
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = $"上传项目失败: {ex.Message}" });
+            _logger.LogError(ex, "读取剧本失败: {Path}", path);
+            return StatusCode(500, new { success = false, error = ex.Message });
         }
     }
 }
 
 /// <summary>
-/// 创建新项目的请求体
+/// 导入项目请求
 /// </summary>
-/// <param name="Name">项目名称</param>
-/// <param name="Path">项目保存路径</param>
-public record NewProjectRequest(string Name, string Path);
+public class ImportProjectRequest
+{
+    public string ProjectPath { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// 项目解析结果
+/// </summary>
+public class ProjectParseResult
+{
+    public List<SceneInfo> Scenes { get; set; } = new();
+}
+
+/// <summary>
+/// 场景信息
+/// </summary>
+public class SceneInfo
+{
+    public string Id { get; set; } = string.Empty;
+    public string LorFilePath { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+}

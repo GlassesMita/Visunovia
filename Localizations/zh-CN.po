@@ -329,7 +329,10 @@ msgid "RemoteAccess.ConfirmMessage"
 msgstr "启用远程访问将允许局域网内的其他设备连接到本应用。\n\n此操作存在安全风险，可能导致您的数据被未授权访问。\n\n确定要启用远程访问吗？"
 
 msgid "RemoteAccess.ConfirmButton"
-msgstr "启用远程访问"
+msgstr "确认启用"
+
+msgid "RemoteAccess.Wait"
+msgstr "请等待"
 
 msgid "Settings.RemoteSessionLocked"
 msgstr "远程会话期间无法关闭远程访问"

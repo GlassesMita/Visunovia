@@ -55,7 +55,8 @@ public class FileBrowserController : ControllerBase
                             letter,
                             name = volumeLabel,
                             totalSpace,
-                            freeSpace
+                            freeSpace,
+                            fileSystem = drive.DriveFormat
                         });
                     }
                     catch (UnauthorizedAccessException)

@@ -2,7 +2,7 @@
   <div class="about-page">
     <div class="about-container">
       <div class="app-header">
-        <h1>{{ t('app.title').value }}</h1>
+        <h1>{{ t('app.title') }}</h1>
         <p class="version">Version {{ appVersion }}</p>
       </div>
 

@@ -194,8 +194,8 @@
             <p class="setting-desc">{{ t('settings.allowremotesessionhint') || 'Allow LAN devices to connect. Requires restart.' }}</p>
           </div>
           <div class="setting-control">
-            <label class="toggle-switch">
-              <input type="checkbox" v-model="settings.allowRemoteSession" />
+            <label class="toggle-switch" @click.prevent="onRemoteToggle">
+              <input type="checkbox" :checked="settings.allowRemoteSession" @click.stop />
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -229,6 +229,38 @@
         </div>
       </div>
 
+      <!-- 远程访问警告全屏遮罩 -->
+      <Teleport to="body">
+        <Transition name="warn-fade">
+          <div v-if="showRemoteWarning" class="remote-warning-overlay" @click.stop>
+            <div class="remote-warning-box">
+              <div class="remote-warning-header">
+                <span class="remote-warning-icon">⚠️</span>
+                <h2>{{ t('remoteaccess.confirmtitle', 'Enable Remote Access') }}</h2>
+              </div>
+              <div class="remote-warning-body">
+                <p class="remote-warning-desc">
+                  {{ t('remoteaccess.confirmmessage', 'Enabling remote access will allow LAN devices to connect to this application.\n\nThis poses a security risk and may allow unauthorized access to your data.\n\nAre you sure you want to enable remote access?') }}
+                </p>
+              </div>
+              <div class="remote-warning-footer">
+                <button class="btn-warning-cancel" @click="cancelRemoteEnable">
+                  {{ t('common.cancel') || 'Cancel' }}
+                </button>
+                <button
+                  class="btn-warning-confirm"
+                  :disabled="countdown > 0"
+                  @click="confirmRemoteEnable"
+                >
+                  <span v-if="countdown > 0">{{ t('remoteaccess.wait', 'Wait') }} {{ countdown }}s</span>
+                  <span v-else>{{ t('remoteaccess.confirmbutton', 'Enable Remote Access') }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
+
       <!-- 底部操作栏 -->
       <div class="prefs-footer">
         <div v-if="saveMessage" class="save-toast" :class="{ error: saveError }">
@@ -248,7 +280,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, onMounted, markRaw } from 'vue'
+import { reactive, ref, computed, watch, onMounted, onBeforeUnmount, markRaw } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useLocalizationStore } from '@/stores/useLocalizationStore'
 import { settingsApi } from '@/api'
@@ -273,10 +305,10 @@ interface Category {
 }
 
 const categories = computed<Category[]>(() => [
-  { key: 'general', label: t('settings.general').value, icon: markRaw(Settings2) },
-  { key: 'editor', label: t('settings.editor').value, icon: markRaw(Palette) },
-  { key: 'preview', label: t('settings.preview').value, icon: markRaw(Eye) },
-  { key: 'network', label: t('settings.network').value, icon: markRaw(Wifi) },
+  { key: 'general', label: t('settings.general'), icon: markRaw(Settings2) },
+  { key: 'editor', label: t('settings.editor'), icon: markRaw(Palette) },
+  { key: 'preview', label: t('settings.preview'), icon: markRaw(Eye) },
+  { key: 'network', label: t('settings.network'), icon: markRaw(Wifi) },
 ])
 
 const activeCategory = ref('general')
@@ -302,10 +334,29 @@ const settings = reactive({
 const saveMessage = ref('')
 const saveError = ref(false)
 
+// 远程访问警告状态
+const showRemoteWarning = ref(false)
+const countdown = ref(0)
+let countdownTimer: ReturnType<typeof setInterval> | null = null
+
 // 同步加载设置（无异步等待，立即渲染）
 onMounted(() => {
   loadSettings()
   applyTheme(settings.theme)
+})
+
+// 锁定/解锁 body 滚动（全屏遮罩时禁止页面滚动）
+watch(showRemoteWarning, (show) => {
+  document.body.style.overflow = show ? 'hidden' : ''
+})
+
+// 组件卸载时清理定时器和 body 滚动锁定
+onBeforeUnmount(() => {
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+  document.body.style.overflow = ''
 })
 
 function loadSettings() {
@@ -369,10 +420,10 @@ async function saveSettings() {
 
   try {
     await settingsApi.saveSettings(backendSettings)
-    saveMessage.value = t('settings.savedsuccess').value
+    saveMessage.value = t('settings.savedsuccess')
     saveError.value = false
   } catch {
-    saveMessage.value = t('settings.savedlocal').value
+    saveMessage.value = t('settings.savedlocal')
     saveError.value = false
   }
 
@@ -384,6 +435,45 @@ async function saveSettings() {
   }
 
   setTimeout(() => { saveMessage.value = '' }, 3000)
+}
+
+function onRemoteToggle() {
+  if (settings.allowRemoteSession) {
+    // 当前已开启 → 直接关闭（无需警告）
+    settings.allowRemoteSession = false
+  } else {
+    // 当前未开启 → 显示警告遮罩，开始倒计时
+    showRemoteWarning.value = true
+    countdown.value = 5
+    countdownTimer = setInterval(() => {
+      countdown.value--
+      if (countdown.value <= 0 && countdownTimer) {
+        clearInterval(countdownTimer)
+        countdownTimer = null
+      }
+    }, 1000)
+  }
+}
+
+function cancelRemoteEnable() {
+  showRemoteWarning.value = false
+  countdown.value = 0
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+}
+
+function confirmRemoteEnable() {
+  if (countdown.value > 0) return
+  // 二次确认：用户点击了确认按钮
+  showRemoteWarning.value = false
+  countdown.value = 0
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+  settings.allowRemoteSession = true
 }
 
 function resetSettings() {
@@ -730,5 +820,114 @@ function resetSettings() {
   .prefs-footer {
     padding: 12px 16px;
   }
+}
+
+/* ========== Remote Access Warning Overlay ========== */
+.remote-warning-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.remote-warning-box {
+  background: #2d2d30;
+  border: 1px solid #ff6b6b;
+  border-radius: 8px;
+  width: 480px;
+  max-width: 90vw;
+  box-shadow: 0 0 40px rgba(255, 107, 107, 0.15), 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.remote-warning-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px 12px;
+}
+
+.remote-warning-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.remote-warning-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ff6b6b;
+}
+
+.remote-warning-body {
+  padding: 0 24px 16px;
+}
+
+.remote-warning-desc {
+  margin: 0;
+  font-size: 14px;
+  color: #cccccc;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.remote-warning-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #3e3e42;
+}
+
+.btn-warning-cancel {
+  padding: 8px 20px;
+  background: #3c3c3c;
+  color: #cccccc;
+  border: 1px solid #555555;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-warning-cancel:hover {
+  background: #4a4a4a;
+}
+
+.btn-warning-confirm {
+  padding: 8px 20px;
+  background: #ff6b6b;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.btn-warning-confirm:hover:not(:disabled) {
+  background: #ff5252;
+}
+
+.btn-warning-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Overlay transition */
+.warn-fade-enter-active,
+.warn-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.warn-fade-enter-from,
+.warn-fade-leave-to {
+  opacity: 0;
 }
 </style>

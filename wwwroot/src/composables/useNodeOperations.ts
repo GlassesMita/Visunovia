@@ -119,7 +119,13 @@ async function restoreNodeProperties(
 
 async function deserializeToEditor(editor: Editor, data: SerializedSceneGraph) {
   const graph = editor.graph as any
-  graph.clear?.() || (graph.nodes = [] && (graph.connections = []))
+  
+  if (typeof graph.clear === 'function') {
+    graph.clear()
+  } else {
+    if (Array.isArray(graph.nodes)) graph.nodes.length = 0
+    if (Array.isArray(graph.connections)) graph.connections.length = 0
+  }
   
   for (const nodeData of data.nodes) {
     const nodeTypeInfo = editor.nodeTypes.get(nodeData.nodeType)
@@ -149,18 +155,34 @@ async function deserializeToEditor(editor: Editor, data: SerializedSceneGraph) {
   
   await new Promise((resolve) => setTimeout(resolve, 100))
   
+  console.log('[deserializeToEditor] Starting to restore', data.connections?.length || 0, 'connections')
+  
   for (const connData of data.connections) {
     try {
       const fromNode = editor.graph.nodes.find((n) => n.id === connData.source)
       const toNode = editor.graph.nodes.find((n) => n.id === connData.target)
       
-      if (!fromNode || !toNode) continue
+      if (!fromNode) {
+        console.warn(`[deserializeToEditor] From node not found: ${connData.source}`)
+        continue
+      }
+      if (!toNode) {
+        console.warn(`[deserializeToEditor] To node not found: ${connData.target}`)
+        continue
+      }
+      
+      console.log(`[deserializeToEditor] Connecting: ${connData.source}:${connData.sourcePort} -> ${connData.target}:${connData.targetPort}`)
+      console.log(`[deserializeToEditor] fromNode.outputs keys:`, Object.keys(fromNode.outputs || {}))
+      console.log(`[deserializeToEditor] toNode.inputs keys:`, Object.keys(toNode.inputs || {}))
       
       const fromPort = fromNode.outputs?.[connData.sourcePort]
       const toPort = toNode.inputs?.[connData.targetPort]
       
       if (fromPort && toPort) {
         editor.graph.addConnection(fromPort, toPort)
+        console.log(`[deserializeToEditor] Connection added successfully`)
+      } else {
+        console.warn(`[deserializeToEditor] Ports not found: fromPort=${!!fromPort}, toPort=${!!toPort}`)
       }
     } catch (e) {
       console.error(`[useNodeOperations] Failed to restore connection:`, e)

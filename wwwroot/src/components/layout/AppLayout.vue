@@ -74,6 +74,24 @@
       <ConsolePanel />
     </div>
 
+    <!-- 文件浏览器模态框 -->
+    <FileExplorer
+      :visible="uiStore.showFileExplorer"
+      title="打开项目"
+      :file-filter="['.tlor']"
+      @close="uiStore.closeFileExplorer()"
+      @select="(path: string, isDir: boolean) => { uiStore.closeFileExplorer(); if (path) loadSceneGraph(path); }"
+    />
+
+    <!-- 新建项目文件夹选择器 -->
+    <FileExplorer
+      :visible="uiStore.showNewProjectExplorer"
+      title="新建项目 — 选择文件夹"
+      :allow-select-directory="true"
+      @close="uiStore.closeNewProjectExplorer()"
+      @select="handleNewProjectSelect"
+    />
+
     <!-- Project 面板 — 右侧弹出模态框 -->
     <Transition name="slide-fade">
       <div
@@ -94,10 +112,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useUIStore } from '@/stores/useUIStore'
 import { useShortcuts } from '@/composables/useShortcuts'
+import { useProjectImport } from '@/composables/useProjectImport'
+import { useNodeOperations } from '@/composables/useNodeOperations'
 import MenuBar from './MenuBar.vue'
 import Toolbar from './Toolbar.vue'
 import StatusBar from './StatusBar.vue'
@@ -106,11 +126,45 @@ import InspectorPanel from '@/components/panels/InspectorPanel.vue'
 import HierarchyPanel from '@/components/panels/HierarchyPanel.vue'
 import ConsolePanel from '@/components/panels/ConsolePanel.vue'
 import BaklavaEditor from '@/components/BaklavaEditor.vue'
+import FileExplorer from '@/components/FileExplorer.vue'
 
 const { t } = useLocalization()
 const uiStore = useUIStore()
+const projectImport = useProjectImport()
+const { loadSceneGraph, newGraph } = useNodeOperations()
+const editorReady = ref(false)
 
 useShortcuts()
+
+onMounted(() => {
+  // 等待编辑器初始化后再导入项目
+  const checkEditorReady = () => {
+    if ((window as any).__editor) {
+      editorReady.value = true
+      importProjectIfNeeded()
+    } else {
+      setTimeout(checkEditorReady, 100)
+    }
+  }
+  checkEditorReady()
+})
+
+async function importProjectIfNeeded() {
+  if (editorReady.value) {
+    const success = await projectImport.importFromUrl()
+    if (success) {
+      console.log(`[AppLayout] 项目已导入: ${projectImport.importedSceneId.value}`)
+    }
+  }
+}
+
+function handleNewProjectSelect(path: string, isDir: boolean) {
+  uiStore.closeNewProjectExplorer()
+  if (path && isDir) {
+    newGraph()
+    console.log(`[AppLayout] 新建项目，目录: ${path}`)
+  }
+}
 
 const rightActiveTab = ref<'inspector' | 'hierarchy'>('inspector')
 

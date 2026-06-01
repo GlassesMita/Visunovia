@@ -9,6 +9,7 @@
     <EnableStaticWebAssetsSupport>false</EnableStaticWebAssetsSupport>
     <StaticWebAssetPrecompress>false</StaticWebAssetPrecompress>
     <EnableStaticWebAssetManifestInBuild>false</EnableStaticWebAssetManifestInBuild>
+    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,17 +24,9 @@
     <EmbeddedResource Remove="_Visunovia\**" />
     <EmbeddedResource Remove="_Visunovia_backup\**" />
 
-    <!-- 直接复制整个 wwwroot 目录到编译输出和发布目录（包含源码） -->
-    <Content Update="wwwroot\**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-
     <!-- 本地化文件 -->
-    <Content Include="Localizations\*.po">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
+    <Content Include="Localizations\*.po" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+
   </ItemGroup>
 
   <ItemGroup>
@@ -42,6 +35,20 @@
     <PackageReference Include="YamlDotNet" Version="17.1.0" />
   </ItemGroup>
 
+  <!-- Release 发布：用 www_build 构建产物替换发布目录中的 wwwroot -->
+  <Target Name="ReplaceWwwrootWithBuild" AfterTargets="Publish" Condition="'$(Configuration)' == 'Release'">
+    <Message Text="[Release] Replacing wwwroot with www_build artifacts..." Importance="high" />
+    <!-- 删除发布目录中的整个 wwwroot（包含源码） -->
+    <RemoveDir Directories="$(PublishDir)wwwroot" />
+    <!-- 重新创建 wwwroot 并复制构建产物 -->
+    <MakeDir Directories="$(PublishDir)wwwroot" />
+    <ItemGroup>
+      <VueBuildFiles Include="$(ProjectDir)www_build\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(VueBuildFiles)" DestinationFiles="@(VueBuildFiles->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Message Text="[Release] wwwroot replaced with @(VueBuildFiles->Count()) build files." Importance="high" />
+  </Target>
+
   <!-- 发布后清理 StaticWebAssets 产生的嵌套目录 -->
   <Target Name="CleanNestedPublishDirs" AfterTargets="Publish">
     <RemoveDir Directories="$(PublishDir)Visunovia" Condition="Exists('$(PublishDir)Visunovia')" />
@@ -49,28 +56,6 @@
     <RemoveDir Directories="$(PublishDir)releases" Condition="Exists('$(PublishDir)releases')" />
     <Delete Files="$(PublishDir)Visunovia.staticwebassets.endpoints.json" Condition="Exists('$(PublishDir)Visunovia.staticwebassets.endpoints.json')" />
     <Delete Files="$(PublishDir)Visunovia.staticwebassets.runtime.json" Condition="Exists('$(PublishDir)Visunovia.staticwebassets.runtime.json')" />
-  </Target>
-
-  <!-- 在编译前（仅 Release 配置），将 www_build 目录的内容复制到 wwwroot 目录 -->
-  <!-- 开发模式下不需要此步骤，因为 Vite.AspNetCore 会直接服务前端源码 -->
-  <Target Name="CopyVueBuildToWwwroot" BeforeTargets="PrepareForBuild" Condition="'$(Configuration)' == 'Release'">
-    <Message Text="Checking for www_build directory..." Importance="high" />
-    <Message Text="ProjectDir: $(ProjectDir)" Importance="high" />
-    
-    <!-- 检查 www_build 目录是否存在 -->
-    <Message Text="www_build exists: $([System.IO.Directory]::Exists('$(ProjectDir)www_build'))" Importance="high" />
-    
-    <!-- 如果 www_build 存在，则复制其内容到 wwwroot -->
-    <ItemGroup>
-      <VueBuildFiles Include="$(ProjectDir)www_build\**\*" />
-    </ItemGroup>
-    
-    <Message Text="VueBuildFiles count: @(VueBuildFiles-&gt;Count())" Importance="high" />
-    
-    <!-- 复制文件到 wwwroot -->
-    <Copy SourceFiles="@(VueBuildFiles)" DestinationFiles="@(VueBuildFiles->'$(ProjectDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" Condition="Exists('$(ProjectDir)www_build')" />
-          
-    <Message Text="Vue build copied to wwwroot" Importance="high" Condition="Exists('$(ProjectDir)www_build')" />
   </Target>
 
 </Project>

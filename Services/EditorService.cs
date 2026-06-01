@@ -64,6 +64,7 @@ public class EditorService
                     {
                         new VNDialogue
                         {
+                            Uuid = System.Guid.NewGuid().ToString(),
                             Speaker = "Visunovia",
                             Text = "欢迎使用 Visunovia 视觉小说引擎！"
                         }
@@ -1081,7 +1082,7 @@ public class EditorService
 
                                 if (typeAttr == "Branch")
                                 {
-                                    dialogue = new VNDialogue { Type = VNDialogueType.Branch };
+                                    dialogue = new VNDialogue { Uuid = System.Guid.NewGuid().ToString(), Type = VNDialogueType.Branch };
                                     var branchElem = dialogueElem.Element("branch");
                                     if (branchElem != null)
                                     {
@@ -1104,7 +1105,7 @@ public class EditorService
                                 }
                                 else if (typeAttr == "Event")
                                 {
-                                    dialogue = new VNDialogue { Type = VNDialogueType.Event };
+                                    dialogue = new VNDialogue { Uuid = System.Guid.NewGuid().ToString(), Type = VNDialogueType.Event };
                                     var eventElem = dialogueElem.Element("event");
                                     if (eventElem != null)
                                     {
@@ -1143,7 +1144,7 @@ public class EditorService
                                 }
                                 else
                                 {
-                                    dialogue = new VNDialogue { Type = VNDialogueType.Dialogue };
+                                    dialogue = new VNDialogue { Uuid = System.Guid.NewGuid().ToString(), Type = VNDialogueType.Dialogue };
                                     dialogue.Speaker = dialogueElem.Element("speaker")?.Value ?? "";
                                     dialogue.Text = dialogueElem.Element("text")?.Value ?? "";
                                     dialogue.Sprites = new List<VNSprite>();

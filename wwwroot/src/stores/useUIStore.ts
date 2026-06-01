@@ -8,6 +8,8 @@ export const useUIStore = defineStore('ui', () => {
   const showPreviewPanel = ref(false)
   const showHierarchyPanel = ref(true)
   const showProjectPopup = ref(false)
+  const showFileExplorer = ref(false)
+  const showNewProjectExplorer = ref(false)
   const activePanel = ref<string | null>(null)
   const theme = ref<'light' | 'dark'>('dark')
 
@@ -51,6 +53,22 @@ export const useUIStore = defineStore('ui', () => {
     showProjectPopup.value = false
   }
 
+  function openFileExplorer() {
+    showFileExplorer.value = true
+  }
+
+  function closeFileExplorer() {
+    showFileExplorer.value = false
+  }
+
+  function openNewProjectExplorer() {
+    showNewProjectExplorer.value = true
+  }
+
+  function closeNewProjectExplorer() {
+    showNewProjectExplorer.value = false
+  }
+
   return {
     showProjectPanel,
     showInspectorPanel,
@@ -65,6 +83,12 @@ export const useUIStore = defineStore('ui', () => {
     setTheme,
     toggleTheme,
     openProjectPopup,
-    closeProjectPopup
+    closeProjectPopup,
+    showFileExplorer,
+    openFileExplorer,
+    closeFileExplorer,
+    showNewProjectExplorer,
+    openNewProjectExplorer,
+    closeNewProjectExplorer
   }
 })

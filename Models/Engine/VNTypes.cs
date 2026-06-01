@@ -154,6 +154,7 @@ public class VNEvent
 
 public class VNDialogue
 {
+    public string Uuid { get; set; } = string.Empty;
     public VNDialogueType Type { get; set; } = VNDialogueType.Dialogue;
     public string Speaker { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
@@ -164,4 +165,6 @@ public class VNDialogue
     public VNBranch? Branch { get; set; }
     public VNEvent? Event { get; set; }
     public VNTransition? Transition { get; set; }
+    public double? PositionX { get; set; }
+    public double? PositionY { get; set; }
 }

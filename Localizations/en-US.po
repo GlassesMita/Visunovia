@@ -329,7 +329,10 @@ msgid "RemoteAccess.ConfirmMessage"
 msgstr "Enabling remote access will allow other devices on the network to connect to this application.\n\nThis is a potentially dangerous operation that may expose your data to unauthorized access.\n\nAre you sure you want to enable remote access?"
 
 msgid "RemoteAccess.ConfirmButton"
-msgstr "Enable Remote Access"
+msgstr "Confirm Enable"
+
+msgid "RemoteAccess.Wait"
+msgstr "Wait"
 
 msgid "Settings.RemoteSessionLocked"
 msgstr "Remote access cannot be disabled during a remote session"

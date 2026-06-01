@@ -1,4 +1,4 @@
-import { computed, type ComputedRef } from 'vue'
+import { computed } from 'vue'
 import { useLocalizationStore } from '@/stores/useLocalizationStore'
 import { tSync, translationVersion } from '@/services/translationService'
 
@@ -20,17 +20,12 @@ export function useLocalization() {
   const availableLanguages = computed(() => store.availableLanguages)
 
   /**
-   * 同步翻译 — 返回 ComputedRef<string>
-   * 当翻译缓存更新时，返回值自动更新
+   * 同步翻译 — 返回 string
    * @param key - 翻译键
    * @param fallback - 缓存未命中时的回退文本
    */
-  function t(key: string, fallback?: string): ComputedRef<string> {
-    return computed(() => {
-      // 读取 translationVersion 使其成为响应式依赖
-      void translationVersion.value
-      return tSync(key, fallback)
-    })
+  function t(key: string, fallback?: string): string {
+    return tSync(key, fallback)
   }
 
   /**

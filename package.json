@@ -1,0 +1,23 @@
+{
+  "name": "visunovia",
+  "version": "1.0.0",
+  "description": "Visunovia 是一款基于 Web 的视觉小说编辑器，采用现代化的技术栈，提供直观的节点图编辑器和实时预览功能。",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GlassesMita/Visunovia.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/GlassesMita/Visunovia/issues"
+  },
+  "homepage": "https://github.com/GlassesMita/Visunovia#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^25.9.1"
+  }
+}
