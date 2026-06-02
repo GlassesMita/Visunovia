@@ -12,6 +12,8 @@ public class VNMetadata
     public string Title { get; set; } = "未命名项目";
     public string Author { get; set; } = "";
     public string Version { get; set; } = "1.0";
+    public string VersionCode { get; set; } = "1";
+    public string CompanyName { get; set; } = "";
 }
 
 public class VNCustomMethod

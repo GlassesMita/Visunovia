@@ -244,3 +244,130 @@ export const fileBrowserApi = {
     return await apiClient.delete(`/files?path=${encodeURIComponent(path)}`)
   }
 }
+
+// ==================== YAML ↔ Blueprint 转换 API ====================
+
+export interface YamlExportResult {
+  sceneId: string
+  yamlContent: string
+  exportedAt: string
+}
+
+export interface YamlImportResult {
+  sceneId: string
+  nodeCount: number
+  edgeCount: number
+  importedAt: string
+}
+
+export interface YamlValidationResult {
+  valid: boolean
+  errors: string[]
+  warnings: string[]
+  stats: {
+    nodeCount: number
+    edgeCount: number
+    resourceCount: number
+    uuidCount: number
+  }
+}
+
+export interface UuidEntry {
+  uuid: string
+  entityType: string
+  name: string
+  displayName: string
+  createdAt: string
+  updatedAt: string
+}
+
+export const yamlConversionApi = {
+  /** 导出蓝图为 YAML */
+  exportYaml: async (
+    sceneId: string,
+    options?: { displayName?: string; description?: string; author?: string }
+  ): Promise<ApiResponse<YamlExportResult>> => {
+    const params = new URLSearchParams()
+    if (options?.displayName) params.set('displayName', options.displayName)
+    if (options?.description) params.set('description', options.description)
+    if (options?.author) params.set('author', options.author)
+    const qs = params.toString() ? `?${params.toString()}` : ''
+    const response = await apiClient.get(`/yaml/export/${sceneId}${qs}`)
+    return response.data
+  },
+
+  /** 下载 YAML 文件 */
+  downloadYaml: (
+    sceneId: string,
+    options?: { displayName?: string; description?: string; author?: string }
+  ): string => {
+    const params = new URLSearchParams()
+    if (options?.displayName) params.set('displayName', options.displayName)
+    if (options?.description) params.set('description', options.description)
+    if (options?.author) params.set('author', options.author)
+    const qs = params.toString() ? `?${params.toString()}` : ''
+    return `/api/yaml/download/${sceneId}${qs}`
+  },
+
+  /** 从 YAML 内容导入蓝图 */
+  importYaml: async (
+    sceneId: string,
+    yamlContent: string,
+    clearExisting: boolean = true
+  ): Promise<ApiResponse<YamlImportResult>> => {
+    const response = await apiClient.post(`/yaml/import/${sceneId}`, {
+      yamlContent,
+      clearExisting,
+    })
+    return response.data
+  },
+
+  /** 上传 YAML 文件并导入 */
+  uploadYaml: async (
+    sceneId: string,
+    file: File
+  ): Promise<ApiResponse<YamlImportResult>> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await apiClient.post(`/yaml/upload/${sceneId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
+  },
+
+  /** 验证 YAML 格式 */
+  validateYaml: async (
+    yamlContent: string
+  ): Promise<ApiResponse<YamlValidationResult>> => {
+    const response = await apiClient.post('/yaml/validate', { yamlContent })
+    return response.data
+  },
+
+  /** 获取 UUID 注册表 */
+  getUuidRegistry: async (): Promise<ApiResponse<UuidEntry[]>> => {
+    const response = await apiClient.get('/yaml/uuid-registry')
+    return response.data
+  },
+
+  /** 按类型获取 UUID 注册表 */
+  getUuidRegistryByType: async (
+    entityType: string
+  ): Promise<ApiResponse<UuidEntry[]>> => {
+    const response = await apiClient.get(`/yaml/uuid-registry/${entityType}`)
+    return response.data
+  },
+
+  /** 获取 UUID 详情 */
+  getUuidDetail: async (uuid: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.get(`/yaml/uuid-registry/detail/${uuid}`)
+    return response.data
+  },
+
+  /** 获取 YAML 快照 */
+  getYamlSnapshot: async (
+    sceneId: string
+  ): Promise<ApiResponse<{ sceneId: string; yamlContent: string }>> => {
+    const response = await apiClient.get(`/yaml/snapshot/${sceneId}`)
+    return response.data
+  },
+}

@@ -27,6 +27,21 @@ public class SystemController : ControllerBase
         return Ok(new { message = "服务正在关闭" });
     }
 
+    /// <summary>
+    /// 前端请求退出应用程序
+    /// </summary>
+    [HttpPost("quit")]
+    public IActionResult Quit()
+    {
+        Task.Run(async () =>
+        {
+            await Task.Delay(500);
+            _lifetime.StopApplication();
+        });
+
+        return Ok(new { success = true, message = "Application is quitting" });
+    }
+
     [HttpPost("send-notification")]
     public IActionResult SendNotification([FromBody] SendNotificationRequest request)
     {

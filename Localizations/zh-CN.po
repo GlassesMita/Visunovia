@@ -1250,3 +1250,97 @@ msgstr "字体"
 
 msgid "resourceTypes.data"
 msgstr "数据"
+
+# ============================================================
+# New Project Modal & Project Preferences (PascalCase keys)
+# ============================================================
+
+msgid "Project.NewProject"
+msgstr "新建项目"
+
+msgid "Project.ProjectName"
+msgstr "项目名称"
+
+msgid "Project.ProjectNamePlaceholder"
+msgstr "输入项目名称"
+
+msgid "Project.CompanyName"
+msgstr "公司名称"
+
+msgid "Project.CompanyNamePlaceholder"
+msgstr "输入公司名称"
+
+msgid "Project.Version"
+msgstr "版本"
+
+msgid "Project.VersionCode"
+msgstr "版本号"
+
+msgid "Project.ProjectLocation"
+msgstr "项目位置"
+
+msgid "Project.LocationPlaceholder"
+msgstr "选择项目保存目录"
+
+msgid "Project.BrowseFolder"
+msgstr "浏览文件夹"
+
+msgid "Project.Browse"
+msgstr "浏览"
+
+msgid "Project.FullPath"
+msgstr "完整路径"
+
+msgid "Project.ProjectStructure"
+msgstr "项目结构"
+
+msgid "Project.Create"
+msgstr "创建"
+
+msgid "Project.CreateSuccess"
+msgstr "项目创建成功"
+
+msgid "Project.CreateFailed"
+msgstr "项目创建失败"
+
+msgid "Project.SelectFolder"
+msgstr "选择文件夹"
+
+msgid "Project.DirectoryExists"
+msgstr "该目录下已存在同名项目文件夹"
+
+msgid "Project.DirectoryNotEmpty"
+msgstr "该目录下已存在同名项目文件夹且不为空"
+
+msgid "Project.ProjectPreferences"
+msgstr "项目首选项"
+
+msgid "Project.ProjectPath"
+msgstr "项目路径"
+
+msgid "Project.SubDirectories"
+msgstr "子目录"
+
+msgid "Project.NoProjectOpen"
+msgstr "当前没有打开的项目"
+
+msgid "Project.SettingsSaved"
+msgstr "项目设置已保存"
+
+msgid "Project.SaveFailed"
+msgstr "保存失败"
+
+msgid "Project.LoadFailed"
+msgstr "加载项目信息失败"
+
+msgid "Menu.ProjectPreferences"
+msgstr "项目首选项"
+
+msgid "FileBrowser.QuickAccessSelect"
+msgstr "选择此目录"
+
+msgid "FileBrowser.NewFolder"
+msgstr "新建文件夹"
+
+msgid "FileBrowser.FolderNamePlaceholder"
+msgstr "输入文件夹名称"

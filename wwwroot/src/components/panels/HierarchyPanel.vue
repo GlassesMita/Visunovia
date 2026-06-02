@@ -98,7 +98,7 @@ function getNodeDisplayName(node: any): string {
     if (subType) {
       // 将 subType key 转为 i18n label
       const typeKey = `eventTypes.${subType}`
-      const translated = t(typeKey)
+      const translated = t(typeKey).value
       return translated !== typeKey ? translated : subType
     }
   }

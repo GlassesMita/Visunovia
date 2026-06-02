@@ -1248,3 +1248,97 @@ msgstr "字型"
 
 msgid "resourceTypes.data"
 msgstr "資料"
+
+# ============================================================
+# New Project Modal & Project Preferences (PascalCase keys)
+# ============================================================
+
+msgid "Project.NewProject"
+msgstr "新建專案"
+
+msgid "Project.ProjectName"
+msgstr "專案名稱"
+
+msgid "Project.ProjectNamePlaceholder"
+msgstr "輸入專案名稱"
+
+msgid "Project.CompanyName"
+msgstr "公司名稱"
+
+msgid "Project.CompanyNamePlaceholder"
+msgstr "輸入公司名稱"
+
+msgid "Project.Version"
+msgstr "版本"
+
+msgid "Project.VersionCode"
+msgstr "版本號"
+
+msgid "Project.ProjectLocation"
+msgstr "專案位置"
+
+msgid "Project.LocationPlaceholder"
+msgstr "選擇專案儲存目錄"
+
+msgid "Project.BrowseFolder"
+msgstr "瀏覽資料夾"
+
+msgid "Project.Browse"
+msgstr "瀏覽"
+
+msgid "Project.FullPath"
+msgstr "完整路徑"
+
+msgid "Project.ProjectStructure"
+msgstr "專案結構"
+
+msgid "Project.Create"
+msgstr "建立"
+
+msgid "Project.CreateSuccess"
+msgstr "專案建立成功"
+
+msgid "Project.CreateFailed"
+msgstr "專案建立失敗"
+
+msgid "Project.SelectFolder"
+msgstr "選擇資料夾"
+
+msgid "Project.DirectoryExists"
+msgstr "該目錄下已存在同名專案資料夾"
+
+msgid "Project.DirectoryNotEmpty"
+msgstr "該目錄下已存在同名專案資料夾且不為空"
+
+msgid "Project.ProjectPreferences"
+msgstr "專案偏好設定"
+
+msgid "Project.ProjectPath"
+msgstr "專案路徑"
+
+msgid "Project.SubDirectories"
+msgstr "子目錄"
+
+msgid "Project.NoProjectOpen"
+msgstr "目前沒有打開的專案"
+
+msgid "Project.SettingsSaved"
+msgstr "專案設定已儲存"
+
+msgid "Project.SaveFailed"
+msgstr "儲存失敗"
+
+msgid "Project.LoadFailed"
+msgstr "載入專案資訊失敗"
+
+msgid "Menu.ProjectPreferences"
+msgstr "專案偏好設定"
+
+msgid "FileBrowser.QuickAccessSelect"
+msgstr "選擇此目錄"
+
+msgid "FileBrowser.NewFolder"
+msgstr "新建資料夾"
+
+msgid "FileBrowser.FolderNamePlaceholder"
+msgstr "輸入資料夾名稱"

@@ -1248,3 +1248,97 @@ msgstr "フォント"
 
 msgid "resourceTypes.data"
 msgstr "データ"
+
+# ============================================================
+# New Project Modal & Project Preferences (PascalCase keys)
+# ============================================================
+
+msgid "Project.NewProject"
+msgstr "新規プロジェクト"
+
+msgid "Project.ProjectName"
+msgstr "プロジェクト名"
+
+msgid "Project.ProjectNamePlaceholder"
+msgstr "プロジェクト名を入力"
+
+msgid "Project.CompanyName"
+msgstr "会社名"
+
+msgid "Project.CompanyNamePlaceholder"
+msgstr "会社名を入力"
+
+msgid "Project.Version"
+msgstr "バージョン"
+
+msgid "Project.VersionCode"
+msgstr "バージョンコード"
+
+msgid "Project.ProjectLocation"
+msgstr "プロジェクトの場所"
+
+msgid "Project.LocationPlaceholder"
+msgstr "プロジェクトの保存先を選択"
+
+msgid "Project.BrowseFolder"
+msgstr "フォルダを参照"
+
+msgid "Project.Browse"
+msgstr "参照"
+
+msgid "Project.FullPath"
+msgstr "フルパス"
+
+msgid "Project.ProjectStructure"
+msgstr "プロジェクト構造"
+
+msgid "Project.Create"
+msgstr "作成"
+
+msgid "Project.CreateSuccess"
+msgstr "プロジェクトが正常に作成されました"
+
+msgid "Project.CreateFailed"
+msgstr "プロジェクトの作成に失敗しました"
+
+msgid "Project.SelectFolder"
+msgstr "フォルダを選択"
+
+msgid "Project.DirectoryExists"
+msgstr "同じ名前のプロジェクトフォルダが既に存在します"
+
+msgid "Project.DirectoryNotEmpty"
+msgstr "同じ名前のプロジェクトフォルダが既に存在し、空ではありません"
+
+msgid "Project.ProjectPreferences"
+msgstr "プロジェクト設定"
+
+msgid "Project.ProjectPath"
+msgstr "プロジェクトパス"
+
+msgid "Project.SubDirectories"
+msgstr "サブディレクトリ"
+
+msgid "Project.NoProjectOpen"
+msgstr "現在開いているプロジェクトはありません"
+
+msgid "Project.SettingsSaved"
+msgstr "プロジェクト設定が保存されました"
+
+msgid "Project.SaveFailed"
+msgstr "保存に失敗しました"
+
+msgid "Project.LoadFailed"
+msgstr "プロジェクト情報の読み込みに失敗しました"
+
+msgid "Menu.ProjectPreferences"
+msgstr "プロジェクト設定"
+
+msgid "FileBrowser.QuickAccessSelect"
+msgstr "このディレクトリを選択"
+
+msgid "FileBrowser.NewFolder"
+msgstr "新規フォルダ"
+
+msgid "FileBrowser.FolderNamePlaceholder"
+msgstr "フォルダ名を入力"

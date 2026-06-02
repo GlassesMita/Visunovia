@@ -20,12 +20,18 @@ export function useLocalization() {
   const availableLanguages = computed(() => store.availableLanguages)
 
   /**
-   * 同步翻译 — 返回 string
+   * 同步翻译 — 返回 ComputedRef<string>
+   * 当翻译缓存更新时（translationVersion 递增）自动重新计算
    * @param key - 翻译键
    * @param fallback - 缓存未命中时的回退文本
    */
-  function t(key: string, fallback?: string): string {
-    return tSync(key, fallback)
+  function t(key: string, fallback?: string): ComputedRef<string> {
+    return computed(() => {
+      // 读取 translationVersion 作为响应式依赖，
+      // 当翻译缓存更新时触发重新计算
+      void translationVersion.value
+      return tSync(key, fallback)
+    })
   }
 
   /**

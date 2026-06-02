@@ -30,6 +30,16 @@ const isEditingAddress = ref(false)
 const addressInputValue = ref('')
 const addressInputRef = ref<HTMLInputElement | null>(null)
 
+// Image preview state
+const previewEntry = ref<DirEntry | null>(null)
+const previewPosition = ref({ x: 0, y: 0 })
+const previewVisible = ref(false)
+const previewTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
+const previewLoaded = ref(false)
+const previewError = ref(false)
+
+const imageExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.ico', '.tga', '.dds'])
+
 const title = computed(() => props.title ?? '打开项目')
 const fileFilter = computed(() => props.fileFilter ?? [])
 const allowSelectDirectory = computed(() => props.allowSelectDirectory ?? false)
@@ -134,7 +144,8 @@ function handleComputerItemClick(item: { type: 'drive'; drive: DriveInfo } | { t
 
 function handleSpecialFolderClick(folder: SpecialFolder) {
   if (folder.path) {
-    navigateTo(folder.path)
+    // 快速访问：选择对应目录（与主窗口行为一致）
+    emit('select', folder.path, true)
   }
 }
 
@@ -231,7 +242,11 @@ async function confirmCreateFolder() {
     folderCreated.value = true
     setTimeout(() => { folderCreated.value = false }, 2000)
     if (result?.path) {
-      await navigateTo(result.path)
+      // 新建文件夹后选中该文件夹，而不是进入
+      selectedEntry.value = null
+      entries.value = []
+      currentPath.value = parentPath
+      emit('select', result.path, true)
     } else if (parentPath) {
       await navigateTo(parentPath)
     }
@@ -281,6 +296,45 @@ function getFileExtension(entry: DirEntry): string {
   return `${entry.extension.toUpperCase().replace('.', '')} 文件`
 }
 
+function isImageFile(entry: DirEntry): boolean {
+  if (entry.isDirectory) return false
+  return imageExtensions.has(entry.extension.toLowerCase())
+}
+
+function handlePreviewEnter(entry: DirEntry, event: MouseEvent) {
+  if (!isImageFile(entry)) {
+    handlePreviewLeave()
+    return
+  }
+  previewEntry.value = entry
+  previewPosition.value = { x: event.clientX, y: event.clientY }
+  previewLoaded.value = false
+  previewError.value = false
+  previewTimeout.value = setTimeout(() => {
+    previewVisible.value = true
+  }, 400)
+}
+
+function handlePreviewMove(event: MouseEvent) {
+  previewPosition.value = { x: event.clientX, y: event.clientY }
+}
+
+function handlePreviewLeave() {
+  if (previewTimeout.value) {
+    clearTimeout(previewTimeout.value)
+    previewTimeout.value = null
+  }
+  previewVisible.value = false
+  previewEntry.value = null
+  previewLoaded.value = false
+  previewError.value = false
+}
+
+function getPreviewUrl(entry: DirEntry): string {
+  // Convert file path to a URL that can be served by the backend
+  return `/api/FileBrowser/preview?path=${encodeURIComponent(entry.path)}`
+}
+
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     if (isCreatingFolder.value) {
@@ -325,8 +379,9 @@ watch(() => props.visible, (newVal) => {
 
 <template>
   <Teleport to="body">
-    <div v-if="visible" class="fb-modal-overlay" @click.self="handleCancel">
-      <div class="fb-window" @keydown="handleKeyDown" tabindex="-1">
+    <Transition name="fb-modal">
+      <div v-if="visible" class="fb-modal-overlay" @click.self="handleCancel">
+        <div class="fb-window" @keydown="handleKeyDown" tabindex="-1">
         <!-- Title Bar -->
         <div class="fb-titlebar">
           <div class="fb-titlebar-icon">
@@ -541,10 +596,14 @@ watch(() => props.visible, (newVal) => {
                   class="fb-file-item"
                   :class="{
                     selected: selectedEntry?.name === entry.name,
-                    'fb-file-item--disabled': !canSelectEntry(entry)
+                    'fb-file-item--disabled': !canSelectEntry(entry),
+                    'fb-file-item--image': isImageFile(entry)
                   }"
                   @click="handleEntryClick(entry)"
                   @dblclick="handleEntryDblClick(entry)"
+                  @mouseenter="handlePreviewEnter(entry, $event)"
+                  @mousemove="handlePreviewMove($event)"
+                  @mouseleave="handlePreviewLeave"
                 >
                   <div class="fb-file-col fb-col-name">
                     <div class="fb-file-icon-wrap">
@@ -606,13 +665,45 @@ watch(() => props.visible, (newVal) => {
           <span v-else class="fb-statusbar-msg">就绪</span>
         </div>
 
+        <!-- Image Preview Popup -->
+        <div
+          v-if="previewVisible && previewEntry"
+          class="fb-preview-popup"
+          :style="{
+            left: (previewPosition.x + 16) + 'px',
+            top: (previewPosition.y - 20) + 'px'
+          }"
+        >
+          <div class="fb-preview-box">
+            <div v-if="!previewLoaded && !previewError" class="fb-preview-loading">
+              <div class="fb-preview-spinner"></div>
+            </div>
+            <div v-if="previewError" class="fb-preview-error">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="#f44336" stroke-width="2"/>
+                <path d="M12 7V13M12 15V16" stroke="#f44336" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span>无法预览</span>
+            </div>
+            <img
+              v-show="previewLoaded"
+              :src="getPreviewUrl(previewEntry)"
+              class="fb-preview-image"
+              @load="previewLoaded = true"
+              @error="previewError = true"
+            />
+            <div class="fb-preview-name">{{ previewEntry.name }}</div>
+          </div>
+        </div>
+
         <!-- Dialog Buttons -->
         <div class="fb-dialog-footer">
           <button class="fb-btn-cancel" @click="handleCancel">取消</button>
           <button class="fb-btn-confirm" @click="handleSelect" :disabled="!canConfirm">确定</button>
         </div>
+        </div>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
 
@@ -1376,5 +1467,101 @@ watch(() => props.visible, (newVal) => {
 .fb-computer-drive-space {
   font-size: 10px;
   color: #777;
+}
+
+/* ========== Image Preview Popup ========== */
+.fb-file-item--image {
+  cursor: default;
+}
+
+.fb-preview-popup {
+  position: fixed;
+  z-index: 99999;
+  pointer-events: none;
+  animation: fb-preview-fadein 0.2s ease;
+}
+
+@keyframes fb-preview-fadein {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.fb-preview-box {
+  background: #1e1e1e;
+  border: 1px solid #555;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  max-width: 320px;
+  max-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.fb-preview-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+}
+
+.fb-preview-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #3c3c3c;
+  border-top-color: #0078d4;
+  border-radius: 50%;
+  animation: fb-spin 0.8s linear infinite;
+}
+
+.fb-preview-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 120px;
+  height: 120px;
+  color: #f44336;
+  font-size: 11px;
+}
+
+.fb-preview-image {
+  max-width: 300px;
+  max-height: 260px;
+  object-fit: contain;
+  display: block;
+  background: repeating-conic-gradient(#2a2a2a 0% 25%, #333 0% 50%) 50% / 16px 16px;
+}
+
+.fb-preview-name {
+  padding: 6px 10px;
+  font-size: 11px;
+  color: #cccccc;
+  background: #2d2d2d;
+  border-top: 1px solid #3c3c3c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+/* ========== Modal Transition (fade + scale) ========== */
+.fb-modal-enter-active,
+.fb-modal-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fb-modal-enter-active .fb-window,
+.fb-modal-leave-active .fb-window {
+  transition: transform 0.2s ease;
+}
+.fb-modal-enter-from,
+.fb-modal-leave-to {
+  opacity: 0;
+}
+.fb-modal-enter-from .fb-window,
+.fb-modal-leave-to .fb-window {
+  transform: scale(0.92);
 }
 </style>

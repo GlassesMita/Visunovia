@@ -163,7 +163,7 @@ public class EditorService
     /// 将项目元数据保存为 XML 格式的 .tlor 文件
     /// </summary>
     /// <param name="path">.tlor 文件保存路径</param>
-    private async Task SaveProjectFileAsync(string path)
+    public async Task SaveProjectFileAsync(string path)
     {
         if (CurrentProject == null) return;
 
@@ -173,7 +173,9 @@ public class EditorService
                 new XElement("metadata",
                     new XElement("title", CurrentProject.Metadata.Title),
                     new XElement("author", CurrentProject.Metadata.Author),
-                    new XElement("version", CurrentProject.Metadata.Version)
+                    new XElement("version", CurrentProject.Metadata.Version),
+                    new XElement("versionCode", CurrentProject.Metadata.VersionCode),
+                    new XElement("companyName", CurrentProject.Metadata.CompanyName)
                 ),
                 new XElement("scenes",
                     CurrentProject.Scenes.Select(s => new XElement("scene",
@@ -475,7 +477,9 @@ public class EditorService
             {
                 Title = root.Element("metadata")?.Element("title")?.Value ?? "未命名项目",
                 Author = root.Element("metadata")?.Element("author")?.Value ?? "",
-                Version = root.Element("metadata")?.Element("version")?.Value ?? "1.0"
+                Version = root.Element("metadata")?.Element("version")?.Value ?? "1.0",
+                VersionCode = root.Element("metadata")?.Element("versionCode")?.Value ?? "1",
+                CompanyName = root.Element("metadata")?.Element("companyName")?.Value ?? ""
             };
 
             CurrentProject.Scenes = new List<VNScene>();
@@ -1011,7 +1015,9 @@ public class EditorService
                     new XElement("metadata",
                         new XElement("title", project.Metadata.Title),
                         new XElement("author", project.Metadata.Author),
-                        new XElement("version", project.Metadata.Version)
+                        new XElement("version", project.Metadata.Version),
+                        new XElement("versionCode", project.Metadata.VersionCode),
+                        new XElement("companyName", project.Metadata.CompanyName)
                     ),
                     scenesElement,
                     variablesElement
@@ -1041,7 +1047,9 @@ public class EditorService
                 {
                     Title = root.Element("metadata")?.Element("title")?.Value ?? "未命名项目",
                     Author = root.Element("metadata")?.Element("author")?.Value ?? "",
-                    Version = root.Element("metadata")?.Element("version")?.Value ?? "1.0"
+                    Version = root.Element("metadata")?.Element("version")?.Value ?? "1.0",
+                    VersionCode = root.Element("metadata")?.Element("versionCode")?.Value ?? "1",
+                    CompanyName = root.Element("metadata")?.Element("companyName")?.Value ?? ""
                 };
 
                 project.Scenes = new List<VNScene>();
@@ -1263,7 +1271,9 @@ public class EditorService
                     new XElement("metadata",
                         new XElement("title", project.Metadata.Title),
                         new XElement("author", project.Metadata.Author),
-                        new XElement("version", project.Metadata.Version)
+                        new XElement("version", project.Metadata.Version),
+                        new XElement("versionCode", project.Metadata.VersionCode),
+                        new XElement("companyName", project.Metadata.CompanyName)
                     ),
                     new XElement("scenes",
                         project.Scenes.Select(s => new XElement("scene",

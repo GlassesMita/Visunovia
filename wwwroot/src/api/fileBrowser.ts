@@ -12,6 +12,7 @@ export interface DriveInfo {
 /** 目录条目 */
 export interface DirEntry {
   name: string
+  path: string
   isDirectory: boolean
   size: number
   lastModified: string
@@ -49,10 +50,14 @@ export async function getEntries(path: string): Promise<DirContent> {
     data: { currentPath: string; parentPath: string; entries: DirEntry[] }
   }>(`/FileBrowser/entries`, { params: { path } })
   const data = response.data?.data
+  const currentPath = data?.currentPath ?? path
   return {
-    currentPath: data?.currentPath ?? path,
+    currentPath: currentPath,
     parentPath: data?.parentPath ?? '',
-    entries: data?.entries ?? [],
+    entries: (data?.entries ?? []).map(e => ({
+      ...e,
+      path: e.path ?? (currentPath ? `${currentPath}\\${e.name}` : e.name)
+    })),
   }
 }
 

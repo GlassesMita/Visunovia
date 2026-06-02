@@ -301,6 +301,17 @@ catch (Exception ex)
     Console.WriteLine(listenMsg);
 }
 
+// 输出已注册的 API 终结点信息
+Console.WriteLine("");
+Console.WriteLine("=== 已注册的 API 终结点 ===");
+Console.WriteLine($"  GET  /api/project/currentProject  - 获取当前项目信息");
+Console.WriteLine($"  POST /api/project/new             - 新建项目");
+Console.WriteLine($"  POST /api/project/import          - 导入项目");
+Console.WriteLine($"  GET  /api/project/folder-tree     - 获取项目文件夹树");
+Console.WriteLine($"  GET  /api/project/scenes          - 获取场景列表");
+Console.WriteLine($"  GET  /api/project/scene           - 读取剧本内容");
+Console.WriteLine("============================");
+Console.WriteLine("");
 
 if (!noNewTab)
 {

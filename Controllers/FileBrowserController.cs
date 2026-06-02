@@ -137,6 +137,7 @@ public class FileBrowserController : ControllerBase
                     entries.Add(new
                     {
                         name = dirInfo.Name,
+                        path = dirInfo.FullName,
                         isDirectory = true,
                         size = 0L,
                         lastModified = dirInfo.LastWriteTime.ToString("o"),
@@ -161,6 +162,7 @@ public class FileBrowserController : ControllerBase
                     entries.Add(new
                     {
                         name = fileInfo.Name,
+                        path = fileInfo.FullName,
                         isDirectory = false,
                         size = fileInfo.Length,
                         lastModified = fileInfo.LastWriteTime.ToString("o"),
@@ -327,6 +329,67 @@ public class FileBrowserController : ControllerBase
             // 异常来源：Environment.GetFolderPath() 调用失败（通常不应发生，除非环境配置严重损坏）
             // 处理方式：返回 500 错误并记录详细信息
             return StatusCode(500, new { success = false, error = $"获取特殊文件夹失败: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// 获取图像文件的预览（返回图片流）
+    /// 支持 PNG、JPG、JPEG、GIF、WEBP、BMP、SVG、ICO 等常见图像格式
+    /// </summary>
+    /// <param name="path">图像文件的绝对路径</param>
+    /// <returns>图片文件流</returns>
+    /// <response code="200">成功返回图片</response>
+    /// <response code="400">请求参数无效</response>
+    /// <response code="403">权限不足</response>
+    /// <response code="404">文件不存在</response>
+    [HttpGet("preview")]
+    public IActionResult GetPreview([FromQuery] string? path)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return BadRequest(new { success = false, error = "路径参数不能为空" });
+
+            var targetPath = Uri.UnescapeDataString(path).Trim();
+
+            // 安全校验
+            if (targetPath.Contains("..") || targetPath.Contains("|"))
+                return BadRequest(new { success = false, error = "路径包含非法字符" });
+
+            targetPath = System.IO.Path.GetFullPath(targetPath);
+
+            if (!System.IO.File.Exists(targetPath))
+                return NotFound(new { success = false, error = "文件不存在" });
+
+            // 检查是否为允许的图像扩展名
+            var extension = System.IO.Path.GetExtension(targetPath).ToLowerInvariant();
+            var allowedExtensions = new HashSet<string> { ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg", ".ico", ".tga", ".dds" };
+            if (!allowedExtensions.Contains(extension))
+                return BadRequest(new { success = false, error = "不支持的文件格式" });
+
+            // 根据扩展名返回正确的 MIME 类型
+            var mimeType = extension switch
+            {
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".gif" => "image/gif",
+                ".webp" => "image/webp",
+                ".bmp" => "image/bmp",
+                ".svg" => "image/svg+xml",
+                ".ico" => "image/x-icon",
+                _ => "application/octet-stream"
+            };
+
+            var fileStream = new FileStream(targetPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return File(fileStream, mimeType);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return StatusCode(403, new { success = false, error = "无权访问该文件" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, error = $"读取文件失败: {ex.Message}" });
         }
     }
 

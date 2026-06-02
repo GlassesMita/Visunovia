@@ -289,7 +289,7 @@ function getNodeIcon(type: string): string {
 }
 
 function getPropertyLabel(name: string): string {
-  const label = t(`properties.${name}`)
+  const label = t(`properties.${name}`).value
   return label !== `properties.${name}` ? label : name
 }
 
@@ -299,12 +299,12 @@ function getPropertyDescription(_name: string): string {
 
 function getPlaceholder(name: string): string {
   const placeholders: Record<string, string> = {
-    speaker: t('properties.speaker') || 'Speaker name...',
-    text: t('properties.text') || 'Dialogue text...',
-    varName: t('properties.varName') || 'Variable name...',
-    value: t('properties.value') || 'Value...',
-    characterId: t('properties.characterId') || 'Character ID...',
-    expression: t('properties.expression') || 'Expression...',
+    speaker: t('properties.speaker').value || 'Speaker name...',
+    text: t('properties.text').value || 'Dialogue text...',
+    varName: t('properties.varName').value || 'Variable name...',
+    value: t('properties.value').value || 'Value...',
+    characterId: t('properties.characterId').value || 'Character ID...',
+    expression: t('properties.expression').value || 'Expression...',
   }
   return placeholders[name] || ''
 }

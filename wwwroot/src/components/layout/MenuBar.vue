@@ -31,8 +31,9 @@
     
     <!-- 自定义输入对话框 (替代原生 prompt) -->
     <Teleport to="body">
-      <div v-if="showInputDialog" class="input-dialog-overlay" @click.self="handleInputCancel">
-        <div class="input-dialog">
+      <Transition name="inp-modal">
+        <div v-if="showInputDialog" class="input-dialog-overlay" @click.self="handleInputCancel">
+          <div class="input-dialog">
           <div class="input-dialog-header">
             <h3>{{ inputDialogTitle }}</h3>
           </div>
@@ -50,8 +51,9 @@
             <button class="cancel-btn" @click="handleInputCancel">取消</button>
             <button class="confirm-btn" @click="handleInputConfirm(inputDialogDefaultValue)">确定</button>
           </div>
+          </div>
         </div>
-      </div>
+      </Transition>
     </Teleport>
   </div>
 </template>
@@ -141,6 +143,8 @@ const menus = computed<Menu[]>(() => [
         checked: uiStore.showConsolePanel 
       },
       { key: 'divider1', labelKey: '', divider: true },
+      { key: 'projectPreferences', labelKey: 'menu.projectPreferences', action: 'openProjectPreferences' },
+      { key: 'divider2', labelKey: '', divider: true },
       { key: 'preferences', labelKey: 'menu.preferences', action: 'openPreferences' },
     ],
   },
@@ -192,7 +196,7 @@ function executeAction(action: string) {
   
   switch (action) {
     case 'newFile':
-      uiStore.openNewProjectExplorer()
+      uiStore.openNewProjectModal()
       break
     case 'openFile':
       uiStore.openFileExplorer()
@@ -248,6 +252,9 @@ function executeAction(action: string) {
       break
     case 'toggleConsole':
       uiStore.togglePanel('console')
+      break
+    case 'openProjectPreferences':
+      uiStore.openProjectPreferences()
       break
     case 'openPreferences':
       // 使用 window.open 打开独立的 Preferences 窗口（Popup）
@@ -456,5 +463,23 @@ onUnmounted(() => {
 
 .confirm-btn:hover {
   background: #1084d8;
+}
+
+/* ========== Input Dialog Transition (fade + scale) ========== */
+.inp-modal-enter-active,
+.inp-modal-leave-active {
+  transition: opacity 0.2s ease;
+}
+.inp-modal-enter-active .input-dialog,
+.inp-modal-leave-active .input-dialog {
+  transition: transform 0.2s ease;
+}
+.inp-modal-enter-from,
+.inp-modal-leave-to {
+  opacity: 0;
+}
+.inp-modal-enter-from .input-dialog,
+.inp-modal-leave-to .input-dialog {
+  transform: scale(0.92);
 }
 </style>

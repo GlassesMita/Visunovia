@@ -83,14 +83,11 @@
       @select="(path: string, isDir: boolean) => { uiStore.closeFileExplorer(); if (path) loadSceneGraph(path); }"
     />
 
-    <!-- 新建项目文件夹选择器 -->
-    <FileExplorer
-      :visible="uiStore.showNewProjectExplorer"
-      title="新建项目 — 选择文件夹"
-      :allow-select-directory="true"
-      @close="uiStore.closeNewProjectExplorer()"
-      @select="handleNewProjectSelect"
-    />
+    <!-- 新建项目模态框 -->
+    <NewProjectModal />
+
+    <!-- 项目首选项模态框 -->
+    <ProjectPreferencesModal />
 
     <!-- Project 面板 — 右侧弹出模态框 -->
     <Transition name="slide-fade">
@@ -108,11 +105,14 @@
         </aside>
       </div>
     </Transition>
+
+    <!-- Welcome Modal (shown when no project is open) -->
+    <WelcomeModal v-if="uiStore.showWelcomeModal" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useUIStore } from '@/stores/useUIStore'
 import { useShortcuts } from '@/composables/useShortcuts'
@@ -127,6 +127,10 @@ import HierarchyPanel from '@/components/panels/HierarchyPanel.vue'
 import ConsolePanel from '@/components/panels/ConsolePanel.vue'
 import BaklavaEditor from '@/components/BaklavaEditor.vue'
 import FileExplorer from '@/components/FileExplorer.vue'
+import NewProjectModal from '@/components/NewProjectModal.vue'
+import ProjectPreferencesModal from '@/components/ProjectPreferencesModal.vue'
+import WelcomeModal from '@/components/WelcomeModal.vue'
+import { getCurrentProject } from '@/api/projectApi'
 
 const { t } = useLocalization()
 const uiStore = useUIStore()
@@ -134,14 +138,78 @@ const projectImport = useProjectImport()
 const { loadSceneGraph, newGraph } = useNodeOperations()
 const editorReady = ref(false)
 
+// Track whether a project is currently open
+const hasOpenProject = ref(false)
+
+// Backend shutdown detection
+let shutdownCheckInterval: ReturnType<typeof setInterval> | null = null
+
 useShortcuts()
 
-onMounted(() => {
-  // 等待编辑器初始化后再导入项目
-  const checkEditorReady = () => {
+/**
+ * Check if a project is currently open.
+ * Returns true if a project was opened, false otherwise.
+ */
+async function checkHasOpenProject(): Promise<boolean> {
+  try {
+    const result = await getCurrentProject()
+    return result.data !== null && result.data !== undefined
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Start polling the backend to detect shutdown.
+ * When the backend becomes unreachable, auto-close the frontend.
+ */
+function startShutdownDetection() {
+  shutdownCheckInterval = setInterval(async () => {
+    try {
+      await getCurrentProject()
+    } catch {
+      // Backend is unreachable — it's shutting down
+      console.log('[AppLayout] Backend is shutting down, closing frontend...')
+      if (shutdownCheckInterval) {
+        clearInterval(shutdownCheckInterval)
+        shutdownCheckInterval = null
+      }
+      // Attempt to close the window
+      window.close()
+      // Fallback: navigate to about:blank after 3 seconds
+      setTimeout(() => {
+        if (!window.closed) {
+          window.location.href = 'about:blank'
+        }
+      }, 3000)
+    }
+  }, 2000)
+}
+
+onMounted(async () => {
+  // Wait for editor to be ready, then check for project
+  const checkEditorReady = async () => {
     if ((window as any).__editor) {
       editorReady.value = true
-      importProjectIfNeeded()
+
+      // First try to import from URL
+      const imported = await importProjectIfNeeded()
+
+      // If no URL import, check if there's already an open project
+      if (!imported) {
+        const hasProject = await checkHasOpenProject()
+        hasOpenProject.value = hasProject
+
+        if (!hasProject) {
+          // No project open — show the welcome modal
+          uiStore.openWelcomeModal()
+        }
+      } else {
+        hasOpenProject.value = true
+      }
+
+      // Start backend shutdown detection
+      startShutdownDetection()
     } else {
       setTimeout(checkEditorReady, 100)
     }
@@ -149,21 +217,49 @@ onMounted(() => {
   checkEditorReady()
 })
 
-async function importProjectIfNeeded() {
+// 监听 openingFilePath，当创建项目后自动打开 start.lor
+watch(
+  () => uiStore.openingFilePath,
+  async (filePath) => {
+    if (filePath) {
+      await nextTick()
+      await loadSceneGraph(filePath)
+      uiStore.openingFilePath.value = null
+      // A project has been opened — close the welcome modal
+      hasOpenProject.value = true
+      uiStore.closeWelcomeModal()
+    }
+  }
+)
+
+// When the file explorer selects a .tlor file, close the welcome modal
+watch(
+  () => uiStore.showFileExplorer,
+  (visible) => {
+    // If the file explorer was closed and we had the welcome modal open,
+    // check if a project was opened
+    if (!visible && uiStore.showWelcomeModal) {
+      // Give a moment for the project to load, then check
+      setTimeout(async () => {
+        const hasProject = await checkHasOpenProject()
+        if (hasProject) {
+          hasOpenProject.value = true
+          uiStore.closeWelcomeModal()
+        }
+      }, 500)
+    }
+  }
+)
+
+async function importProjectIfNeeded(): Promise<boolean> {
   if (editorReady.value) {
     const success = await projectImport.importFromUrl()
     if (success) {
       console.log(`[AppLayout] 项目已导入: ${projectImport.importedSceneId.value}`)
+      return true
     }
   }
-}
-
-function handleNewProjectSelect(path: string, isDir: boolean) {
-  uiStore.closeNewProjectExplorer()
-  if (path && isDir) {
-    newGraph()
-    console.log(`[AppLayout] 新建项目，目录: ${path}`)
-  }
+  return false
 }
 
 const rightActiveTab = ref<'inspector' | 'hierarchy'>('inspector')
@@ -205,6 +301,10 @@ function toggleRightPanel() {
 onUnmounted(() => {
   document.removeEventListener('mousemove', handleResizeRight)
   document.removeEventListener('mouseup', stopResize)
+  if (shutdownCheckInterval) {
+    clearInterval(shutdownCheckInterval)
+    shutdownCheckInterval = null
+  }
 })
 </script>
 
@@ -482,7 +582,7 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* 滑入滑出动画 */
+/* 滑入滑出动画 (fade + slide + scale) */
 .slide-fade-enter-active,
 .slide-fade-leave-active {
   transition: opacity 0.2s ease;
@@ -490,7 +590,7 @@ onUnmounted(() => {
 
 .slide-fade-enter-active .project-popup,
 .slide-fade-leave-active .project-popup {
-  transition: transform 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .slide-fade-enter-from,
@@ -500,6 +600,6 @@ onUnmounted(() => {
 
 .slide-fade-enter-from .project-popup,
 .slide-fade-leave-to .project-popup {
-  transform: translateX(100%);
+  transform: translateX(60px) scale(0.96);
 }
 </style>

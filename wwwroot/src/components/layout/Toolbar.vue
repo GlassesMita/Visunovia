@@ -82,17 +82,40 @@
         <Trash2 :size="18" />
       </button>
     </div>
+
+    <!-- Spacer to push window controls to the right -->
+    <div class="toolbar-spacer"></div>
+
+    <!-- Window controls -->
+    <div class="toolbar-group toolbar-window-controls">
+      <button
+        class="toolbar-button toolbar-btn-window"
+        :title="isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'"
+        @click="toggleFullscreen"
+      >
+        <Maximize v-if="!isFullscreen" :size="14" />
+        <Minimize v-else :size="14" />
+      </button>
+      <button
+        class="toolbar-button toolbar-btn-close"
+        title="Close"
+        @click="handleCloseApp"
+      >
+        <X :size="16" />
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { FilePlus, FolderOpen, Save, Undo2, Redo2, Scissors, Copy, Clipboard, Trash2 } from 'lucide-vue-next'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { FilePlus, FolderOpen, Save, Undo2, Redo2, Scissors, Copy, Clipboard, Trash2, Maximize, Minimize, X } from 'lucide-vue-next'
 import { useLocalization } from '@/composables/useLocalization'
 import { useUIStore } from '@/stores/useUIStore'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useUndoRedoStore } from '@/stores/useUndoRedoStore'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
+import { quitApplication } from '@/api/systemApi'
 
 const { t } = useLocalization()
 const uiStore = useUIStore()
@@ -103,12 +126,48 @@ const nodeGraphStore = useNodeGraphStore()
 const undoDescription = computed(() => undoRedoStore.getUndoDescription())
 const redoDescription = computed(() => undoRedoStore.getRedoDescription())
 
-function handleNew() {
-  if (confirm('Create new project? Unsaved changes will be lost.')) {
-    nodeGraphStore.deserializeGraph({ nodes: [], connections: [] })
-    undoRedoStore.clear()
-    editorStore.selectNode(null)
+const isFullscreen = ref(false)
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {})
+  } else {
+    document.exitFullscreen().catch(() => {})
   }
+}
+
+function handleFullscreenChange() {
+  isFullscreen.value = !!document.fullscreenElement
+}
+
+async function handleCloseApp() {
+  try {
+    await quitApplication()
+  } catch {
+    // If the API call fails, still attempt to close
+  }
+  // Close the window after requesting shutdown
+  window.close()
+  // Fallback: if window.close() doesn't work (e.g. opened directly in browser),
+  // navigate to about:blank after 3 seconds
+  setTimeout(() => {
+    if (!window.closed) {
+      window.location.href = 'about:blank'
+    }
+  }, 3000)
+}
+
+onMounted(() => {
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
+  isFullscreen.value = !!document.fullscreenElement
+})
+
+onUnmounted(() => {
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
+})
+
+function handleNew() {
+  uiStore.openNewProjectModal()
 }
 
 function handleSave() {
@@ -204,5 +263,32 @@ function handleDelete() {
   height: 22px;
   background: #3e3e42;
   margin: 0 6px;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.toolbar-window-controls {
+  gap: 0;
+  margin-left: 4px;
+}
+
+.toolbar-btn-window {
+  width: 36px;
+}
+
+.toolbar-btn-close {
+  width: 36px;
+  border-radius: 0 4px 4px 0;
+}
+
+.toolbar-btn-close:hover {
+  background: #e81123 !important;
+  color: #ffffff !important;
+}
+
+.toolbar-btn-close:active {
+  background: #c50f1f !important;
 }
 </style>

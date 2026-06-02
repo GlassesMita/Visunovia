@@ -1,5 +1,21 @@
 @import '@baklavajs/themes/dist/syrup-dark.css';
 
+/* 排除蓝图节点使用自定义字体，保持原有系统字体 */
+.baklava-editor,
+.baklava-editor *,
+.baklava-node,
+.baklava-node *,
+.baklava-sidebar,
+.baklava-sidebar *,
+.baklava-toolbar,
+.baklava-toolbar *,
+.baklava-context-menu,
+.baklava-context-menu *,
+.baklava-node-palette,
+.baklava-node-palette * {
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+}
+
 :root {
   /* 节点连线颜色 - 根据源节点类型区分 */
   --connection-start: #2E7D32;

@@ -1251,3 +1251,97 @@ msgstr "Font"
 
 msgid "resourceTypes.data"
 msgstr "Data"
+
+# ============================================================
+# New Project Modal & Project Preferences (PascalCase keys)
+# ============================================================
+
+msgid "Project.NewProject"
+msgstr "New Project"
+
+msgid "Project.ProjectName"
+msgstr "Project Name"
+
+msgid "Project.ProjectNamePlaceholder"
+msgstr "Enter project name"
+
+msgid "Project.CompanyName"
+msgstr "Company Name"
+
+msgid "Project.CompanyNamePlaceholder"
+msgstr "Enter company name"
+
+msgid "Project.Version"
+msgstr "Version"
+
+msgid "Project.VersionCode"
+msgstr "Version Code"
+
+msgid "Project.ProjectLocation"
+msgstr "Project Location"
+
+msgid "Project.LocationPlaceholder"
+msgstr "Select project save directory"
+
+msgid "Project.BrowseFolder"
+msgstr "Browse Folder"
+
+msgid "Project.Browse"
+msgstr "Browse"
+
+msgid "Project.FullPath"
+msgstr "Full Path"
+
+msgid "Project.ProjectStructure"
+msgstr "Project Structure"
+
+msgid "Project.Create"
+msgstr "Create"
+
+msgid "Project.CreateSuccess"
+msgstr "Project created successfully"
+
+msgid "Project.CreateFailed"
+msgstr "Failed to create project"
+
+msgid "Project.SelectFolder"
+msgstr "Select Folder"
+
+msgid "Project.DirectoryExists"
+msgstr "A project folder with the same name already exists in this directory"
+
+msgid "Project.DirectoryNotEmpty"
+msgstr "A project folder with the same name already exists and is not empty"
+
+msgid "Project.ProjectPreferences"
+msgstr "Project Preferences"
+
+msgid "Project.ProjectPath"
+msgstr "Project Path"
+
+msgid "Project.SubDirectories"
+msgstr "Sub Directories"
+
+msgid "Project.NoProjectOpen"
+msgstr "No project currently open"
+
+msgid "Project.SettingsSaved"
+msgstr "Project settings saved"
+
+msgid "Project.SaveFailed"
+msgstr "Save failed"
+
+msgid "Project.LoadFailed"
+msgstr "Failed to load project info"
+
+msgid "Menu.ProjectPreferences"
+msgstr "Project Preferences"
+
+msgid "FileBrowser.QuickAccessSelect"
+msgstr "Select This Directory"
+
+msgid "FileBrowser.NewFolder"
+msgstr "New Folder"
+
+msgid "FileBrowser.FolderNamePlaceholder"
+msgstr "Enter folder name"
