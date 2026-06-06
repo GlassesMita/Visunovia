@@ -342,6 +342,7 @@ public class SettingsService : IDisposable
         section[DefaultSettings.PreviewWidthKey] = DefaultSettings.DefaultPreviewWidth.ToString();
         section[DefaultSettings.PreviewHeightKey] = DefaultSettings.DefaultPreviewHeight.ToString();
         section[DefaultSettings.AllowRemoteSessionKey] = DefaultSettings.DefaultAllowRemoteSession.ToString();
+        section[DefaultSettings.IsFirstRunKey] = DefaultSettings.DefaultIsFirstRun.ToString();
         return section;
     }
 

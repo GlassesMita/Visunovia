@@ -16,28 +16,31 @@ public static class DefaultSettings
     #region 配置键名常量
 
     /// <summary>语言设置键名</summary>
-    public const string LanguageKey = "language";
+    public const string LanguageKey = "Language";
 
     /// <summary>主题设置键名</summary>
-    public const string ThemeKey = "theme";
+    public const string ThemeKey = "Theme";
 
     /// <summary>编辑器字体大小键名</summary>
-    public const string EditorFontSizeKey = "editorFontSize";
+    public const string EditorFontSizeKey = "FontSize";
 
     /// <summary>自动保存间隔（秒）键名</summary>
-    public const string AutoSaveIntervalKey = "autoSaveInterval";
+    public const string AutoSaveIntervalKey = "AutoSaveInterval";
 
     /// <summary>最近打开项目数量上限键名</summary>
-    public const string RecentProjectsLimitKey = "recentProjectsLimit";
+    public const string RecentProjectsLimitKey = "RecentProjectsLimit";
 
     /// <summary>预览窗口宽度键名</summary>
-    public const string PreviewWidthKey = "previewWidth";
+    public const string PreviewWidthKey = "PreviewWidth";
 
     /// <summary>预览窗口高度键名</summary>
-    public const string PreviewHeightKey = "previewHeight";
+    public const string PreviewHeightKey = "PreviewHeight";
 
     /// <summary>允许远程会话键名（控制是否监听所有网络接口）</summary>
-    public const string AllowRemoteSessionKey = "allowRemoteSession";
+    public const string AllowRemoteSessionKey = "AllowRemoteSession";
+
+    /// <summary>首次运行标志键名（控制是否显示安装向导）</summary>
+    public const string IsFirstRunKey = "IsFirstRun";
 
     #endregion
 
@@ -67,49 +70,36 @@ public static class DefaultSettings
     /// <summary>默认不允许远程会话（仅本地连接）</summary>
     public const bool DefaultAllowRemoteSession = false;
 
+    /// <summary>默认首次运行标志为 true（首次启动时显示安装向导）</summary>
+    public const bool DefaultIsFirstRun = true;
+
     #endregion
 
     #region XML 元素名映射
 
     /// <summary>
-    /// 将配置键名映射为语义化 XML 元素名。
-    /// Language → "Language"（文本元素）
-    /// Theme → 合并到 "UI" 元素的 theme 属性
-    /// EditorFontSize → "FontSize"
-    /// 其余键名首字母大写作为元素名
+    /// 将配置键名映射为 XML 元素名。
+    /// 所有键名已统一为 PascalCase，与 XML 元素名一致。
+    /// 唯一例外：Theme 键使用 "UI" 元素，值存储在 theme 属性中。
     /// </summary>
     public static string GetXmlElementName(string key)
     {
         return key switch
         {
-            LanguageKey => "Language",
             ThemeKey => "UI",
-            EditorFontSizeKey => "FontSize",
-            AutoSaveIntervalKey => "AutoSaveInterval",
-            RecentProjectsLimitKey => "RecentProjectsLimit",
-            PreviewWidthKey => "PreviewWidth",
-            PreviewHeightKey => "PreviewHeight",
-            AllowRemoteSessionKey => "AllowRemoteSession",
             _ => key
         };
     }
 
     /// <summary>
-    /// 将语义化 XML 元素名反向映射为配置键名。
+    /// 将 XML 元素名反向映射为配置键名。
     /// 用于反序列化时从 XML 元素名恢复为内部键名。
     /// </summary>
     public static string? GetKeyFromXmlElementName(string elementName)
     {
         return elementName switch
         {
-            "Language" => LanguageKey,
             "UI" => ThemeKey,
-            "FontSize" => EditorFontSizeKey,
-            "AutoSaveInterval" => AutoSaveIntervalKey,
-            "RecentProjectsLimit" => RecentProjectsLimitKey,
-            "PreviewWidth" => PreviewWidthKey,
-            "PreviewHeight" => PreviewHeightKey,
-            "AllowRemoteSession" => AllowRemoteSessionKey,
             _ => null
         };
     }
@@ -145,6 +135,7 @@ public static class DefaultSettings
             PreviewWidthKey => DefaultPreviewWidth,
             PreviewHeightKey => DefaultPreviewHeight,
             AllowRemoteSessionKey => DefaultAllowRemoteSession,
+            IsFirstRunKey => DefaultIsFirstRun,
             _ => null
         };
     }
@@ -164,7 +155,8 @@ public static class DefaultSettings
             RecentProjectsLimitKey,
             PreviewWidthKey,
             PreviewHeightKey,
-            AllowRemoteSessionKey
+            AllowRemoteSessionKey,
+            IsFirstRunKey
         ];
     }
 

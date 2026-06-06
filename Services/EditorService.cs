@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Xml.Linq;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -1489,12 +1490,56 @@ public class ViewportData
 
 public class NodeData
 {
-    public string Id { get; set; } = "";
+    /// <summary>
+    /// 节点的唯一标识符（UUID），用于 YAML 序列化和蓝图视图中的节点对应。
+    /// </summary>
+    public string Uuid { get; set; } = "";
+
+    /// <summary>
+    /// 节点类型名称（如 DialogueNode, EventNode, BranchNode 等）。
+    /// </summary>
     public string Type { get; set; } = "";
+
+    /// <summary>
+    /// 节点子类型（如 playBgm, setVariable 等）。
+    /// </summary>
+    public string SubType { get; set; } = "";
+
+    /// <summary>
+    /// 蓝图视图中的绝对坐标位置。
+    /// </summary>
     public PositionData Position { get; set; } = new();
+
+    /// <summary>
+    /// 节点属性字典。
+    /// </summary>
     public Dictionary<string, object> Properties { get; set; } = new();
+
+    /// <summary>
+    /// 输入端口列表。
+    /// </summary>
     public List<PortData> Inputs { get; set; } = new();
+
+    /// <summary>
+    /// 输出端口列表。
+    /// </summary>
     public List<PortData> Outputs { get; set; } = new();
+
+    /// <summary>
+    /// 下一个执行步骤的节点 UUID 列表。
+    /// 一个节点可以连接到多个节点，支持分支、并行等流程。
+    /// </summary>
+    public List<string> NextNodeUuids { get; set; } = new();
+
+    /// <summary>
+    /// 兼容旧代码的 Id 属性，映射到 Uuid。
+    /// </summary>
+    [JsonIgnore]
+    public string Id
+    {
+        get => Uuid;
+        set => Uuid = value;
+    }
 }
 
 public class PositionData
@@ -1515,12 +1560,57 @@ public class PortData
 
 public class EdgeData
 {
-    public string Id { get; set; } = "";
-    public string Source { get; set; } = "";
+    /// <summary>
+    /// 连线的唯一标识符（UUID）。
+    /// </summary>
+    public string Uuid { get; set; } = "";
+
+    /// <summary>
+    /// 源节点 UUID。
+    /// </summary>
+    public string SourceNodeUuid { get; set; } = "";
+
+    /// <summary>
+    /// 源端口名称。
+    /// </summary>
     public string SourcePort { get; set; } = "";
-    public string Target { get; set; } = "";
+
+    /// <summary>
+    /// 目标节点 UUID。
+    /// </summary>
+    public string TargetNodeUuid { get; set; } = "";
+
+    /// <summary>
+    /// 目标端口名称。
+    /// </summary>
     public string TargetPort { get; set; } = "";
+
+    /// <summary>
+    /// 连线类型（exec, data, resource）。
+    /// </summary>
     public string Type { get; set; } = "exec";
+
+    // 兼容旧代码的属性（不序列化，避免与 Uuid/SourceNodeUuid/TargetNodeUuid 重复）
+    [JsonIgnore]
+    public string Id
+    {
+        get => Uuid;
+        set => Uuid = value;
+    }
+
+    [JsonIgnore]
+    public string Source
+    {
+        get => SourceNodeUuid;
+        set => SourceNodeUuid = value;
+    }
+
+    [JsonIgnore]
+    public string Target
+    {
+        get => TargetNodeUuid;
+        set => TargetNodeUuid = value;
+    }
 }
 
 public class SceneConfigData

@@ -808,6 +808,87 @@ msgstr "種類型"
 msgid "palette.noMatch"
 msgstr "無匹配節點"
 
+# ============================================================
+# 啟動頁面和安裝精靈
+# ============================================================
+
+# 啟動頁面
+msgid "Startup.WelcomeTitle"
+msgstr "歡迎使用 Visunovia"
+
+msgid "Startup.WelcomeSubtitle"
+msgstr "視覺小說編輯器和引擎"
+
+msgid "Startup.StartButton"
+msgstr "開始使用"
+
+msgid "Startup.Loading"
+msgstr "載入中..."
+
+msgid "Startup.NewProject"
+msgstr "新建專案"
+
+msgid "Startup.OpenProject"
+msgstr "開啟專案"
+
+msgid "Startup.RecentProjects"
+msgstr "最近的專案"
+
+msgid "Startup.NoRecentProjects"
+msgstr "沒有最近的專案"
+
+# 安裝精靈
+msgid "SetupWizard.Title"
+msgstr "安裝精靈"
+
+msgid "SetupWizard.StepLanguage"
+msgstr "選擇語言"
+
+msgid "SetupWizard.StepLanguageDesc"
+msgstr "選擇您偏好的應用程式介面語言。"
+
+msgid "SetupWizard.StepTheme"
+msgstr "選擇主題"
+
+msgid "SetupWizard.StepThemeDesc"
+msgstr "選擇您偏好的色彩主題。"
+
+msgid "SetupWizard.ThemeDark"
+msgstr "深色"
+
+msgid "SetupWizard.ThemeLight"
+msgstr "淺色"
+
+msgid "SetupWizard.ThemeSystem"
+msgstr "跟隨系統"
+
+msgid "SetupWizard.StepFinish"
+msgstr "準備就緒"
+
+msgid "SetupWizard.StepFinishDesc"
+msgstr "您的偏好已儲存。您可以隨時在設定中更改。"
+
+msgid "SetupWizard.FinishButton"
+msgstr "開始使用 Visunovia"
+
+msgid "SetupWizard.BackButton"
+msgstr "上一步"
+
+msgid "SetupWizard.NextButton"
+msgstr "下一步"
+
+msgid "SetupWizard.SkipButton"
+msgstr "跳過"
+
+msgid "SetupWizard.LanguageDetected"
+msgstr "我們偵測到您的系統語言：{0}"
+
+msgid "SetupWizard.LanguageNotAvailable"
+msgstr "您的系統語言不可用，已回退到 English (US)。"
+
+msgid "SetupWizard.NoLanguageFiles"
+msgstr "未找到語言檔案，顯示原始字串。"
+
 # Categories
 msgid "categories.flow"
 msgstr "流程控制"

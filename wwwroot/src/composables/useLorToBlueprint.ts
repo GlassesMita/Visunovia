@@ -246,12 +246,16 @@ export function useLorToBlueprint() {
 
   /**
    * 创建执行连接（通过 UUID）
+   * 使用 UUID 进行节点对应和连线
    */
   function createConnection(fromUuid: string, toUuid: string): SerializedConnection {
     return {
+      uuid: `conn_${fromUuid}_${toUuid}`,
       id: `conn_${fromUuid}_${toUuid}`,
+      sourceNodeUuid: fromUuid,
       source: fromUuid,
       sourcePort: 'exec_out',
+      targetNodeUuid: toUuid,
       target: toUuid,
       targetPort: 'exec_in',
     }
@@ -259,10 +263,11 @@ export function useLorToBlueprint() {
 
   /**
    * 转换对话为蓝图节点
-   * 使用 UUID 作为节点 ID，保留蓝图上的位置信息
+   * 使用 UUID 作为节点 ID，保留蓝图上的绝对坐标位置
+   * 支持一个节点连接到多个节点（通过 nextNodeUuids）
    */
   function convertDialogueToNode(dialogue: LorDialogue, index: number, uuid: string): SerializedNode | null {
-    // 优先使用 YAML 中保存的位置，否则使用自动布局位置
+    // 优先使用 YAML 中保存的绝对坐标位置，否则使用自动布局位置
     const position = dialogue.position && typeof dialogue.position.x === 'number'
       ? { x: dialogue.position.x, y: dialogue.position.y }
       : { x: 300, y: 100 + index * 150 }
@@ -275,6 +280,7 @@ export function useLorToBlueprint() {
       }))
       
       return {
+        uuid,
         id: uuid,
         nodeType: 'DialogueNode',
         position,
@@ -286,6 +292,7 @@ export function useLorToBlueprint() {
           textEffect: dialogue.textEffect || { type: '', speed: 0, shake: false, fadeDuration: 0, delayBeforeStart: 0 },
           animation: dialogue.animation || { type: '', duration: 0 },
         },
+        nextNodeUuids: [],
       }
     }
     
@@ -327,15 +334,19 @@ export function useLorToBlueprint() {
       }
       
       return {
+        uuid,
         id: uuid,
         nodeType: 'EventNode',
+        subType,
         position,
         properties,
+        nextNodeUuids: [],
       }
     }
     
     if (dialogue.type === 'Branch' && dialogue.branch) {
       return {
+        uuid,
         id: uuid,
         nodeType: 'BranchNode',
         position,
@@ -346,6 +357,7 @@ export function useLorToBlueprint() {
             condition: c.condition,
           })),
         },
+        nextNodeUuids: [],
       }
     }
     

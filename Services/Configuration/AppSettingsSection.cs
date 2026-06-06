@@ -86,7 +86,7 @@ public class AppSettingsSection
                 if (DefaultSettings.IsAttributeElement(key))
                 {
                     writer.WriteStartElement(elementName);
-                    writer.WriteAttributeString(key, value);
+                    writer.WriteAttributeString("theme", value);
                     writer.WriteEndElement();
                 }
                 else
@@ -142,23 +142,33 @@ public class AppSettingsSection
                     break;
 
                 default:
-                    var mappedKey = DefaultSettings.GetKeyFromXmlElementName(childElem.Name);
-                    if (mappedKey != null)
+                    // 所有键名已统一为 PascalCase，XML 元素名即键名
+                    // 唯一例外：UI 元素存储 Theme 值，通过 theme 属性读取
+                    if (childElem.Name == "UI")
                     {
-                        if (DefaultSettings.IsAttributeElement(mappedKey))
-                        {
-                            var attrValue = childElem.GetAttribute(mappedKey);
-                            if (!string.IsNullOrEmpty(attrValue))
-                                section._values[mappedKey] = attrValue;
-                        }
-                        else
-                        {
-                            var textValue = childElem.InnerText?.Trim();
-                            if (!string.IsNullOrEmpty(textValue))
-                                section._values[mappedKey] = textValue;
-                        }
+                        var themeAttr = childElem.GetAttribute("theme");
+                        if (!string.IsNullOrEmpty(themeAttr))
+                            section._values[DefaultSettings.ThemeKey] = themeAttr;
+                    }
+                    else
+                    {
+                        // 元素名直接作为键名（PascalCase）
+                        var textValue = childElem.InnerText?.Trim();
+                        if (!string.IsNullOrEmpty(textValue))
+                            section._values[childElem.Name] = textValue;
                     }
                     break;
+            }
+        }
+
+        // 补全缺失的默认键，确保反序列化后所有配置项都存在
+        foreach (var key in DefaultSettings.GetAllKeys())
+        {
+            if (!section._values.ContainsKey(key))
+            {
+                var defaultValue = DefaultSettings.GetDefaultValue(key);
+                if (defaultValue != null)
+                    section._values[key] = defaultValue.ToString()!;
             }
         }
 

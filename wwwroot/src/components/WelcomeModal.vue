@@ -66,7 +66,7 @@ function handleKeydown(event: KeyboardEvent) {
                 <line x1="12" y1="18" x2="12" y2="12"/>
                 <line x1="9" y1="15" x2="15" y2="15"/>
               </svg>
-              <span>New Project</span>
+              <span>{{ t('Startup.NewProject') }}</span>
             </button>
 
             <button class="wm-action-btn wm-btn-secondary" @click="handleOpenProject">
@@ -75,7 +75,7 @@ function handleKeydown(event: KeyboardEvent) {
                 <line x1="12" y1="11" x2="12" y2="17"/>
                 <line x1="9" y1="14" x2="15" y2="14"/>
               </svg>
-              <span>Open Project</span>
+              <span>{{ t('Startup.OpenProject') }}</span>
             </button>
           </div>
         </div>
@@ -85,18 +85,18 @@ function handleKeydown(event: KeyboardEvent) {
 
         <!-- Right: Recent Projects -->
         <div class="wm-right">
-          <h3 class="wm-recent-title">Recent Projects</h3>
+          <h3 class="wm-recent-title">{{ t('Startup.RecentProjects') }}</h3>
 
           <div v-if="isLoadingRecents" class="wm-loading">
             <div class="wm-spinner"></div>
-            <span>Loading...</span>
+            <span>{{ t('Startup.Loading') }}</span>
           </div>
 
           <div v-else-if="recentProjects.length === 0" class="wm-empty">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.3;">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>
-            <span>No recent projects</span>
+            <span>{{ t('Startup.NoRecentProjects') }}</span>
           </div>
 
           <div v-else class="wm-recent-list">

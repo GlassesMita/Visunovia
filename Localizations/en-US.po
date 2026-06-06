@@ -1345,3 +1345,84 @@ msgstr "New Folder"
 
 msgid "FileBrowser.FolderNamePlaceholder"
 msgstr "Enter folder name"
+
+# ============================================================
+# Startup Page & Setup Wizard
+# ============================================================
+
+# Startup Page
+msgid "Startup.WelcomeTitle"
+msgstr "Welcome to Visunovia"
+
+msgid "Startup.WelcomeSubtitle"
+msgstr "Visual Novel Editor & Engine"
+
+msgid "Startup.StartButton"
+msgstr "Get Started"
+
+msgid "Startup.Loading"
+msgstr "Loading..."
+
+msgid "Startup.NewProject"
+msgstr "New Project"
+
+msgid "Startup.OpenProject"
+msgstr "Open Project"
+
+msgid "Startup.RecentProjects"
+msgstr "Recent Projects"
+
+msgid "Startup.NoRecentProjects"
+msgstr "No recent projects"
+
+# Setup Wizard
+msgid "SetupWizard.Title"
+msgstr "Setup Wizard"
+
+msgid "SetupWizard.StepLanguage"
+msgstr "Choose Language"
+
+msgid "SetupWizard.StepLanguageDesc"
+msgstr "Select your preferred language for the application interface."
+
+msgid "SetupWizard.StepTheme"
+msgstr "Choose Theme"
+
+msgid "SetupWizard.StepThemeDesc"
+msgstr "Select your preferred color theme."
+
+msgid "SetupWizard.ThemeDark"
+msgstr "Dark"
+
+msgid "SetupWizard.ThemeLight"
+msgstr "Light"
+
+msgid "SetupWizard.ThemeSystem"
+msgstr "Follow System"
+
+msgid "SetupWizard.StepFinish"
+msgstr "Ready to Go"
+
+msgid "SetupWizard.StepFinishDesc"
+msgstr "Your preferences have been saved. You can change them anytime in Settings."
+
+msgid "SetupWizard.FinishButton"
+msgstr "Start Using Visunovia"
+
+msgid "SetupWizard.BackButton"
+msgstr "Back"
+
+msgid "SetupWizard.NextButton"
+msgstr "Next"
+
+msgid "SetupWizard.SkipButton"
+msgstr "Skip"
+
+msgid "SetupWizard.LanguageDetected"
+msgstr "We detected your system language: {0}"
+
+msgid "SetupWizard.LanguageNotAvailable"
+msgstr "Your system language is not available, falling back to English (US)."
+
+msgid "SetupWizard.NoLanguageFiles"
+msgstr "No language files found. Displaying original strings."

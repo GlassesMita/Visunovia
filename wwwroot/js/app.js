@@ -808,11 +808,6 @@ app.openSelectedInFileBrowser = function () {
         return;
     }
 
-    if (app.fileBrowserSelectedType === 'directory') {
-        app.loadFileBrowserDirectory(app.fileBrowserSelectedPath);
-        return;
-    }
-
     app.closeFileBrowser();
     app.showLoading('正在打开项目...');
 

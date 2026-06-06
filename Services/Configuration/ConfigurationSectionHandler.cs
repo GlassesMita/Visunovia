@@ -93,6 +93,8 @@ public class ConfigurationSectionHandler : IConfigurationSectionHandler
         section[DefaultSettings.RecentProjectsLimitKey] = DefaultSettings.DefaultRecentProjectsLimit.ToString();
         section[DefaultSettings.PreviewWidthKey] = DefaultSettings.DefaultPreviewWidth.ToString();
         section[DefaultSettings.PreviewHeightKey] = DefaultSettings.DefaultPreviewHeight.ToString();
+        section[DefaultSettings.AllowRemoteSessionKey] = DefaultSettings.DefaultAllowRemoteSession.ToString();
+        section[DefaultSettings.IsFirstRunKey] = DefaultSettings.DefaultIsFirstRun.ToString();
         return section;
     }
 

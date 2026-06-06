@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.IO;
 using System.Linq;
+using System.Xml;
 using Microsoft.Extensions.Logging;
 using Visunovia.Middleware;
 using Visunovia.Services;
@@ -80,7 +81,7 @@ builder.Services.AddVisunoviaLocalization(options =>
 builder.Services.AddViteServices(options =>
 {
     // 指定 package.json 所在目录（wwwroot 目录）
-    options.Server.PackageDirectory = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
+    options.Server.PackageDirectory = Path.Combine(AppContext.BaseDirectory, "wwwroot");
     // 启用自动启动，确保 Vite 服务器与后端同时就绪
     options.Server.AutoRun = true;
     // 指定 Vite 开发服务器端口（与 vite.config.ts 中的 server.port 一致）
@@ -136,8 +137,9 @@ app.Use(async (context, next) =>
 // - 构建产物（/assets/*）始终由静态文件中间件提供，绕过 Vite
 // - Vite 只处理源码请求（/src/*）和 SPA 路由
 // - Vite 不可用时（开发/生产）：使用预构建的静态文件提供 SPA 回退
-var wwwrootPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
-var wwwBuildPath = Path.Combine(builder.Environment.ContentRootPath, "www_build");
+var baseDir = AppContext.BaseDirectory;
+var wwwrootPath = Path.Combine(baseDir, "wwwroot");
+var wwwBuildPath = Path.Combine(baseDir, "www_build");
 
 // 检查 www_build 目录是否存在有效的构建产物
 var wwwBuildExists = Directory.Exists(Path.Combine(wwwBuildPath, "assets"));
@@ -158,7 +160,7 @@ else
     staticFilesPath = wwwBuildPath;
 }
 
-Console.WriteLine($"[StaticFiles] ContentRootPath: {builder.Environment.ContentRootPath}");
+Console.WriteLine($"[StaticFiles] BaseDirectory: {baseDir}");
 Console.WriteLine($"[StaticFiles] Environment: {app.Environment.EnvironmentName}");
 Console.WriteLine($"[StaticFiles] www_build exists: {wwwBuildExists}");
 Console.WriteLine($"[StaticFiles] wwwroot assets exists: {wwwrootAssetsExists}");
@@ -258,6 +260,60 @@ if (!hasStaticAssets)
     Console.WriteLine($"[StaticFiles] Warning: Static files directory not found at {staticFilesPath}");
     Console.WriteLine($"[StaticFiles] Hint: Run 'npm run build' in wwwroot/ then restart the application");
 }
+
+// 启动页面路由 — 根据 isFirstRun 配置决定显示安装向导还是主页面
+// 当 isFirstRun 为 true 或不存在时，所有页面请求重定向到 SetupWizard
+// 当 isFirstRun 为 false 时，正常加载页面，不进行重定向
+// 注意：此中间件必须在 UseRouting 之前注册，以确保在路由匹配之前拦截请求
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value ?? "";
+
+    // API 请求直接放行
+    if (path.StartsWith("/api"))
+    {
+        await next();
+        return;
+    }
+
+    // SetupWizard 页面本身直接放行（避免重定向循环）
+    if (path.StartsWith("/SetupWizard", StringComparison.OrdinalIgnoreCase))
+    {
+        await next();
+        return;
+    }
+
+    // 静态文件请求直接放行（有扩展名的文件）
+    if (path.Contains('.'))
+    {
+        await next();
+        return;
+    }
+
+    try
+    {
+        var settingsService = context.RequestServices.GetRequiredService<SettingsService>();
+        var isFirstRunValue = settingsService.GetRawValue(DefaultSettings.IsFirstRunKey);
+        bool isFirstRun = string.IsNullOrEmpty(isFirstRunValue) ||
+                          (bool.TryParse(isFirstRunValue, out bool parsed) && parsed);
+
+        if (isFirstRun)
+        {
+            // 首次运行：任何页面请求都重定向到 SetupWizard
+            Console.WriteLine($"[StartupPage] isFirstRun={isFirstRun}, redirecting {path} -> /SetupWizard");
+            context.Response.Redirect("/SetupWizard", permanent: false);
+            return;
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[StartupPage] 读取 isFirstRun 配置失败: {ex.Message}，默认显示安装向导");
+        context.Response.Redirect("/SetupWizard", permanent: false);
+        return;
+    }
+
+    await next();
+});
 
 app.UseRouting();
 

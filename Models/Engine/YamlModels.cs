@@ -110,7 +110,7 @@ public class YamlResourceEntry
 
 /// <summary>
 /// YAML 中的节点条目，通过 UUID 标识。
-/// 包含节点类型、位置、属性和端口定义。
+/// 包含节点类型、绝对坐标位置、属性、端口定义以及多目标执行步骤。
 /// </summary>
 public class YamlNodeEntry
 {
@@ -126,6 +126,9 @@ public class YamlNodeEntry
     [JsonPropertyName("display_name")]
     public string DisplayName { get; set; } = "";
 
+    /// <summary>
+    /// 蓝图视图中的绝对坐标位置，用于从 YAML 正确转换后显示到蓝图视图内。
+    /// </summary>
     [JsonPropertyName("position")]
     public YamlPosition Position { get; set; } = new();
 
@@ -137,6 +140,13 @@ public class YamlNodeEntry
 
     [JsonPropertyName("outputs")]
     public List<YamlPortDefinition> Outputs { get; set; } = new();
+
+    /// <summary>
+    /// 下一个执行步骤的节点 UUID 列表。
+    /// 一个节点可以连接到多个节点，支持分支、并行等流程。
+    /// </summary>
+    [JsonPropertyName("next_node_uuids")]
+    public List<string> NextNodeUuids { get; set; } = new();
 }
 
 /// <summary>

@@ -4,19 +4,37 @@ import { sceneGraphApi } from '@/api'
 import type { Editor } from '@baklavajs/core'
 
 export interface SerializedNode {
-  id: string
+  /** 节点唯一标识符（UUID） */
+  uuid: string
+  /** 节点类型名称 */
   nodeType: string
+  /** 节点子类型 */
   subType?: string
+  /** 蓝图视图中的绝对坐标位置 */
   position: { x: number; y: number }
+  /** 节点属性 */
   properties: Record<string, any>
+  /** 下一个执行步骤的节点 UUID 列表 */
+  nextNodeUuids: string[]
+  /** 兼容旧代码的 id 属性 */
+  id: string
 }
 
 export interface SerializedConnection {
+  /** 连线唯一标识符（UUID） */
+  uuid: string
+  /** 源节点 UUID */
+  sourceNodeUuid: string
+  /** 源端口名称 */
+  sourcePort: string
+  /** 目标节点 UUID */
+  targetNodeUuid: string
+  /** 目标端口名称 */
+  targetPort: string
+  /** 兼容旧代码的属性 */
   id: string
   source: string
-  sourcePort: string
   target: string
-  targetPort: string
 }
 
 export interface SerializedSceneGraph {
@@ -59,17 +77,22 @@ function extractNodeProperties(node: any): Record<string, any> {
 
 function serializeEditorGraph(editor: Editor): SerializedSceneGraph {
   const nodes: SerializedNode[] = editor.graph.nodes.map((node) => ({
+    uuid: node.id,
     id: node.id,
     nodeType: extractNodeType(node),
     subType: extractSubType(node),
     position: { x: node.position.x, y: node.position.y },
-    properties: extractNodeProperties(node)
+    properties: extractNodeProperties(node),
+    nextNodeUuids: (node as any).nextNodeUuids || []
   }))
   
   const connections: SerializedConnection[] = editor.graph.connections.map((conn) => ({
+    uuid: `${conn.from.nodeId}:${conn.from.name}->${conn.to.nodeId}:${conn.to.name}`,
     id: `${conn.from.nodeId}:${conn.from.name}->${conn.to.nodeId}:${conn.to.name}`,
+    sourceNodeUuid: conn.from.nodeId,
     source: conn.from.nodeId,
     sourcePort: conn.from.name,
+    targetNodeUuid: conn.to.nodeId,
     target: conn.to.nodeId,
     targetPort: conn.to.name
   }))
@@ -135,8 +158,11 @@ async function deserializeToEditor(editor: Editor, data: SerializedSceneGraph) {
     }
     
     const node = new nodeTypeInfo.type()
-    node.id = nodeData.id
+    node.id = nodeData.uuid || nodeData.id
     node.position = nodeData.position
+    
+    // 保存 nextNodeUuids 到节点对象上，供后续使用
+    ;(node as any).nextNodeUuids = nodeData.nextNodeUuids || []
     
     editor.graph.addNode(node as any)
   }
@@ -159,19 +185,22 @@ async function deserializeToEditor(editor: Editor, data: SerializedSceneGraph) {
   
   for (const connData of data.connections) {
     try {
-      const fromNode = editor.graph.nodes.find((n) => n.id === connData.source)
-      const toNode = editor.graph.nodes.find((n) => n.id === connData.target)
+      const sourceUuid = connData.sourceNodeUuid || connData.source
+      const targetUuid = connData.targetNodeUuid || connData.target
+      
+      const fromNode = editor.graph.nodes.find((n) => n.id === sourceUuid)
+      const toNode = editor.graph.nodes.find((n) => n.id === targetUuid)
       
       if (!fromNode) {
-        console.warn(`[deserializeToEditor] From node not found: ${connData.source}`)
+        console.warn(`[deserializeToEditor] From node not found: ${sourceUuid}`)
         continue
       }
       if (!toNode) {
-        console.warn(`[deserializeToEditor] To node not found: ${connData.target}`)
+        console.warn(`[deserializeToEditor] To node not found: ${targetUuid}`)
         continue
       }
       
-      console.log(`[deserializeToEditor] Connecting: ${connData.source}:${connData.sourcePort} -> ${connData.target}:${connData.targetPort}`)
+      console.log(`[deserializeToEditor] Connecting: ${sourceUuid}:${connData.sourcePort} -> ${targetUuid}:${connData.targetPort}`)
       console.log(`[deserializeToEditor] fromNode.outputs keys:`, Object.keys(fromNode.outputs || {}))
       console.log(`[deserializeToEditor] toNode.inputs keys:`, Object.keys(toNode.inputs || {}))
       

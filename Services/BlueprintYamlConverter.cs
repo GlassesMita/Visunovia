@@ -146,7 +146,7 @@ public class BlueprintYamlConverter
                     Uuid = nodeUuid,
                     NodeType = nodeType,
                     SubType = subType,
-                    DisplayName = displayName,
+                    DisplayName = nodeDisplayName,
                     Position = new YamlPosition
                     {
                         X = node.Position?.X ?? 0,
@@ -154,7 +154,8 @@ public class BlueprintYamlConverter
                     },
                     Properties = node.Properties ?? new Dictionary<string, object>(),
                     Inputs = inputs,
-                    Outputs = outputs
+                    Outputs = outputs,
+                    NextNodeUuids = node.NextNodeUuids ?? new List<string>()
                 });
             }
         }
@@ -267,8 +268,9 @@ public class BlueprintYamlConverter
             {
                 var nodeData = new NodeData
                 {
-                    Id = yamlNode.Uuid,
+                    Uuid = yamlNode.Uuid,
                     Type = yamlNode.NodeType,
+                    SubType = yamlNode.SubType,
                     Position = new PositionData
                     {
                         X = yamlNode.Position?.X ?? 0,
@@ -288,7 +290,8 @@ public class BlueprintYamlConverter
                         Label = p.Label,
                         Type = p.PortType,
                         DataType = p.DataType
-                    }).ToList() ?? new List<PortData>()
+                    }).ToList() ?? new List<PortData>(),
+                    NextNodeUuids = yamlNode.NextNodeUuids ?? new List<string>()
                 };
 
                 sceneGraph.Nodes.Add(nodeData);
@@ -315,10 +318,10 @@ public class BlueprintYamlConverter
             {
                 var edgeData = new EdgeData
                 {
-                    Id = yamlEdge.Uuid,
-                    Source = yamlEdge.SourceNodeUuid,
+                    Uuid = yamlEdge.Uuid,
+                    SourceNodeUuid = yamlEdge.SourceNodeUuid,
                     SourcePort = yamlEdge.SourcePort,
-                    Target = yamlEdge.TargetNodeUuid,
+                    TargetNodeUuid = yamlEdge.TargetNodeUuid,
                     TargetPort = yamlEdge.TargetPort,
                     Type = yamlEdge.EdgeType
                 };

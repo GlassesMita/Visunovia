@@ -27,6 +27,7 @@ body {
     font-size: 14px;
     margin-right: 12px;
     cursor: default;
+    -webkit-user-select: none;
     user-select: none;
 }
 

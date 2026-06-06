@@ -808,6 +808,87 @@ msgstr "種類"
 msgid "palette.noMatch"
 msgstr "検索に一致するノードがありません"
 
+# ============================================================
+# 起動ページとセットアップウィザード
+# ============================================================
+
+# 起動ページ
+msgid "Startup.WelcomeTitle"
+msgstr "Visunovia へようこそ"
+
+msgid "Startup.WelcomeSubtitle"
+msgstr "ビジュアルノベルエディタ＆エンジン"
+
+msgid "Startup.StartButton"
+msgstr "始める"
+
+msgid "Startup.Loading"
+msgstr "読み込み中..."
+
+msgid "Startup.NewProject"
+msgstr "新規プロジェクト"
+
+msgid "Startup.OpenProject"
+msgstr "プロジェクトを開く"
+
+msgid "Startup.RecentProjects"
+msgstr "最近のプロジェクト"
+
+msgid "Startup.NoRecentProjects"
+msgstr "最近のプロジェクトはありません"
+
+# セットアップウィザード
+msgid "SetupWizard.Title"
+msgstr "セットアップウィザード"
+
+msgid "SetupWizard.StepLanguage"
+msgstr "言語の選択"
+
+msgid "SetupWizard.StepLanguageDesc"
+msgstr "アプリケーションのインターフェース言語を選択してください。"
+
+msgid "SetupWizard.StepTheme"
+msgstr "テーマの選択"
+
+msgid "SetupWizard.StepThemeDesc"
+msgstr "お好みのカラーテーマを選択してください。"
+
+msgid "SetupWizard.ThemeDark"
+msgstr "ダーク"
+
+msgid "SetupWizard.ThemeLight"
+msgstr "ライト"
+
+msgid "SetupWizard.ThemeSystem"
+msgstr "システムに従う"
+
+msgid "SetupWizard.StepFinish"
+msgstr "準備完了"
+
+msgid "SetupWizard.StepFinishDesc"
+msgstr "設定が保存されました。設定画面でいつでも変更できます。"
+
+msgid "SetupWizard.FinishButton"
+msgstr "Visunovia を使い始める"
+
+msgid "SetupWizard.BackButton"
+msgstr "戻る"
+
+msgid "SetupWizard.NextButton"
+msgstr "次へ"
+
+msgid "SetupWizard.SkipButton"
+msgstr "スキップ"
+
+msgid "SetupWizard.LanguageDetected"
+msgstr "システム言語を検出しました：{0}"
+
+msgid "SetupWizard.LanguageNotAvailable"
+msgstr "システム言語は利用できません。English (US) にフォールバックします。"
+
+msgid "SetupWizard.NoLanguageFiles"
+msgstr "言語ファイルが見つかりません。元の文字列を表示します。"
+
 # Categories
 msgid "categories.flow"
 msgstr "フロー制御"
