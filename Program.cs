@@ -211,50 +211,6 @@ if (app.Environment.IsDevelopment())
 
 Console.WriteLine($"[StaticFiles] Vite server available: {viteServerAvailable}");
 
-// SPA 路由回退 — 所有未匹配的非 API、非静态文件请求返回 index.html
-// 始终注册此中间件，作为 Vite 不可用时的回退
-app.Use(async (context, next) =>
-{
-    var path = context.Request.Path.Value ?? "";
-
-    // API 直接放行
-    if (path.StartsWith("/api"))
-    {
-        await next();
-        return;
-    }
-
-    // 有扩展名的文件请求直接放行（静态文件中间件已处理）
-    if (path.Contains('.'))
-    {
-        await next();
-        return;
-    }
-
-    // Vite 开发服务器可用时，让 Vite 处理 SPA 路由
-    if (viteServerAvailable && app.Environment.IsDevelopment())
-    {
-        await next();
-        return;
-    }
-
-    // Vite 不可用时：为所有路由提供 index.html
-    if (hasStaticAssets)
-    {
-        var indexPath = Path.Combine(staticFilesPath, "index.html");
-        if (File.Exists(indexPath))
-        {
-            var htmlContent = await File.ReadAllTextAsync(indexPath);
-            htmlContent = htmlContent.Replace("./assets/", "/assets/");
-            context.Response.ContentType = "text/html; charset=utf-8";
-            await context.Response.WriteAsync(htmlContent);
-            return;
-        }
-    }
-
-    await next();
-});
-
 if (!hasStaticAssets)
 {
     Console.WriteLine($"[StaticFiles] Warning: Static files directory not found at {staticFilesPath}");
@@ -264,7 +220,7 @@ if (!hasStaticAssets)
 // 启动页面路由 — 根据 isFirstRun 配置决定显示安装向导还是主页面
 // 当 isFirstRun 为 true 或不存在时，所有页面请求重定向到 SetupWizard
 // 当 isFirstRun 为 false 时，正常加载页面，不进行重定向
-// 注意：此中间件必须在 UseRouting 之前注册，以确保在路由匹配之前拦截请求
+// 注意：此中间件必须在 SPA 路由回退之前注册，以确保在 SPA 回退拦截请求之前执行
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path.Value ?? "";
@@ -310,6 +266,58 @@ app.Use(async (context, next) =>
         Console.WriteLine($"[StartupPage] 读取 isFirstRun 配置失败: {ex.Message}，默认显示安装向导");
         context.Response.Redirect("/SetupWizard", permanent: false);
         return;
+    }
+
+    await next();
+});
+
+// SPA 路由回退 — 所有未匹配的非 API、非静态文件请求返回 index.html
+// 始终注册此中间件，作为 Vite 不可用时的回退
+// 注意：此中间件必须在 StartupPage 中间件之后注册，否则会在 isFirstRun 检查之前拦截请求
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value ?? "";
+
+    // API 直接放行
+    if (path.StartsWith("/api"))
+    {
+        await next();
+        return;
+    }
+
+    // Razor Pages 路由直接放行（如 /SetupWizard），不返回 SPA index.html
+    if (path.StartsWith("/SetupWizard", StringComparison.OrdinalIgnoreCase))
+    {
+        await next();
+        return;
+    }
+
+    // 有扩展名的文件请求直接放行（静态文件中间件已处理）
+    if (path.Contains('.'))
+    {
+        await next();
+        return;
+    }
+
+    // Vite 开发服务器可用时，让 Vite 处理 SPA 路由
+    if (viteServerAvailable && app.Environment.IsDevelopment())
+    {
+        await next();
+        return;
+    }
+
+    // Vite 不可用时：为所有路由提供 index.html
+    if (hasStaticAssets)
+    {
+        var indexPath = Path.Combine(staticFilesPath, "index.html");
+        if (File.Exists(indexPath))
+        {
+            var htmlContent = await File.ReadAllTextAsync(indexPath);
+            htmlContent = htmlContent.Replace("./assets/", "/assets/");
+            context.Response.ContentType = "text/html; charset=utf-8";
+            await context.Response.WriteAsync(htmlContent);
+            return;
+        }
     }
 
     await next();

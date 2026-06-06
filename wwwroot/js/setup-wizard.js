@@ -49,11 +49,13 @@ var wizard = wizard || {};
                 var html = '';
                 langResult.data.forEach(function (lang) {
                     var selected = lang.code === (detectResult.data && detectResult.data.detectedLanguage) ? 'style="border-color:#3B82F6; background:#1a2a4a;"' : '';
+                    var displayName = lang.displayName || lang.nativeName || lang.name || lang.code;
+                    var codeLabel = lang.code;
                     html += '<label ' + selected + ' class="wizard-lang-option" data-code="' + lang.code + '" style="display:flex; align-items:center; gap:12px; padding:12px 16px; background:#0d0d0d; border:1px solid #333; border-radius:8px; cursor:pointer; transition:all 0.2s;">';
                     html += '<input type="radio" name="language" value="' + lang.code + '" style="accent-color:#3B82F6;" />';
                     html += '<div style="flex:1;">';
-                    html += '<div style="color:#ddd; font-size:14px;">' + escapeHtml(lang.nativeName || lang.name || lang.code) + '</div>';
-                    html += '<div style="color:#666; font-size:11px;">' + escapeHtml(lang.name || lang.code) + '</div>';
+                    html += '<div style="color:#ddd; font-size:14px;">' + escapeHtml(displayName) + '</div>';
+                    html += '<div style="color:#666; font-size:11px;">' + escapeHtml(codeLabel) + '</div>';
                     html += '</div>';
                     html += '</label>';
                 });
@@ -212,7 +214,7 @@ var wizard = wizard || {};
             if (subtitleEl) subtitleEl.textContent = 'Select your preferred language for the application interface.';
         } else if (currentStep === 1) {
             if (titleEl) titleEl.textContent = 'Choose Theme';
-            if (subtitleEl) subtitleEl.textContent = 'Select your preferred color theme.';
+            if (subtitleEl) subtitleEl.textContent = 'Select your preferred color theme for the editor.';
         } else if (currentStep === 2) {
             if (titleEl) titleEl.textContent = 'Ready to Go';
             if (subtitleEl) subtitleEl.textContent = 'Your preferences have been saved. You can change them anytime in Settings.';
@@ -252,9 +254,13 @@ var wizard = wizard || {};
             if (currentStep === totalSteps - 1) {
                 nextBtn.textContent = 'Start Using Visunovia';
                 nextBtn.onclick = wizard.complete;
+                nextBtn.style.background = '#10B981';
+                nextBtn.style.borderColor = '#059669';
             } else {
-                nextBtn.textContent = 'Next';
+                nextBtn.textContent = 'Next \u2192';
                 nextBtn.onclick = wizard.goNext;
+                nextBtn.style.background = '#3B82F6';
+                nextBtn.style.borderColor = '#2563EB';
             }
         }
     }

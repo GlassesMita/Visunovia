@@ -48,7 +48,12 @@
       <VueBuildFiles Include="$(ProjectDir)www_build\**\*" />
     </ItemGroup>
     <Copy SourceFiles="@(VueBuildFiles)" DestinationFiles="@(VueBuildFiles->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
-    <Message Text="[Release] wwwroot replaced with @(VueBuildFiles->Count()) build files." Importance="high" />
+    <!-- 复制 wwwroot 中的非 Vite 资源文件（如 js/setup-wizard.js） -->
+    <ItemGroup>
+      <WwwrootExtraFiles Include="$(ProjectDir)wwwroot\**\*" Exclude="$(ProjectDir)wwwroot\assets\**\*;$(ProjectDir)wwwroot\src\**\*;$(ProjectDir)wwwroot\css\**\*;$(ProjectDir)wwwroot\fonts\**\*;$(ProjectDir)wwwroot\index.html;$(ProjectDir)wwwroot\package.json;$(ProjectDir)wwwroot\vite.config.ts;$(ProjectDir)wwwroot\tsconfig.json;$(ProjectDir)wwwroot\tsconfig.node.json;$(ProjectDir)wwwroot\postcss.config.js;$(ProjectDir)wwwroot\_check_file.js" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WwwrootExtraFiles)" DestinationFiles="@(WwwrootExtraFiles->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Message Text="[Release] wwwroot replaced with @(VueBuildFiles->Count()) build files + @(WwwrootExtraFiles->Count()) extra files." Importance="high" />
   </Target>
 
   <!-- 发布后清理 StaticWebAssets 产生的嵌套目录 -->
