@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { apiClient } from '@/api'
+import axios from 'axios'
 import * as translationService from '@/services/translationService'
 import type { LanguageInfo } from '@/types'
 
@@ -17,84 +17,38 @@ export const useLocalizationStore = defineStore('localization', () => {
   const isLoading = ref(false)
   const isReady = ref(false)
   const error = ref<string | null>(null)
-  let initPromise: Promise<void> | null = null
 
-  /**
-   * 初始化本地化服务
-   * 使用 Promise 锁防止并发调用导致重复请求
-   */
   async function initialize() {
-    // 如果已经初始化完成，直接返回
     if (isReady.value) return
 
-    // 如果正在初始化，等待现有的初始化完成
-    if (initPromise) {
-      await initPromise
-      return
-    }
-
-    // 创建新的初始化 Promise
-    initPromise = _doInitialize()
-
-    try {
-      await initPromise
-    } finally {
-      initPromise = null
-    }
-  }
-
-  /**
-   * 实际执行初始化的内部函数
-   */
-  async function _doInitialize() {
     isLoading.value = true
     error.value = null
 
     try {
       // 并行加载语言列表和翻译
-      const results = await Promise.allSettled([
+      await Promise.all([
         fetchAvailableLanguages(),
         translationService.initTranslations(),
       ])
-
-      const [languagesResult, translationsResult] = results
-
-      // 处理语言列表加载失败的情况
-      if (languagesResult.status === 'rejected') {
-        console.warn('[LocalizationStore] Language list load failed:', languagesResult.reason)
-      }
-
-      // 处理翻译加载失败的情况
-      if (translationsResult.status === 'rejected') {
-        console.error('[LocalizationStore] Translation load failed:', translationsResult.reason)
-        error.value = 'Failed to load translations'
-      }
-
       currentLanguage.value = translationService.getCurrentLanguage()
       isReady.value = true
     } catch (err: any) {
       console.error('[LocalizationStore] Initialization failed:', err)
       error.value = err.message || 'Failed to initialize localization'
-      // 即使失败也标记为 ready，避免无限阻塞 UI
-      isReady.value = true
     } finally {
       isLoading.value = false
     }
   }
 
-  /**
-   * 从后端获取可用语言列表
-   * 使用统一的 apiClient 实例
-   */
-  async function fetchAvailableLanguages(): Promise<void> {
+  /** 从后端获取可用语言列表 */
+  async function fetchAvailableLanguages() {
     try {
-      const response = await apiClient.get('/localization/languages', { timeout: 5000 })
+      const response = await axios.get('/api/localization/languages', { timeout: 5000 })
       if (response.data?.success && Array.isArray(response.data?.data)) {
         availableLanguages.value = response.data.data
       }
     } catch (err) {
       console.warn('[LocalizationStore] Failed to fetch language list:', err)
-      throw err
     }
   }
 
@@ -108,7 +62,7 @@ export const useLocalizationStore = defineStore('localization', () => {
     try {
       // 通知后端切换语言（持久化偏好）
       try {
-        await apiClient.post('/localization/language', { language: lang }, { timeout: 5000 })
+        await axios.post('/api/localization/language', { language: lang }, { timeout: 5000 })
       } catch {
         // 后端不可用时继续
       }

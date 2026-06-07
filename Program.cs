@@ -185,6 +185,25 @@ if (hasStaticAssets)
     });
 }
 
+// wwwroot 静态文件服务 — 为 Razor 页面提供 CSS/JS 等文件
+// 注意：此中间件必须在构建产物静态文件之后注册，以确保 /assets/* 优先由构建产物提供
+if (Directory.Exists(wwwrootPath))
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(wwwrootPath),
+        RequestPath = "",
+        OnPrepareResponse = ctx =>
+        {
+            var headers = ctx.Context.Response.Headers;
+            headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            headers["Pragma"] = "no-cache";
+            headers["Expires"] = "0";
+        }
+    });
+    Console.WriteLine($"[StaticFiles] wwwroot static files enabled: {wwwrootPath}");
+}
+
 // Vite 开发服务器中间件 — 默认禁用
 // Vite 中间件会导致 API 请求被代理到 Vite 服务器，再代理回后端，形成循环
 // 使用预构建产物代替 Vite 开发服务器，确保 API 请求直接由后端处理
@@ -232,8 +251,9 @@ app.Use(async (context, next) =>
         return;
     }
 
-    // SetupWizard 页面本身直接放行（避免重定向循环）
-    if (path.StartsWith("/SetupWizard", StringComparison.OrdinalIgnoreCase))
+    // SetupWizard 和 About 页面本身直接放行（避免重定向循环）
+    if (path.StartsWith("/SetupWizard", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/About", StringComparison.OrdinalIgnoreCase))
     {
         await next();
         return;
@@ -285,8 +305,9 @@ app.Use(async (context, next) =>
         return;
     }
 
-    // Razor Pages 路由直接放行（如 /SetupWizard），不返回 SPA index.html
-    if (path.StartsWith("/SetupWizard", StringComparison.OrdinalIgnoreCase))
+    // Razor Pages 路由直接放行（如 /SetupWizard, /About），不返回 SPA index.html
+    if (path.StartsWith("/SetupWizard", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/About", StringComparison.OrdinalIgnoreCase))
     {
         await next();
         return;

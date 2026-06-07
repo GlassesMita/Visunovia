@@ -346,6 +346,69 @@ msgstr "標題"
 msgid "EventParam.NotificationMessage"
 msgstr "內文"
 
+# About Page - Sidebar
+msgid "About.Sidebar.Contents"
+msgstr "目錄"
+
+msgid "About.Sidebar.SoftwareInfo"
+msgstr "軟體資訊"
+
+msgid "About.Sidebar.TechnologyStack"
+msgstr "技術棧"
+
+msgid "About.Sidebar.OpenSourceLicenses"
+msgstr "開源授權"
+
+msgid "About.Sidebar.Links"
+msgstr "連結"
+
+# About Page - Sections
+msgid "About.Section.SoftwareInfo"
+msgstr "軟體資訊"
+
+msgid "About.Section.TechnologyStack"
+msgstr "技術棧"
+
+msgid "About.Section.OpenSourceLicenses"
+msgstr "開源授權"
+
+msgid "About.Section.Links"
+msgstr "連結"
+
+# About Page - Labels
+msgid "About.Label.BuildDate"
+msgstr "建置日期"
+
+msgid "About.Label.Platform"
+msgstr "平台"
+
+msgid "About.Label.License"
+msgstr "授權"
+
+msgid "About.Label.Copyright"
+msgstr "版權"
+
+msgid "About.Label.Version"
+msgstr "版本"
+
+# About Page - Description
+msgid "About.Description"
+msgstr "一款基於 Vue 3 與 ASP.NET Core 的跨平台視覺小說編輯器。透過直覺的節點圖編輯器建立互動式視覺小說，支援多語言功能與即時預覽。"
+
+# About Page - License intro
+msgid "About.LicenseIntro"
+msgstr "本軟體基於以下開源元件構建。感謝所有貢獻者的付出。"
+
+msgid "About.LicenseText"
+msgstr "本專案本身採用 GPL-3.0 授權。版權所有 (c) 2026 Visunovia 團隊。保留所有權利。"
+
+# About Page - Footer
+msgid "About.Footer.BuiltWith"
+msgstr "由 Visunovia 團隊用 ❤️ 打造"
+
+msgid "About.Footer.BuildDate"
+msgstr "建置日期：{0}"
+
 # Vue Frontend - Menu Bar
 msgid "menu.file"
 msgstr "檔案"

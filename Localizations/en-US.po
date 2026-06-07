@@ -349,6 +349,69 @@ msgstr "Title"
 msgid "EventParam.NotificationMessage"
 msgstr "Message"
 
+# About Page - Sidebar
+msgid "About.Sidebar.Contents"
+msgstr "Contents"
+
+msgid "About.Sidebar.SoftwareInfo"
+msgstr "Software Info"
+
+msgid "About.Sidebar.TechnologyStack"
+msgstr "Technology Stack"
+
+msgid "About.Sidebar.OpenSourceLicenses"
+msgstr "Open Source Licenses"
+
+msgid "About.Sidebar.Links"
+msgstr "Links"
+
+# About Page - Sections
+msgid "About.Section.SoftwareInfo"
+msgstr "Software Info"
+
+msgid "About.Section.TechnologyStack"
+msgstr "Technology Stack"
+
+msgid "About.Section.OpenSourceLicenses"
+msgstr "Open Source Licenses"
+
+msgid "About.Section.Links"
+msgstr "Links"
+
+# About Page - Labels
+msgid "About.Label.BuildDate"
+msgstr "Build Date"
+
+msgid "About.Label.Platform"
+msgstr "Platform"
+
+msgid "About.Label.License"
+msgstr "License"
+
+msgid "About.Label.Copyright"
+msgstr "Copyright"
+
+msgid "About.Label.Version"
+msgstr "Version"
+
+# About Page - Description
+msgid "About.Description"
+msgstr "A cross-platform visual novel editor built with Vue 3 and ASP.NET Core. Create interactive visual novels with an intuitive node-based editor, multi-language support, and real-time preview."
+
+# About Page - License intro
+msgid "About.LicenseIntro"
+msgstr "This software is built upon the following open-source components. We thank all contributors for their work."
+
+msgid "About.LicenseText"
+msgstr "This project itself is licensed under the GPL-3.0 License. Copyright (c) 2026 Visunovia Team. All rights reserved."
+
+# About Page - Footer
+msgid "About.Footer.BuiltWith"
+msgstr "Built with ❤️ by the Visunovia Team"
+
+msgid "About.Footer.BuildDate"
+msgstr "Build Date: {0}"
+
 # Vue Frontend - Menu Bar
 msgid "menu.file"
 msgstr "File"
@@ -1426,3 +1489,15 @@ msgstr "Your system language is not available, falling back to English (US)."
 
 msgid "SetupWizard.NoLanguageFiles"
 msgstr "No language files found. Displaying original strings."
+# Placeholder settings (Preferences page)
+msgid "settings.placeholderCompany"
+msgstr "Company Name (Placeholder)"
+
+msgid "settings.placeholderCompany.desc"
+msgstr "Default company name for new projects"
+
+msgid "settings.placeholderProduct"
+msgstr "Product Name (Placeholder)"
+
+msgid "settings.placeholderProduct.desc"
+msgstr "Default product name for new projects"

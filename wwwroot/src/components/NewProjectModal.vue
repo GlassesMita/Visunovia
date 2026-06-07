@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useUIStore } from '@/stores/useUIStore'
 import { createProject } from '@/api/projectApi'
+import { settingsApi } from '@/api'
 import type { FolderNode } from '@/api/projectApi'
 import FileExplorer from '@/components/FileExplorer.vue'
-
 import FolderTreeNode from '@/components/FolderTreeNode.vue'
 
 const { t } = useLocalization()
@@ -23,6 +23,10 @@ const showFolderBrowser = ref(false)
 const projectNameInputRef = ref<HTMLInputElement | null>(null)
 const createdFolderTree = ref<FolderNode | null>(null)
 const showStructurePreview = ref(false)
+const defaultCompanyName = 'Abydos Highschool'
+const defaultProductName = 'Anubis'
+const projectNamePlaceholder = ref('e.g. ' + defaultProductName)
+const companyNamePlaceholder = ref('e.g. ' + defaultCompanyName)
 
 const canCreate = computed(() => {
   return projectName.value.trim().length > 0 && projectPath.value.trim().length > 0 && !isCreating.value
@@ -103,7 +107,30 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
-watch(() => uiStore.showNewProjectModal, (visible) => {
+// Load Placeholder config from settings and pre-fill companyName
+async function loadPlaceholderFromConfig() {
+  try {
+    const response = await settingsApi.get()
+    const settings = response?.data?.settings
+    if (settings && typeof settings === 'object') {
+      // Pre-fill company name
+      const savedCompanyName = settings['PlaceholderCompanyName']
+      if (savedCompanyName && typeof savedCompanyName === 'string' && savedCompanyName.trim()) {
+        companyName.value = savedCompanyName.trim()
+      }
+      // Set dynamic placeholder hints
+      const company = (typeof savedCompanyName === 'string' && savedCompanyName.trim()) ? savedCompanyName.trim() : defaultCompanyName
+      const product = (typeof settings['PlaceholderProductName'] === 'string' && settings['PlaceholderProductName'].trim()) ? settings['PlaceholderProductName'].trim() : defaultProductName
+      projectNamePlaceholder.value = 'e.g. ' + product
+      companyNamePlaceholder.value = 'e.g. ' + company
+    }
+  } catch (e) {
+    // Silently ignore — placeholder is optional
+  }
+}
+
+// When modal opens, reset fields then load placeholder
+watch(() => uiStore.showNewProjectModal, async (visible) => {
   if (visible) {
     projectName.value = ''
     projectPath.value = ''
@@ -115,6 +142,7 @@ watch(() => uiStore.showNewProjectModal, (visible) => {
     showFolderBrowser.value = false
     createdFolderTree.value = null
     showStructurePreview.value = false
+    await loadPlaceholderFromConfig()
     nextTick(() => {
       projectNameInputRef.value?.focus()
     })
@@ -156,7 +184,8 @@ watch(() => uiStore.showNewProjectModal, (visible) => {
               v-model="projectName"
               type="text"
               class="npm-input"
-              placeholder="Enter project name"
+              :placeholder="projectNamePlaceholder"
+              autocomplete="off"
               :disabled="isCreating"
             />
           </div>
@@ -169,7 +198,8 @@ watch(() => uiStore.showNewProjectModal, (visible) => {
               v-model="companyName"
               type="text"
               class="npm-input"
-              placeholder="Enter company name (optional)"
+              :placeholder="companyNamePlaceholder"
+              autocomplete="off"
               :disabled="isCreating"
             />
           </div>
@@ -184,6 +214,7 @@ watch(() => uiStore.showNewProjectModal, (visible) => {
                 type="text"
                 class="npm-input"
                 placeholder="1.0"
+                autocomplete="off"
                 :disabled="isCreating"
               />
             </div>
@@ -195,6 +226,7 @@ watch(() => uiStore.showNewProjectModal, (visible) => {
                 type="text"
                 class="npm-input"
                 placeholder="1"
+                autocomplete="off"
                 :disabled="isCreating"
               />
             </div>

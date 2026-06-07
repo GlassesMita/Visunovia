@@ -54,6 +54,26 @@
             </select>
           </div>
         </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.placeholderCompany') || 'Company Name' }}</label>
+            <p class="setting-desc">新建项目时默认的公司名称（占位符）</p>
+          </div>
+          <div class="setting-control">
+            <input type="text" v-model="settings.placeholderCompanyName" placeholder="Abydos Highschool" />
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <label>{{ t('settings.placeholderProduct') || 'Product Name' }}</label>
+            <p class="setting-desc">新建项目时默认的产品名称（占位符）</p>
+          </div>
+          <div class="setting-control">
+            <input type="text" v-model="settings.placeholderProductName" placeholder="Anubis" />
+          </div>
+        </div>
       </div>
 
       <!-- Editor -->
@@ -62,7 +82,7 @@
 
         <div class="setting-row">
           <div class="setting-label">
-            <label>{{ t('settings.autosave') || 'Auto Save' }}</label>
+            <label>{{ t('settings.autoSave') || 'Auto Save' }}</label>
             <p class="setting-desc">自动保存当前场景</p>
           </div>
           <div class="setting-control">
@@ -75,7 +95,7 @@
 
         <div class="setting-row" v-if="settings.autoSave">
           <div class="setting-label">
-            <label>{{ t('settings.autosaveinterval') || 'Auto Save Interval' }}</label>
+            <label>{{ t('settings.autoSaveInterval') || 'Auto Save Interval' }}</label>
             <p class="setting-desc">自动保存间隔（秒）</p>
           </div>
           <div class="setting-control">
@@ -85,7 +105,7 @@
 
         <div class="setting-row">
           <div class="setting-label">
-            <label>{{ t('settings.showgrid') || 'Show Grid' }}</label>
+            <label>{{ t('settings.showGrid') || 'Show Grid' }}</label>
             <p class="setting-desc">在编辑器中显示网格线</p>
           </div>
           <div class="setting-control">
@@ -98,7 +118,7 @@
 
         <div class="setting-row">
           <div class="setting-label">
-            <label>{{ t('settings.gridsize') || 'Grid Size' }}</label>
+            <label>{{ t('settings.gridSize') || 'Grid Size' }}</label>
             <p class="setting-desc">网格单元格大小（像素）</p>
           </div>
           <div class="setting-control">
@@ -108,7 +128,7 @@
 
         <div class="setting-row">
           <div class="setting-label">
-            <label>{{ t('settings.snapenabled') || 'Snap to Grid' }}</label>
+            <label>{{ t('settings.snapEnabled') || 'Snap to Grid' }}</label>
             <p class="setting-desc">节点移动时对齐到网格</p>
           </div>
           <div class="setting-control">
@@ -121,7 +141,7 @@
 
         <div class="setting-row">
           <div class="setting-label">
-            <label>{{ t('settings.defaultzoom') || 'Default Zoom' }}</label>
+            <label>{{ t('settings.defaultZoom') || 'Default Zoom' }}</label>
             <p class="setting-desc">新建场景的默认缩放级别</p>
           </div>
           <div class="setting-control">
@@ -137,7 +157,7 @@
 
         <div class="setting-row">
           <div class="setting-label">
-            <label>{{ t('settings.defaultnodesize') || 'Default Node Size' }}</label>
+            <label>{{ t('settings.defaultNodeSize') || 'Default Node Size' }}</label>
             <p class="setting-desc">新建节点的默认宽度</p>
           </div>
           <div class="setting-control">
@@ -152,7 +172,7 @@
 
         <div class="setting-row">
           <div class="setting-label">
-            <label>{{ t('settings.previewwidth') || 'Preview Width' }}</label>
+            <label>{{ t('settings.previewWidth') || 'Preview Width' }}</label>
             <p class="setting-desc">预览窗口宽度（像素）</p>
           </div>
           <div class="setting-control">
@@ -162,7 +182,7 @@
 
         <div class="setting-row">
           <div class="setting-label">
-            <label>{{ t('settings.previewheight') || 'Preview Height' }}</label>
+            <label>{{ t('settings.previewHeight') || 'Preview Height' }}</label>
             <p class="setting-desc">预览窗口高度（像素）</p>
           </div>
           <div class="setting-control">
@@ -172,7 +192,7 @@
 
         <div class="setting-row">
           <div class="setting-label">
-            <label>{{ t('settings.fullscreenpreview') || 'Fullscreen Preview' }}</label>
+            <label>{{ t('settings.fullscreenPreview') || 'Fullscreen Preview' }}</label>
             <p class="setting-desc">默认以全屏模式预览</p>
           </div>
           <div class="setting-control">
@@ -190,20 +210,7 @@
 
         <div class="setting-row">
           <div class="setting-label">
-            <label>{{ t('settings.allowremotesession') || 'Allow Remote Access' }}</label>
-            <p class="setting-desc">{{ t('settings.allowremotesessionhint') || 'Allow LAN devices to connect. Requires restart.' }}</p>
-          </div>
-          <div class="setting-control">
-            <label class="toggle-switch" @click.prevent="onRemoteToggle">
-              <input type="checkbox" :checked="settings.allowRemoteSession" @click.stop />
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-        </div>
-
-        <div class="setting-row">
-          <div class="setting-label">
-            <label>{{ t('settings.apibaseurl') || 'API Base URL' }}</label>
+            <label>{{ t('settings.apiBaseUrl') || 'API Base URL' }}</label>
             <p class="setting-desc">后端 API 服务地址</p>
           </div>
           <div class="setting-control">
@@ -213,53 +220,14 @@
 
         <div class="setting-row">
           <div class="setting-label">
-            <label>{{ t('settings.requesttimeout') || 'Request Timeout' }}</label>
+            <label>{{ t('settings.requestTimeout') || 'Request Timeout' }}</label>
             <p class="setting-desc">HTTP 请求超时时间（毫秒）</p>
           </div>
           <div class="setting-control">
             <input type="number" v-model.number="settings.requestTimeout" min="5000" max="120000" step="5000" />
           </div>
         </div>
-
-        <div v-if="settings.allowRemoteSession" class="setting-row setting-warning">
-          <div class="setting-label">
-            <label class="warning-label">⚠️ {{ t('settings.remotesessionlocked') || 'Remote access enabled' }}</label>
-            <p class="setting-desc warning-desc">启用远程访问后，局域网内的其他设备可以连接到本应用。请确保网络安全。</p>
-          </div>
-        </div>
       </div>
-
-      <!-- 远程访问警告全屏遮罩 -->
-      <Teleport to="body">
-        <Transition name="warn-fade">
-          <div v-if="showRemoteWarning" class="remote-warning-overlay" @click.stop>
-            <div class="remote-warning-box">
-              <div class="remote-warning-header">
-                <span class="remote-warning-icon">⚠️</span>
-                <h2>{{ t('remoteaccess.confirmtitle', 'Enable Remote Access') }}</h2>
-              </div>
-              <div class="remote-warning-body">
-                <p class="remote-warning-desc">
-                  {{ t('remoteaccess.confirmmessage', 'Enabling remote access will allow LAN devices to connect to this application.\n\nThis poses a security risk and may allow unauthorized access to your data.\n\nAre you sure you want to enable remote access?') }}
-                </p>
-              </div>
-              <div class="remote-warning-footer">
-                <button class="btn-warning-cancel" @click="cancelRemoteEnable">
-                  {{ t('common.cancel') || 'Cancel' }}
-                </button>
-                <button
-                  class="btn-warning-confirm"
-                  :disabled="countdown > 0"
-                  @click="confirmRemoteEnable"
-                >
-                  <span v-if="countdown > 0">{{ t('remoteaccess.wait', 'Wait') }} {{ countdown }}s</span>
-                  <span v-else>{{ t('remoteaccess.confirmbutton', 'Enable Remote Access') }}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </Transition>
-      </Teleport>
 
       <!-- 底部操作栏 -->
       <div class="prefs-footer">
@@ -268,7 +236,7 @@
         </div>
         <div class="footer-actions">
           <button class="btn-reset" @click="resetSettings">
-            {{ t('common.cancel') || 'Cancel' }}
+            {{ t('common.cancel') || 'Reset' }}
           </button>
           <button class="btn-save" @click="saveSettings">
             {{ t('common.save') || 'Save' }}
@@ -280,7 +248,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, watch, onMounted, onBeforeUnmount, markRaw } from 'vue'
+import { reactive, ref, onMounted, markRaw } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useLocalizationStore } from '@/stores/useLocalizationStore'
 import { settingsApi } from '@/api'
@@ -304,18 +272,20 @@ interface Category {
   icon: Component
 }
 
-const categories = computed<Category[]>(() => [
-  { key: 'general', label: t('settings.general'), icon: markRaw(Settings2) },
-  { key: 'editor', label: t('settings.editor'), icon: markRaw(Palette) },
-  { key: 'preview', label: t('settings.preview'), icon: markRaw(Eye) },
-  { key: 'network', label: t('settings.network'), icon: markRaw(Wifi) },
-])
+const categories: Category[] = [
+  { key: 'general', label: t('settings.general') || 'General', icon: markRaw(Settings2) },
+  { key: 'editor', label: t('settings.editor') || 'Editor', icon: markRaw(Palette) },
+  { key: 'preview', label: t('settings.preview') || 'Preview', icon: markRaw(Eye) },
+  { key: 'network', label: t('settings.network') || 'Network', icon: markRaw(Wifi) },
+]
 
 const activeCategory = ref('general')
 
 const settings = reactive({
   language: 'zh-CN',
   theme: 'dark' as 'dark' | 'light',
+  placeholderCompanyName: '',
+  placeholderProductName: '',
   autoSave: false,
   autoSaveInterval: 60,
   gridSize: 20,
@@ -328,35 +298,15 @@ const settings = reactive({
   fullscreenPreview: false,
   apiBaseUrl: '/api',
   requestTimeout: 30000,
-  allowRemoteSession: false,
 })
 
 const saveMessage = ref('')
 const saveError = ref(false)
 
-// 远程访问警告状态
-const showRemoteWarning = ref(false)
-const countdown = ref(0)
-let countdownTimer: ReturnType<typeof setInterval> | null = null
-
 // 同步加载设置（无异步等待，立即渲染）
 onMounted(() => {
   loadSettings()
   applyTheme(settings.theme)
-})
-
-// 锁定/解锁 body 滚动（全屏遮罩时禁止页面滚动）
-watch(showRemoteWarning, (show) => {
-  document.body.style.overflow = show ? 'hidden' : ''
-})
-
-// 组件卸载时清理定时器和 body 滚动锁定
-onBeforeUnmount(() => {
-  if (countdownTimer) {
-    clearInterval(countdownTimer)
-    countdownTimer = null
-  }
-  document.body.style.overflow = ''
 })
 
 function loadSettings() {
@@ -367,6 +317,8 @@ function loadSettings() {
     Object.assign(settings, {
       language: parsed.language || settings.language,
       theme: parsed.theme || settings.theme,
+      placeholderCompanyName: parsed.placeholderCompanyName ?? settings.placeholderCompanyName,
+      placeholderProductName: parsed.placeholderProductName ?? settings.placeholderProductName,
       autoSave: parsed.autoSave ?? settings.autoSave,
       autoSaveInterval: parsed.autoSaveInterval ?? settings.autoSaveInterval,
       gridSize: parsed.gridSize ?? settings.gridSize,
@@ -379,7 +331,6 @@ function loadSettings() {
       fullscreenPreview: parsed.fullscreenPreview ?? settings.fullscreenPreview,
       apiBaseUrl: parsed.apiBaseUrl || settings.apiBaseUrl,
       requestTimeout: parsed.requestTimeout ?? settings.requestTimeout,
-      allowRemoteSession: parsed.allowRemoteSession ?? settings.allowRemoteSession,
     })
   } catch (e) {
     console.error('[Preferences] Failed to parse settings:', e)
@@ -409,21 +360,12 @@ function applyTheme(theme: 'dark' | 'light') {
 async function saveSettings() {
   localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ ...settings }))
 
-  const backendSettings: Record<string, unknown> = {
-    language: settings.language,
-    theme: settings.theme,
-    autoSaveInterval: settings.autoSaveInterval,
-    previewWidth: settings.previewWidth,
-    previewHeight: settings.previewHeight,
-    allowRemoteSession: settings.allowRemoteSession,
-  }
-
   try {
-    await settingsApi.saveSettings(backendSettings)
-    saveMessage.value = t('settings.savedsuccess')
+    await settingsApi.saveSettings({ ...settings })
+    saveMessage.value = t('settings.savedSuccess') || 'Settings saved!'
     saveError.value = false
   } catch {
-    saveMessage.value = t('settings.savedlocal')
+    saveMessage.value = t('settings.savedLocal') || 'Saved locally (server unavailable)'
     saveError.value = false
   }
 
@@ -437,48 +379,11 @@ async function saveSettings() {
   setTimeout(() => { saveMessage.value = '' }, 3000)
 }
 
-function onRemoteToggle() {
-  if (settings.allowRemoteSession) {
-    // 当前已开启 → 直接关闭（无需警告）
-    settings.allowRemoteSession = false
-  } else {
-    // 当前未开启 → 显示警告遮罩，开始倒计时
-    showRemoteWarning.value = true
-    countdown.value = 5
-    countdownTimer = setInterval(() => {
-      countdown.value--
-      if (countdown.value <= 0 && countdownTimer) {
-        clearInterval(countdownTimer)
-        countdownTimer = null
-      }
-    }, 1000)
-  }
-}
-
-function cancelRemoteEnable() {
-  showRemoteWarning.value = false
-  countdown.value = 0
-  if (countdownTimer) {
-    clearInterval(countdownTimer)
-    countdownTimer = null
-  }
-}
-
-function confirmRemoteEnable() {
-  if (countdown.value > 0) return
-  // 二次确认：用户点击了确认按钮
-  showRemoteWarning.value = false
-  countdown.value = 0
-  if (countdownTimer) {
-    clearInterval(countdownTimer)
-    countdownTimer = null
-  }
-  settings.allowRemoteSession = true
-}
-
 function resetSettings() {
   settings.language = 'zh-CN'
   settings.theme = 'dark'
+  settings.placeholderCompanyName = ''
+  settings.placeholderProductName = ''
   settings.autoSave = false
   settings.autoSaveInterval = 60
   settings.gridSize = 20
@@ -491,10 +396,10 @@ function resetSettings() {
   settings.fullscreenPreview = false
   settings.apiBaseUrl = '/api'
   settings.requestTimeout = 30000
-  settings.allowRemoteSession = false
 
   applyTheme('dark')
   changeLanguage('zh-CN').catch(() => {})
+  saveSettings()
 }
 </script>
 
@@ -755,32 +660,6 @@ function resetSettings() {
   color: #f48771;
 }
 
-/* ========== Warning Row ========== */
-.setting-warning {
-  background: #3c2a00;
-  border: 1px solid #664d00;
-  border-radius: 4px;
-  padding: 10px 14px;
-  margin-top: 8px;
-}
-
-.setting-warning .setting-label {
-  flex: 1;
-}
-
-.setting-warning .setting-desc {
-  margin: 0;
-}
-
-.warning-label {
-  color: #ffcc00 !important;
-  font-weight: 600;
-}
-
-.warning-desc {
-  color: #cc9900 !important;
-}
-
 /* ========== Responsive ========== */
 @media (max-width: 640px) {
   .prefs-sidebar {
@@ -821,113 +700,5 @@ function resetSettings() {
     padding: 12px 16px;
   }
 }
-
-/* ========== Remote Access Warning Overlay ========== */
-.remote-warning-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-  background: rgba(0, 0, 0, 0.75);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(4px);
-}
-
-.remote-warning-box {
-  background: #2d2d30;
-  border: 1px solid #ff6b6b;
-  border-radius: 8px;
-  width: 480px;
-  max-width: 90vw;
-  box-shadow: 0 0 40px rgba(255, 107, 107, 0.15), 0 20px 60px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-}
-
-.remote-warning-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 24px 12px;
-}
-
-.remote-warning-icon {
-  font-size: 28px;
-  flex-shrink: 0;
-}
-
-.remote-warning-header h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #ff6b6b;
-}
-
-.remote-warning-body {
-  padding: 0 24px 16px;
-}
-
-.remote-warning-desc {
-  margin: 0;
-  font-size: 14px;
-  color: #cccccc;
-  line-height: 1.7;
-  white-space: pre-line;
-}
-
-.remote-warning-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 24px 20px;
-  border-top: 1px solid #3e3e42;
-}
-
-.btn-warning-cancel {
-  padding: 8px 20px;
-  background: #3c3c3c;
-  color: #cccccc;
-  border: 1px solid #555555;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.btn-warning-cancel:hover {
-  background: #4a4a4a;
-}
-
-.btn-warning-confirm {
-  padding: 8px 20px;
-  background: #ff6b6b;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
-}
-
-.btn-warning-confirm:hover:not(:disabled) {
-  background: #ff5252;
-}
-
-.btn-warning-confirm:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Overlay transition */
-.warn-fade-enter-active,
-.warn-fade-leave-active {
-  transition: opacity 0.25s ease;
-}
-
-.warn-fade-enter-from,
-.warn-fade-leave-to {
-  opacity: 0;
-}
 </style>
+

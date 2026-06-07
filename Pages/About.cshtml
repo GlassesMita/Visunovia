@@ -1,0 +1,556 @@
+@page
+@model Visunovia.Pages.AboutModel
+@using Visunovia.Services.Localization
+@inject IStringLocalizer Localizer
+@{
+    Layout = null;
+    var appVersion = "0.1.0-alpha";
+    var buildDate = "";
+    var configPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Visunovia.exe.config");
+    if (System.IO.File.Exists(configPath)) {
+        var doc = new System.Xml.XmlDocument();
+        doc.Load(configPath);
+        var node = doc.SelectSingleNode("//appSettings/add[@key='BuildDate']");
+        if (node != null) buildDate = node.Attributes["value"].Value;
+    }
+    if (string.IsNullOrEmpty(buildDate)) buildDate = DateTime.Now.ToString("yyyy-MM-dd");
+    // Convert to ISO 8601 format for display
+    var buildDateIso = buildDate;
+    if (DateTime.TryParse(buildDate, out var parsedDate)) {
+        buildDateIso = parsedDate.ToString("yyyy-MM-ddTHH:mm:ss");
+    }
+    var techStack = new[]
+    {
+        new { Name = "Vue 3", Version = "3.x" },
+        new { Name = "TypeScript", Version = "5.x" },
+        new { Name = "Pinia", Version = "2.x" },
+        new { Name = "Vue Router", Version = "4.x" },
+        new { Name = "ASP.NET Core", Version = "10.x" },
+        new { Name = "Vite", Version = "2.4.1" },
+        new { Name = "YamlDotNet", Version = "17.1.0" },
+        new { Name = "Dapper", Version = "2.1.66" },
+        new { Name = "Microsoft.Data.Sqlite", Version = "9.0.0" },
+        new { Name = "Tailwind CSS", Version = "4.x" }
+    };
+    var licenses = new[]
+    {
+        new { Name = "Vue 3", License = "MIT", Url = "https://github.com/vuejs/core/blob/main/LICENSE" },
+        new { Name = "TypeScript", License = "Apache 2.0", Url = "https://github.com/microsoft/TypeScript/blob/main/LICENSE.txt" },
+        new { Name = "Pinia", License = "MIT", Url = "https://github.com/vuejs/pinia/blob/main/LICENSE" },
+        new { Name = "Vue Router", License = "MIT", Url = "https://github.com/vuejs/router/blob/main/LICENSE" },
+        new { Name = "ASP.NET Core", License = "MIT", Url = "https://github.com/dotnet/aspnetcore/blob/main/LICENSE.txt" },
+        new { Name = "Vite", License = "MIT", Url = "https://github.com/vitejs/vite/blob/main/LICENSE" },
+        new { Name = "Tailwind CSS", License = "MIT", Url = "https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE" },
+        new { Name = "YamlDotNet", License = "MIT", Url = "https://github.com/aaubry/YamlDotNet/blob/master/LICENSE.txt" },
+        new { Name = "Dapper", License = "Apache 2.0", Url = "https://github.com/DapperLib/Dapper/blob/main/LICENSE" },
+        new { Name = "Microsoft.Data.Sqlite", License = "MIT", Url = "https://github.com/dotnet/efcore/blob/main/LICENSE.txt" },
+        new { Name = "System.Configuration.ConfigurationManager", License = "MIT", Url = "https://github.com/dotnet/runtime/blob/main/LICENSE.TXT" }
+    };
+    var links = new[]
+    {
+        new { Name = "GitHub Repository", Url = "https://github.com/visunovia/visunovia-editor", Icon = "📦" },
+        new { Name = "Issue Tracker", Url = "https://github.com/visunovia/visunovia-editor/issues", Icon = "🐛" }
+    };
+}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@Localizer["Menu.About"] - Visunovia</title>
+    <style>
+        /* ==================== About 页面 ==================== */
+        .about-page {
+            display: flex;
+            background: #1e1e1e;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* 侧边栏 - 固定定位 */
+        .about-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200px;
+            height: 100vh;
+            background: #1a1a1a;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 12px;
+            border-bottom: 1px solid #333;
+            min-height: 48px;
+        }
+
+        .sidebar-title {
+            color: #888;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            transition: opacity 0.2s;
+        }
+
+
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            padding: 8px 0;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            color: #999;
+            text-decoration: none;
+            font-size: 13px;
+            transition: background 0.15s, color 0.15s;
+            white-space: nowrap;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: #ccc;
+        }
+
+        .sidebar-link.active {
+            background: rgba(59, 130, 246, 0.08);
+            color: #4fc3f7;
+            border-left-color: #3B82F6;
+        }
+
+        .sidebar-link-icon {
+            font-size: 14px;
+            width: 18px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-link-text {
+            overflow: hidden;
+        }
+
+
+
+        /* 主内容区 - 左侧留出侧边栏宽度 */
+        .about-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px 40px;
+            margin-left: 200px;
+        }
+
+        .about-container {
+            width: 100%;
+            max-width: 650px;
+            background: #252526;
+            border-radius: 8px;
+            padding: 32px;
+        }
+
+        .app-header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .app-header h1 {
+            margin: 0 0 8px;
+            font-size: 28px;
+            color: #ffffff;
+        }
+
+        .version {
+            color: #888;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .description {
+            color: #999;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 12px 0 0;
+        }
+
+        .about-section {
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .about-section:last-of-type {
+            border-bottom: none;
+        }
+
+        .about-section h2 {
+            color: #e0e0e0;
+            font-size: 18px;
+            margin: 0 0 14px;
+        }
+
+        .tech-list,
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .tech-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            background: #2d2d30;
+        }
+
+        .tech-name {
+            color: #ffffff;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .tech-version {
+            color: #888;
+            font-size: 13px;
+        }
+
+        .feature-list li {
+            padding: 6px 0;
+            color: #d4d4d4;
+            font-size: 14px;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .feature-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #4ec9b0;
+            font-weight: bold;
+        }
+
+        .license-intro {
+            color: #999;
+            font-size: 13px;
+            margin: 0 0 14px;
+            line-height: 1.5;
+        }
+
+        .license-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .license-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: #2d2d30;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background 0.15s, transform 0.1s;
+        }
+
+        .license-card:hover {
+            background: #3e3e42;
+            transform: translateX(3px);
+        }
+
+        .license-name {
+            color: #e0e0e0;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .license-type {
+            color: #4ec9b0;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(78, 201, 176, 0.1);
+            padding: 2px 8px;
+            border-radius: 3px;
+        }
+
+        .license-text {
+            color: #888;
+            font-size: 13px;
+            margin: 0;
+        }
+
+        .links {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .link-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: #2d2d30;
+            border-radius: 4px;
+            color: #4fc3f7;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.2s ease, transform 0.1s ease;
+        }
+
+        .link-item:hover {
+            background: #3e3e42;
+            transform: translateX(4px);
+        }
+
+        .link-icon {
+            font-size: 18px;
+        }
+
+        .about-footer {
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid #3e3e42;
+            text-align: center;
+        }
+
+        .about-footer p {
+            color: #666;
+            font-size: 13px;
+            margin: 4px 0;
+        }
+
+        .build-info {
+            font-size: 11px !important;
+        }
+
+        /* 信息网格 */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 10px 14px;
+            background: #2d2d30;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .info-label {
+            color: #888;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            color: #e0e0e0;
+            font-size: 14px;
+            font-weight: 500;
+            transition: opacity 0.3s ease;
+        }
+
+        .info-item:hover .info-value {
+            opacity: 0;
+        }
+
+        .info-value-local {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #e0e0e0;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .info-item:hover .info-value-local {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="about-page">
+        <!-- 侧边栏 -->
+        <aside class="about-sidebar" id="aboutSidebar">
+            <div class="sidebar-header">
+                <span class="sidebar-title">@Localizer["About.Sidebar.Contents"]</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#section-info" class="sidebar-link active" data-section="info">
+                    <span class="sidebar-link-icon">ℹ</span>
+                    <span class="sidebar-link-text">@Localizer["About.Sidebar.SoftwareInfo"]</span>
+                </a>
+                <a href="#section-tech" class="sidebar-link" data-section="tech">
+                    <span class="sidebar-link-icon">⚙</span>
+                    <span class="sidebar-link-text">@Localizer["About.Sidebar.TechnologyStack"]</span>
+                </a>
+                <a href="#section-licenses" class="sidebar-link" data-section="licenses">
+                    <span class="sidebar-link-icon">📄</span>
+                    <span class="sidebar-link-text">@Localizer["About.Sidebar.OpenSourceLicenses"]</span>
+                </a>
+                <a href="#section-links" class="sidebar-link" data-section="links">
+                    <span class="sidebar-link-icon">🔗</span>
+                    <span class="sidebar-link-text">@Localizer["About.Sidebar.Links"]</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="about-content">
+            <div class="about-container">
+                <!-- 软件信息 -->
+                <section id="section-info" class="about-section section-info">
+                    <div class="app-header">
+                        <h1>@Localizer["App.Title"]</h1>
+                        <p class="version">@Localizer["About.Label.Version"] @appVersion</p>
+                    </div>
+                    <p class="description">
+                        @Localizer["About.Description"]
+                    </p>
+                    <div class="info-grid">
+                        <div class="info-item" data-build-date="@buildDateIso">
+                            <span class="info-label">@Localizer["About.Label.BuildDate"]</span>
+                            <span class="info-value build-date-value" data-iso="@buildDateIso">@buildDateIso</span>
+                            <span class="info-value-local" id="buildDateLocal"></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">@Localizer["About.Label.Platform"]</span>
+                            <span class="info-value">.NET 10 / Vue 3</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">@Localizer["About.Label.License"]</span>
+                            <span class="info-value">GPL-3.0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">@Localizer["About.Label.Copyright"]</span>
+                            <span class="info-value">2026 Visunovia Team</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 技术栈 -->
+                <section id="section-tech" class="about-section section-tech">
+                    <h2>@Localizer["About.Section.TechnologyStack"]</h2>
+                    <ul class="tech-list">
+                        @foreach (var tech in techStack)
+                        {
+                            <li>
+                                <span class="tech-name">@tech.Name</span>
+                                <span class="tech-version">@tech.Version</span>
+                            </li>
+                        }
+                    </ul>
+                </section>
+
+                <!-- 开源许可证 -->
+                <section id="section-licenses" class="about-section section-licenses">
+                    <h2>@Localizer["About.Section.OpenSourceLicenses"]</h2>
+                    <p class="license-intro">
+                        @Localizer["About.LicenseIntro"]
+                    </p>
+                    <div class="license-grid">
+                        @foreach (var lic in licenses)
+                        {
+                            <a href="@lic.Url" target="_blank" rel="noopener noreferrer" class="license-card">
+                                <span class="license-name">@lic.Name</span>
+                                <span class="license-type">@lic.License</span>
+                            </a>
+                        }
+                    </div>
+                    <p class="license-text">
+                        @Localizer["About.LicenseText"]
+                    </p>
+                </section>
+
+                <!-- 链接 -->
+                <section id="section-links" class="about-section section-links">
+                    <h2>@Localizer["About.Section.Links"]</h2>
+                    <div class="links">
+                        @foreach (var link in links)
+                        {
+                            <a href="@link.Url" target="_blank" rel="noopener noreferrer" class="link-item">
+                                <span class="link-icon">@link.Icon</span>
+                                <span>@link.Name</span>
+                            </a>
+                        }
+                    </div>
+                </section>
+
+                <div class="about-footer">
+                    <p>@Localizer["About.Footer.BuiltWith"]</p>
+                    <p class="build-info">@string.Format(Localizer["About.Footer.BuildDate"], @buildDate)</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Active section tracking on scroll
+        const sections = document.querySelectorAll('.about-section');
+        const navLinks = document.querySelectorAll('.sidebar-link');
+
+        function updateActiveSection() {
+            let current = '';
+            sections.forEach(section => {
+                const top = section.offsetTop - 100;
+                if (window.scrollY >= top) {
+                    current = section.getAttribute('id');
+                }
+            });
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('data-section') === current.replace('section-', '')) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', updateActiveSection);
+        updateActiveSection();
+
+        // Build date hover: show local time
+        const buildDateIso = '@buildDateIso';
+        const localEl = document.getElementById('buildDateLocal');
+        if (localEl && buildDateIso) {
+            const d = new Date(buildDateIso);
+            if (!isNaN(d)) {
+                const pad = (n) => String(n).padStart(2, '0');
+                const localStr = `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+                localEl.textContent = localStr;
+            }
+        }
+    </script>
+</body>
+</html>

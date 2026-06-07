@@ -42,6 +42,12 @@ public static class DefaultSettings
     /// <summary>首次运行标志键名（控制是否显示安装向导）</summary>
     public const string IsFirstRunKey = "IsFirstRun";
 
+    /// <summary>占位符公司名称键名（用于新建项目的默认 CompanyName）</summary>
+    public const string PlaceholderCompanyNameKey = "PlaceholderCompanyName";
+
+    /// <summary>占位符产品名称键名（用于新建项目的默认 ProductName）</summary>
+    public const string PlaceholderProductNameKey = "PlaceholderProductName";
+
     #endregion
 
     #region 默认值常量
@@ -72,6 +78,12 @@ public static class DefaultSettings
 
     /// <summary>默认首次运行标志为 true（首次启动时显示安装向导）</summary>
     public const bool DefaultIsFirstRun = true;
+
+    /// <summary>默认占位符公司名称（用于新建项目的 CompanyName 预填）</summary>
+    public const string DefaultPlaceholderCompanyName = "Abydos Highschool";
+
+    /// <summary>默认占位符产品名称（用于新建项目的 ProductName 预填）</summary>
+    public const string DefaultPlaceholderProductName = "Anubis";
 
     #endregion
 
@@ -136,6 +148,8 @@ public static class DefaultSettings
             PreviewHeightKey => DefaultPreviewHeight,
             AllowRemoteSessionKey => DefaultAllowRemoteSession,
             IsFirstRunKey => DefaultIsFirstRun,
+            PlaceholderCompanyNameKey => DefaultPlaceholderCompanyName,
+            PlaceholderProductNameKey => DefaultPlaceholderProductName,
             _ => null
         };
     }
@@ -156,7 +170,9 @@ public static class DefaultSettings
             PreviewWidthKey,
             PreviewHeightKey,
             AllowRemoteSessionKey,
-            IsFirstRunKey
+            IsFirstRunKey,
+            PlaceholderCompanyNameKey,
+            PlaceholderProductNameKey
         ];
     }
 

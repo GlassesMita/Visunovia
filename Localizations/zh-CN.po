@@ -349,6 +349,69 @@ msgstr "标题"
 msgid "EventParam.NotificationMessage"
 msgstr "正文"
 
+# About Page - Sidebar
+msgid "About.Sidebar.Contents"
+msgstr "目录"
+
+msgid "About.Sidebar.SoftwareInfo"
+msgstr "软件信息"
+
+msgid "About.Sidebar.TechnologyStack"
+msgstr "技术栈"
+
+msgid "About.Sidebar.OpenSourceLicenses"
+msgstr "开源许可证"
+
+msgid "About.Sidebar.Links"
+msgstr "链接"
+
+# About Page - Sections
+msgid "About.Section.SoftwareInfo"
+msgstr "软件信息"
+
+msgid "About.Section.TechnologyStack"
+msgstr "技术栈"
+
+msgid "About.Section.OpenSourceLicenses"
+msgstr "开源许可证"
+
+msgid "About.Section.Links"
+msgstr "链接"
+
+# About Page - Labels
+msgid "About.Label.BuildDate"
+msgstr "构建日期"
+
+msgid "About.Label.Platform"
+msgstr "平台"
+
+msgid "About.Label.License"
+msgstr "许可证"
+
+msgid "About.Label.Copyright"
+msgstr "版权"
+
+msgid "About.Label.Version"
+msgstr "版本"
+
+# About Page - Description
+msgid "About.Description"
+msgstr "一款基于 Vue 3 和 ASP.NET Core 的跨平台视觉小说编辑器。通过直观的节点图编辑器创建互动式视觉小说，支持多语言功能和实时预览。"
+
+# About Page - License intro
+msgid "About.LicenseIntro"
+msgstr "本软件基于以下开源组件构建。感谢所有贡献者的工作。"
+
+msgid "About.LicenseText"
+msgstr "本项目本身采用 GPL-3.0 许可证。版权所有 (c) 2026 Visunovia 团队。保留所有权利。"
+
+# About Page - Footer
+msgid "About.Footer.BuiltWith"
+msgstr "由 Visunovia 团队用 ❤️ 构建"
+
+msgid "About.Footer.BuildDate"
+msgstr "构建日期：{0}"
+
 # Vue Frontend - Menu Bar
 msgid "menu.file"
 msgstr "文件"
@@ -1425,3 +1488,15 @@ msgstr "新建文件夹"
 
 msgid "FileBrowser.FolderNamePlaceholder"
 msgstr "输入文件夹名称"
+# Placeholder settings (Preferences page)
+msgid "settings.placeholderCompany"
+msgstr "公司名称（占位符）"
+
+msgid "settings.placeholderCompany.desc"
+msgstr "新建项目时默认的公司名称"
+
+msgid "settings.placeholderProduct"
+msgstr "产品名称（占位符）"
+
+msgid "settings.placeholderProduct.desc"
+msgstr "新建项目时默认的产品名称"

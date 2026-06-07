@@ -42,43 +42,21 @@ export interface VNNodePort {
 }
 
 export interface VNNode {
-  /** 节点唯一标识符（UUID），用于 YAML 序列化和蓝图视图中的节点对应 */
-  uuid: string
-  /** 节点类型 */
-  type: VNNodeType
-  /** 蓝图视图中的绝对坐标位置 */
-  position: { x: number; y: number }
-  /** 节点子类型（如 playBgm, setVariable 等） */
-  subType?: string
-  /** 节点属性 */
-  properties: Record<string, unknown>
-  /** 输入端口列表 */
-  inputs: VNNodePort[]
-  /** 输出端口列表 */
-  outputs: VNNodePort[]
-  /** 下一个执行步骤的节点 UUID 列表，支持一个节点连接到多个节点 */
-  nextNodeUuids: string[]
-  /** 兼容旧代码的 id 属性 */
   id: string
+  type: VNNodeType
+  position: { x: number; y: number }
+  properties: Record<string, unknown>
+  inputs: VNNodePort[]
+  outputs: VNNodePort[]
 }
 
 export interface VNEdge {
-  /** 连线唯一标识符（UUID） */
-  uuid: string
-  /** 源节点 UUID */
-  sourceNodeUuid: string
-  /** 源端口名称 */
-  sourcePort: string
-  /** 目标节点 UUID */
-  targetNodeUuid: string
-  /** 目标端口名称 */
-  targetPort: string
-  /** 连线类型 */
-  type: 'exec' | 'data'
-  /** 兼容旧代码的属性 */
   id: string
   source: string
+  sourcePort: string
   target: string
+  targetPort: string
+  type: 'exec' | 'data'
 }
 
 export interface Viewport {
@@ -107,7 +85,6 @@ export interface VNSceneGraph {
   id: string
   viewport: Viewport
   nodes: VNNode[]
-  edges: VNEdge[]
   sceneConfig: SceneConfig
 }
 

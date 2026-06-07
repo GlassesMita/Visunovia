@@ -154,10 +154,20 @@ public class SetupWizardController : ControllerBase
                 _settingsService.SetAndSave(DefaultSettings.ThemeKey, request.Theme);
             }
 
+            // 保存占位符设置（首次向导时写入默认值，用户后续可在设置中修改）
+            if (string.IsNullOrEmpty(_settingsService.GetRawValue(DefaultSettings.PlaceholderCompanyNameKey)))
+            {
+                _settingsService.SetAndSave(DefaultSettings.PlaceholderCompanyNameKey, DefaultSettings.DefaultPlaceholderCompanyName);
+            }
+            if (string.IsNullOrEmpty(_settingsService.GetRawValue(DefaultSettings.PlaceholderProductNameKey)))
+            {
+                _settingsService.SetAndSave(DefaultSettings.PlaceholderProductNameKey, DefaultSettings.DefaultPlaceholderProductName);
+            }
+
             // 标记已完成首次运行向导
             _settingsService.SetAndSave(DefaultSettings.IsFirstRunKey, "false");
 
-            _logger.LogInformation("[SetupWizard] 安装向导已完成，语言={Language}，主题={Theme}",
+            _logger.LogInformation("[SetupWizard] 安装向导已完成，语言={Language}，主题={Theme}，占位符已初始化",
                 request.Language, request.Theme);
 
             return Ok(ApiResponseDto<object>.SuccessResponse(new { success = true }));

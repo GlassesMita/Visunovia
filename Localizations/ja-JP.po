@@ -346,6 +346,69 @@ msgstr "タイトル"
 msgid "EventParam.NotificationMessage"
 msgstr "本文"
 
+# About Page - Sidebar
+msgid "About.Sidebar.Contents"
+msgstr "目次"
+
+msgid "About.Sidebar.SoftwareInfo"
+msgstr "ソフトウェア情報"
+
+msgid "About.Sidebar.TechnologyStack"
+msgstr "技術スタック"
+
+msgid "About.Sidebar.OpenSourceLicenses"
+msgstr "オープンソースライセンス"
+
+msgid "About.Sidebar.Links"
+msgstr "リンク"
+
+# About Page - Sections
+msgid "About.Section.SoftwareInfo"
+msgstr "ソフトウェア情報"
+
+msgid "About.Section.TechnologyStack"
+msgstr "技術スタック"
+
+msgid "About.Section.OpenSourceLicenses"
+msgstr "オープンソースライセンス"
+
+msgid "About.Section.Links"
+msgstr "リンク"
+
+# About Page - Labels
+msgid "About.Label.BuildDate"
+msgstr "ビルド日"
+
+msgid "About.Label.Platform"
+msgstr "プラットフォーム"
+
+msgid "About.Label.License"
+msgstr "ライセンス"
+
+msgid "About.Label.Copyright"
+msgstr "著作権"
+
+msgid "About.Label.Version"
+msgstr "バージョン"
+
+# About Page - Description
+msgid "About.Description"
+msgstr "Vue 3 と ASP.NET Core で構築されたクロスプラットフォームのビジュアルノベルエディタ。直感的なノードベースのエディタでインタラクティブなビジュアルノベルを作成でき、多言語サポートとリアルタイムプレビューを備えています。"
+
+# About Page - License intro
+msgid "About.LicenseIntro"
+msgstr "本ソフトウェアは以下のオープンソースコンポーネント上に構築されています。すべての貢献者の皆様に感謝いたします。"
+
+msgid "About.LicenseText"
+msgstr "本プロジェクト自体は GPL-3.0 ライセンスの下でライセンスされています。Copyright (c) 2026 Visunovia Team. All rights reserved."
+
+# About Page - Footer
+msgid "About.Footer.BuiltWith"
+msgstr "Visunovia チームによって ❤️ を込めて構築されました"
+
+msgid "About.Footer.BuildDate"
+msgstr "ビルド日：{0}"
+
 # Vue Frontend - Menu Bar
 msgid "menu.file"
 msgstr "ファイル"
@@ -1423,3 +1486,15 @@ msgstr "新規フォルダ"
 
 msgid "FileBrowser.FolderNamePlaceholder"
 msgstr "フォルダ名を入力"
+# Placeholder settings (Preferences page)
+msgid "settings.placeholderCompany"
+msgstr "会社名（プレースホルダー）"
+
+msgid "settings.placeholderCompany.desc"
+msgstr "新規プロジェクトのデフォルト会社名"
+
+msgid "settings.placeholderProduct"
+msgstr "製品名（プレースホルダー）"
+
+msgid "settings.placeholderProduct.desc"
+msgstr "新規プロジェクトのデフォルト製品名"

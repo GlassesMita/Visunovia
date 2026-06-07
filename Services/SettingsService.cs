@@ -58,6 +58,9 @@ public class SettingsService : IDisposable
 
         _configFilePath = Path.Combine(baseDir, $"{assemblyName}.exe.config");
         _section = LoadOrCreateConfig();
+
+        // Ensure Placeholder defaults exist in config (migration for existing installs)
+        EnsurePlaceholderDefaults();
     }
 
     #endregion
@@ -343,7 +346,37 @@ public class SettingsService : IDisposable
         section[DefaultSettings.PreviewHeightKey] = DefaultSettings.DefaultPreviewHeight.ToString();
         section[DefaultSettings.AllowRemoteSessionKey] = DefaultSettings.DefaultAllowRemoteSession.ToString();
         section[DefaultSettings.IsFirstRunKey] = DefaultSettings.DefaultIsFirstRun.ToString();
+        section[DefaultSettings.PlaceholderCompanyNameKey] = DefaultSettings.DefaultPlaceholderCompanyName;
+        section[DefaultSettings.PlaceholderProductNameKey] = DefaultSettings.DefaultPlaceholderProductName;
         return section;
+    }
+
+    /// <summary>
+    /// 确保占位符配置项存在于当前配置中。
+    /// 用于已有配置文件的迁移：如果配置中缺少占位符项，则写入默认值并保存。
+    /// </summary>
+    private void EnsurePlaceholderDefaults()
+    {
+        try
+        {
+            var companyValue = _section[DefaultSettings.PlaceholderCompanyNameKey];
+            var productValue = _section[DefaultSettings.PlaceholderProductNameKey];
+
+            if (string.IsNullOrEmpty(companyValue) || string.IsNullOrEmpty(productValue))
+            {
+                if (string.IsNullOrEmpty(companyValue))
+                    _section[DefaultSettings.PlaceholderCompanyNameKey] = DefaultSettings.DefaultPlaceholderCompanyName;
+                if (string.IsNullOrEmpty(productValue))
+                    _section[DefaultSettings.PlaceholderProductNameKey] = DefaultSettings.DefaultPlaceholderProductName;
+
+                WriteConfigFile();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[SettingsService] Placeholder 默认值写入失败: {ex.Message}");
+        }
     }
 
     private static void EnsureConfigDirectory()

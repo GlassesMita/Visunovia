@@ -28,33 +28,6 @@
         </div>
       </div>
     </div>
-    
-    <!-- 自定义输入对话框 (替代原生 prompt) -->
-    <Teleport to="body">
-      <Transition name="inp-modal">
-        <div v-if="showInputDialog" class="input-dialog-overlay" @click.self="handleInputCancel">
-          <div class="input-dialog">
-          <div class="input-dialog-header">
-            <h3>{{ inputDialogTitle }}</h3>
-          </div>
-          <div class="input-dialog-body">
-            <input 
-              ref="inputRef"
-              v-model="inputDialogDefaultValue"
-              type="text"
-              :placeholder="inputDialogPlaceholder"
-              @keyup.enter="handleInputConfirm(inputDialogDefaultValue)"
-              @keyup.escape="handleInputCancel"
-            />
-          </div>
-          <div class="input-dialog-footer">
-            <button class="cancel-btn" @click="handleInputCancel">取消</button>
-            <button class="confirm-btn" @click="handleInputConfirm(inputDialogDefaultValue)">确定</button>
-          </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>
 
@@ -143,8 +116,6 @@ const menus = computed<Menu[]>(() => [
         checked: uiStore.showConsolePanel 
       },
       { key: 'divider1', labelKey: '', divider: true },
-      { key: 'projectPreferences', labelKey: 'menu.projectPreferences', action: 'openProjectPreferences' },
-      { key: 'divider2', labelKey: '', divider: true },
       { key: 'preferences', labelKey: 'menu.preferences', action: 'openPreferences' },
     ],
   },
@@ -161,45 +132,20 @@ function toggleMenu(key: string) {
   activeMenu.value = activeMenu.value === key ? null : key
 }
 
-const showInputDialog = ref(false)
-const inputDialogTitle = ref('')
-const inputDialogPlaceholder = ref('')
-const inputDialogDefaultValue = ref('')
-const inputDialogCallback = ref<((value: string | null) => void) | null>(null)
-
-function openInputDialog(title: string, placeholder: string, defaultValue: string, callback: (value: string | null) => void) {
-  inputDialogTitle.value = title
-  inputDialogPlaceholder.value = placeholder
-  inputDialogDefaultValue.value = defaultValue
-  inputDialogCallback.value = callback
-  showInputDialog.value = true
-}
-
-function handleInputConfirm(value: string) {
-  showInputDialog.value = false
-  if (inputDialogCallback.value) {
-    inputDialogCallback.value(value)
-    inputDialogCallback.value = null
-  }
-}
-
-function handleInputCancel() {
-  showInputDialog.value = false
-  if (inputDialogCallback.value) {
-    inputDialogCallback.value(null)
-    inputDialogCallback.value = null
-  }
-}
-
 function executeAction(action: string) {
   activeMenu.value = null
   
   switch (action) {
     case 'newFile':
-      uiStore.openNewProjectModal()
+      newGraph()
       break
     case 'openFile':
-      uiStore.openFileExplorer()
+      // 打开文件：需要通过文件浏览器选择场景 ID 后调用 loadSceneGraph
+      // 当前使用默认场景 ID 作为演示，实际应配合文件浏览器组件使用
+      const openSceneId = prompt('请输入要打开的场景 ID:')
+      if (openSceneId) {
+        loadSceneGraph(openSceneId)
+      }
       break
     case 'saveFile':
       if (editorStore.currentFileName && editorStore.currentFileName !== 'Untitled') {
@@ -208,14 +154,14 @@ function executeAction(action: string) {
         executeAction('saveFileAs')
       }
       break
-    case 'saveFileAs':
-      openInputDialog('另存为', '请输入文件名', editorStore.currentFileName || 'Untitled', (fileName) => {
-        if (fileName) {
-          editorStore.currentFileName = fileName
-          saveSceneGraph(fileName)
-        }
-      })
+    case 'saveFileAs': {
+      const saveAsName = prompt('请输入文件名:', editorStore.currentFileName || 'Untitled')
+      if (saveAsName) {
+        editorStore.currentFileName = saveAsName
+        saveSceneGraph(saveAsName)
+      }
       break
+    }
     case 'exitApp':
       console.log('Exit app')
       break
@@ -253,16 +199,15 @@ function executeAction(action: string) {
     case 'toggleConsole':
       uiStore.togglePanel('console')
       break
-    case 'openProjectPreferences':
-      uiStore.openProjectPreferences()
-      break
     case 'openPreferences':
       // 使用 window.open 打开独立的 Preferences 窗口（Popup）
-      window.open('/Preferences', 'Preferences', 'width=800,height=600,scrollbars=yes,resizable=yes')
+      // 使用 hash 路径以确保在构建后也能正确路由
+      window.open('/#/Preferences', 'Preferences', 'width=800,height=600,scrollbars=yes,resizable=yes')
       break
     case 'showAbout':
       // 使用 window.open 打开独立的 About 窗口（Popup）
-      window.open('/About', 'About', 'width=600,height=500,scrollbars=yes,resizable=yes')
+      // 使用 hash 路径以确保在构建后也能正确路由
+      window.open('/#/About', 'About', 'width=600,height=500,scrollbars=yes,resizable=yes')
       break
     default:
       console.log('Action not implemented:', action)
@@ -375,111 +320,5 @@ onUnmounted(() => {
   height: 1px;
   background: #3e3e42;
   margin: 4px 12px;
-}
-
-/* 输入对话框样式 */
-.input-dialog-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-}
-
-.input-dialog {
-  background: #252526;
-  border: 1px solid #454545;
-  border-radius: 6px;
-  width: 360px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-}
-
-.input-dialog-header {
-  padding: 16px 20px 12px;
-  border-bottom: 1px solid #3e3e42;
-}
-
-.input-dialog-header h3 {
-  margin: 0;
-  font-size: 14px;
-  color: #ffffff;
-  font-weight: 500;
-}
-
-.input-dialog-body {
-  padding: 20px;
-}
-
-.input-dialog-body input {
-  width: 100%;
-  padding: 10px 12px;
-  background: #3c3c3c;
-  border: 1px solid #555;
-  border-radius: 4px;
-  color: #ffffff;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-.input-dialog-body input:focus {
-  outline: none;
-  border-color: #0078d4;
-}
-
-.input-dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 12px 20px 16px;
-}
-
-.cancel-btn,
-.confirm-btn {
-  padding: 8px 20px;
-  border-radius: 4px;
-  font-size: 13px;
-  cursor: pointer;
-  border: none;
-}
-
-.cancel-btn {
-  background: #3c3c3c;
-  color: #cccccc;
-}
-
-.cancel-btn:hover {
-  background: #4a4a4a;
-}
-
-.confirm-btn {
-  background: #0078d4;
-  color: #ffffff;
-}
-
-.confirm-btn:hover {
-  background: #1084d8;
-}
-
-/* ========== Input Dialog Transition (fade + scale) ========== */
-.inp-modal-enter-active,
-.inp-modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-.inp-modal-enter-active .input-dialog,
-.inp-modal-leave-active .input-dialog {
-  transition: transform 0.2s ease;
-}
-.inp-modal-enter-from,
-.inp-modal-leave-to {
-  opacity: 0;
-}
-.inp-modal-enter-from .input-dialog,
-.inp-modal-leave-to .input-dialog {
-  transform: scale(0.92);
 }
 </style>

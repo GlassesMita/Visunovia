@@ -130,7 +130,10 @@ function handleKeydown(event: KeyboardEvent) {
 /* ========== Overlay ========== */
 .wm-overlay {
   position: fixed;
-  inset: 0;
+  top: 72px;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 10000;
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(8px);

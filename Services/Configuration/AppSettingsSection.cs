@@ -76,8 +76,32 @@ public class AppSettingsSection
         {
             writer.WriteStartElement(DefaultSettings.SectionName);
 
+            // Serialize Placeholder section as a group if any placeholder key has a value
+            var placeholderKeys = new[] { DefaultSettings.PlaceholderCompanyNameKey, DefaultSettings.PlaceholderProductNameKey };
+            var hasPlaceholder = placeholderKeys.Any(k => _values.ContainsKey(k) || DefaultSettings.GetDefaultValue(k) != null);
+
+            if (hasPlaceholder)
+            {
+                writer.WriteStartElement("Placeholder");
+                foreach (var key in placeholderKeys)
+                {
+                    var value = _values.TryGetValue(key, out var v) ? v : DefaultSettings.GetDefaultValue(key)?.ToString();
+                    if (value == null) continue;
+
+                    // Use short element name inside <Placeholder> group
+                    // PlaceholderCompanyName → CompanyName, PlaceholderProductName → ProductName
+                    var elementName = key.Replace("Placeholder", "");
+                    writer.WriteElementString(elementName, value);
+                }
+                writer.WriteEndElement();
+            }
+
             foreach (var key in DefaultSettings.GetAllKeys())
             {
+                // Skip placeholder keys — they are serialized inside the <Placeholder> group above
+                if (key == DefaultSettings.PlaceholderCompanyNameKey || key == DefaultSettings.PlaceholderProductNameKey)
+                    continue;
+
                 var value = _values.TryGetValue(key, out var v) ? v : DefaultSettings.GetDefaultValue(key)?.ToString();
                 if (value == null) continue;
 
@@ -139,6 +163,25 @@ public class AppSettingsSection
                     var theme = childElem.GetAttribute("theme");
                     if (!string.IsNullOrEmpty(theme))
                         section._values[DefaultSettings.ThemeKey] = theme;
+                    break;
+
+                case "Placeholder":
+                    // 解析嵌套的 Placeholder 元素，提取子元素值
+                    // 短元素名映射回完整键名：CompanyName → PlaceholderCompanyName
+                    foreach (XmlNode placeholderChild in childElem.ChildNodes)
+                    {
+                        if (placeholderChild is not XmlElement placeholderElem) continue;
+                        var textValue = placeholderElem.InnerText?.Trim();
+                        if (string.IsNullOrEmpty(textValue)) continue;
+
+                        var fullKey = placeholderElem.Name switch
+                        {
+                            "CompanyName" => DefaultSettings.PlaceholderCompanyNameKey,
+                            "ProductName" => DefaultSettings.PlaceholderProductNameKey,
+                            _ => placeholderElem.Name
+                        };
+                        section._values[fullKey] = textValue;
+                    }
                     break;
 
                 default:

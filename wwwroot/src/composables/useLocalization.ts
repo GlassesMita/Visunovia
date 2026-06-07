@@ -1,15 +1,14 @@
 import { computed } from 'vue'
 import { useLocalizationStore } from '@/stores/useLocalizationStore'
-import { tSync, translationVersion } from '@/services/translationService'
+import { tSync } from '@/services/translationService'
 
 /**
  * 本地化 composable — 完全基于后端翻译
  *
  * 所有翻译来自后端 PO 文件。
- * - t(key): 返回 ComputedRef<string>，当翻译缓存更新时自动重新计算
+ * - t(key): 同步翻译（从预加载缓存中读取）
  * - tAsync(key): 异步翻译（缓存未命中时调用后端 API）
  * - changeLanguage(lang): 切换语言并重新加载所有翻译
- * - translationVersion: 响应式版本号，翻译更新时递增
  */
 export function useLocalization() {
   const store = useLocalizationStore()
@@ -20,18 +19,13 @@ export function useLocalization() {
   const availableLanguages = computed(() => store.availableLanguages)
 
   /**
-   * 同步翻译 — 返回 ComputedRef<string>
-   * 当翻译缓存更新时（translationVersion 递增）自动重新计算
+   * 同步翻译 — 从本地缓存读取
+   * 适用于模板渲染（必须在初始化完成后使用）
    * @param key - 翻译键
    * @param fallback - 缓存未命中时的回退文本
    */
-  function t(key: string, fallback?: string): ComputedRef<string> {
-    return computed(() => {
-      // 读取 translationVersion 作为响应式依赖，
-      // 当翻译缓存更新时触发重新计算
-      void translationVersion.value
-      return tSync(key, fallback)
-    })
+  function t(key: string, fallback?: string): string {
+    return tSync(key, fallback)
   }
 
   /**
@@ -57,6 +51,5 @@ export function useLocalization() {
     currentLanguage,
     availableLanguages,
     changeLanguage,
-    translationVersion,
   }
 }
