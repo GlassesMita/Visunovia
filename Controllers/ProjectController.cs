@@ -156,6 +156,14 @@ public class ProjectController : ControllerBase
 
             _logger.LogInformation("新建项目成功: {Path}", projectDir);
 
+            // 将新项目加载到 EditorService，使后续 API 能获取到当前项目
+            var editor = _sessionService.GetEditor();
+            var tlorPath = Path.Combine(projectDir, "Project.tlor");
+            if (System.IO.File.Exists(tlorPath))
+            {
+                await editor.LoadProjectAsync(tlorPath, projectDir);
+            }
+
             // 获取创建后的文件夹结构
             var folderTree = BuildFolderTree(projectDir);
 
@@ -165,7 +173,7 @@ public class ProjectController : ControllerBase
                 data = new
                 {
                     projectPath = projectDir,
-                    tlorPath = Path.Combine(projectDir, "Project.tlor"),
+                    tlorPath = tlorPath,
                     name = request.Name,
                     folderTree = folderTree
                 }
@@ -423,6 +431,15 @@ dialogues: []";
         try
         {
             var result = await ParseProjectAsync(request.ProjectPath);
+
+            // 将项目加载到 EditorService，使后续 API 能获取到当前项目
+            var editor = _sessionService.GetEditor();
+            var tlorPath = Path.Combine(request.ProjectPath, "Project.tlor");
+            if (System.IO.File.Exists(tlorPath))
+            {
+                await editor.LoadProjectAsync(tlorPath, request.ProjectPath);
+            }
+
             return Ok(new { success = true, data = result });
         }
         catch (Exception ex)

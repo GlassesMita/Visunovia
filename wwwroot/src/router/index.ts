@@ -18,11 +18,6 @@ const router = createRouter({
       path: '/ProjectSettings',
       name: 'project-settings',
       component: () => import('@/pages/ProjectSettingsPage.vue')
-    },
-    {
-      path: '/About',
-      name: 'about',
-      component: () => import('@/pages/AboutPage.vue')
     }
   ]
 })

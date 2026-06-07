@@ -144,8 +144,8 @@ function handleComputerItemClick(item: { type: 'drive'; drive: DriveInfo } | { t
 
 function handleSpecialFolderClick(folder: SpecialFolder) {
   if (folder.path) {
-    // 快速访问：选择对应目录（与主窗口行为一致）
-    emit('select', folder.path, true)
+    // 快速访问：仅导航到目标文件夹，不触发项目打开
+    navigateTo(folder.path)
   }
 }
 
