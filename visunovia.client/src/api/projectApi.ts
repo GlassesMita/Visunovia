@@ -141,6 +141,24 @@ export async function getSceneContent(lorFilePath: string): Promise<SceneInfo> {
   return response.data.data
 }
 
+/**
+ * 只读读取项目内文本文件内容。
+ */
+export async function getProjectFileContent(path: string): Promise<{ path: string; name: string; content: string }> {
+  const response = await apiClient.get<{
+    success: boolean
+    data: { path: string; name: string; content: string }
+  }>('/project/file-content', {
+    params: { path },
+  })
+
+  if (!response.data?.success) {
+    throw new Error('读取文件内容失败')
+  }
+
+  return response.data.data
+}
+
 export interface CurrentProjectInfo {
   projectName: string
   version: string

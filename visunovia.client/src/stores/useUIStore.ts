@@ -16,6 +16,7 @@ export const useUIStore = defineStore('ui', () => {
   const theme = ref<'light' | 'dark'>('dark')
   const openingFilePath = ref<string | null>(null)
   const showWelcomeModal = ref(false)
+  const projectTreeRefreshToken = ref(0)
 
   function togglePanel(panelName: string) {
     switch (panelName) {
@@ -101,6 +102,10 @@ export const useUIStore = defineStore('ui', () => {
     showWelcomeModal.value = false
   }
 
+  function refreshProjectTree() {
+    projectTreeRefreshToken.value += 1
+  }
+
   return {
     showProjectPanel,
     showInspectorPanel,
@@ -132,6 +137,8 @@ export const useUIStore = defineStore('ui', () => {
     openFileByPath,
     showWelcomeModal,
     openWelcomeModal,
-    closeWelcomeModal
+    closeWelcomeModal,
+    projectTreeRefreshToken,
+    refreshProjectTree
   }
 })

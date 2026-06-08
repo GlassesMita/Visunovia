@@ -111,9 +111,6 @@
           <span v-if="isSaving" class="loading-indicator-inline"></span>
           {{ isSaving ? (t('projectSettings.saving') || '保存中...') : (t('common.save') || '保存') }}
         </button>
-        <button class="btn-secondary" @click="resetSettings">
-          {{ t('projectSettings.reset') || '重置' }}
-        </button>
       </div>
 
       <!-- 保存状态消息 -->
@@ -127,15 +124,13 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
+import { getCurrentProject, updateProjectSettings } from '@/api/projectApi'
 
 const { t } = useLocalization()
 
-// 设置存储键名
-const SETTINGS_STORAGE_KEY = 'visunovia-project-settings'
-
 // 默认项目设置
 const defaultSettings = {
-  projectName: 'Untitled Project',
+  projectName: '',
   resolutionWidth: 1920,
   resolutionHeight: 1080,
   bgmVolume: 80,
@@ -166,35 +161,17 @@ onMounted(() => {
 })
 
 /**
- * 从 localStorage 加载已保存的项目设置
- * 页面初始化时调用，恢复用户之前的配置
+ * 从当前打开项目加载设置。
+ * Project.tlor 是项目设置的唯一可信来源，避免 localStorage 旧值导致显示 Untitled Project。
  */
-function loadSettings() {
-  const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY)
-
-  if (!savedSettings) return
-
+async function loadSettings() {
   try {
-    const parsed = JSON.parse(savedSettings)
-
-    // 使用 Object.assign 合并保存的设置到当前 settings 对象
-    // 仅覆盖已存在的属性，保持默认值作为兜底
-    Object.assign(settings, {
-      projectName: parsed.projectName || defaultSettings.projectName,
-      resolutionWidth: parsed.resolutionWidth ?? defaultSettings.resolutionWidth,
-      resolutionHeight: parsed.resolutionHeight ?? defaultSettings.resolutionHeight,
-      bgmVolume: parsed.bgmVolume ?? defaultSettings.bgmVolume,
-      voiceVolume: parsed.voiceVolume ?? defaultSettings.voiceVolume,
-      bgmLoop: parsed.bgmLoop ?? defaultSettings.bgmLoop,
-      language: parsed.language || defaultSettings.language,
-      theme: parsed.theme || defaultSettings.theme,
-    })
-
-    console.log('[ProjectSettingsPage] Settings loaded from localStorage')
+    const result = await getCurrentProject()
+    settings.projectName = result.data?.projectName || defaultSettings.projectName
   } catch (error) {
-    // 异常来源：localStorage 数据格式损坏
-    // 处理方法：忽略错误数据，使用默认设置
-    console.error('[ProjectSettingsPage] Failed to parse saved settings:', error)
+    console.error('[ProjectSettingsPage] Failed to load current project settings:', error)
+    saveMessage.value = t('projectSettings.loadFailed') || '项目设置加载失败'
+    saveError.value = true
   }
 }
 
@@ -207,28 +184,13 @@ async function saveSettings() {
   saveMessage.value = ''
 
   try {
-    // 序列化当前设置对象
-    const settingsData = {
-      projectName: settings.projectName,
-      resolutionWidth: settings.resolutionWidth,
-      resolutionHeight: settings.resolutionHeight,
-      bgmVolume: settings.bgmVolume,
-      voiceVolume: settings.voiceVolume,
-      bgmLoop: settings.bgmLoop,
-      language: settings.language,
-      theme: settings.theme,
-    }
-
-    // 持久化到 localStorage
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settingsData))
+    await updateProjectSettings({ projectName: settings.projectName.trim() })
 
     saveMessage.value = t('projectSettings.savedSuccess') || '设置已保存'
     saveError.value = false
 
-    console.log('[ProjectSettingsPage] Settings saved to localStorage')
+    console.log('[ProjectSettingsPage] Settings saved to Project.tlor')
   } catch (error) {
-    // 异常来源：localStorage 存储空间不足或浏览器限制
-    // 处理方法：提示用户保存失败
     console.error('[ProjectSettingsPage] Failed to save settings:', error)
     saveMessage.value = t('projectSettings.saveFailed') || '保存失败'
     saveError.value = true
@@ -242,23 +204,6 @@ async function saveSettings() {
   }, 3000)
 }
 
-/**
- * 重置所有设置为默认值
- */
-function resetSettings() {
-  // 重置各设置项为默认值
-  settings.projectName = defaultSettings.projectName
-  settings.resolutionWidth = defaultSettings.resolutionWidth
-  settings.resolutionHeight = defaultSettings.resolutionHeight
-  settings.bgmVolume = defaultSettings.bgmVolume
-  settings.voiceVolume = defaultSettings.voiceVolume
-  settings.bgmLoop = defaultSettings.bgmLoop
-  settings.language = defaultSettings.language
-  settings.theme = defaultSettings.theme
-
-  // 立即保存重置后的设置
-  saveSettings()
-}
 </script>
 
 <style scoped>
@@ -431,26 +376,6 @@ h1 {
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-/* 次要按钮样式 */
-.btn-secondary {
-  padding: 8px 24px;
-  background: #3c3c3c;
-  border: none;
-  border-radius: 4px;
-  color: #ffffff;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.btn-secondary:hover {
-  background: #4c4c4c;
-}
-
-.btn-secondary:active {
-  background: #555555;
 }
 
 /* 保存状态消息 */

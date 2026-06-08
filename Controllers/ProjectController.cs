@@ -316,6 +316,74 @@ public class ProjectController : ControllerBase
     }
 
     /// <summary>
+    /// 只读读取当前项目内的文本文件内容，用于资源索引等只读预览。
+    /// </summary>
+    [HttpGet("file-content")]
+    public async Task<IActionResult> GetProjectFileContent([FromQuery] string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return BadRequest(new { success = false, error = "文件路径不能为空" });
+        }
+
+        var editor = _sessionService.GetEditor();
+        if (string.IsNullOrWhiteSpace(editor.CurrentProjectPath))
+        {
+            return BadRequest(new { success = false, error = "当前没有打开的项目" });
+        }
+
+        var projectRoot = Path.GetFullPath(Path.GetDirectoryName(editor.CurrentProjectPath) ?? editor.CurrentProjectPath);
+        var fullPath = Path.GetFullPath(path);
+
+        if (!fullPath.StartsWith(projectRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            return Forbid("不允许访问项目目录之外的文件");
+        }
+
+        if (!System.IO.File.Exists(fullPath))
+        {
+            return NotFound(new { success = false, error = "文件不存在" });
+        }
+
+        var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".resona", ".json", ".xml", ".yaml", ".yml", ".txt", ".md", ".po", ".css", ".js", ".ts", ".html"
+        };
+
+        var extension = Path.GetExtension(fullPath);
+        if (!allowedExtensions.Contains(extension))
+        {
+            return BadRequest(new { success = false, error = "该文件类型不支持文本预览" });
+        }
+
+        try
+        {
+            var fileInfo = new FileInfo(fullPath);
+            if (fileInfo.Length > 1024 * 1024)
+            {
+                return BadRequest(new { success = false, error = "文件过大，无法预览" });
+            }
+
+            var content = await System.IO.File.ReadAllTextAsync(fullPath);
+            return Ok(new
+            {
+                success = true,
+                data = new
+                {
+                    path = fullPath,
+                    name = Path.GetFileName(fullPath),
+                    content
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "读取项目文件内容失败: {Path}", fullPath);
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// 递归获取文件夹树结构
     /// </summary>
     private FolderNode BuildFolderTree(string path)

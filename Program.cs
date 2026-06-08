@@ -403,10 +403,11 @@ if (!noNewTab)
         {
             try
             {
-                await Task.Delay(500);
+                var startupUrl = $"http://127.0.0.1:{port}/";
+                await WaitForFrontendReadyAsync(startupUrl, TimeSpan.FromSeconds(12));
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = $"http://127.0.0.1:{port}/",
+                    FileName = startupUrl,
                     UseShellExecute = true
                 });
             }
@@ -511,5 +512,39 @@ static void AddParentSpaCandidates(List<string> candidates, string startPath, in
     {
         candidates.Add(Path.Combine(current.FullName, "www_build"));
         candidates.Add(Path.Combine(current.FullName, "wwwroot"));
+    }
+}
+
+static async Task WaitForFrontendReadyAsync(string url, TimeSpan timeout)
+{
+    using var httpClient = new HttpClient
+    {
+        Timeout = TimeSpan.FromMilliseconds(800)
+    };
+
+    var deadline = DateTime.UtcNow + timeout;
+    Exception? lastError = null;
+
+    while (DateTime.UtcNow < deadline)
+    {
+        try
+        {
+            using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            if ((int)response.StatusCode < 500)
+            {
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            lastError = ex;
+        }
+
+        await Task.Delay(150);
+    }
+
+    if (lastError != null)
+    {
+        Console.WriteLine($"[Startup] Frontend readiness check timed out: {lastError.Message}");
     }
 }

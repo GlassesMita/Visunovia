@@ -10,6 +10,13 @@
       </button>
       <button
         class="toolbar-button"
+        title="刷新项目资源"
+        @click="handleRefreshProjectTree"
+      >
+        <RefreshCw :size="18" />
+      </button>
+      <button
+        class="toolbar-button"
         :title="t('menu.new')"
         @click="handleNew"
       >
@@ -90,7 +97,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { FilePlus, FolderOpen, Save, Undo2, Redo2, Scissors, Copy, Clipboard, Trash2 } from 'lucide-vue-next'
+import { FilePlus, FolderOpen, RefreshCw, Save, Undo2, Redo2, Scissors, Copy, Clipboard, Trash2 } from 'lucide-vue-next'
 import { useLocalization } from '@/composables/useLocalization'
 import { useUIStore } from '@/stores/useUIStore'
 import { useEditorStore } from '@/stores/useEditorStore'
@@ -112,6 +119,11 @@ function handleNew() {
 
 function handleSave() {
   editorStore.save()
+}
+
+function handleRefreshProjectTree() {
+  uiStore.openProjectPopup()
+  uiStore.refreshProjectTree()
 }
 
 function handleUndo() {

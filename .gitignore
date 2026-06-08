@@ -16,6 +16,7 @@ www_build/
 [Pp]ublish/
 # 发布/验证产物目录（包含 artifacts/publish-verify-refactor-clean/）
 artifacts/
+publish*/
 
 ## Visual Studio 用户特定文件
 *.suo
