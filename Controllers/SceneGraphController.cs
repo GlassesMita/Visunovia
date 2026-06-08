@@ -34,13 +34,13 @@ public class SceneGraphController : ControllerBase
     }
 
     [HttpPut("{sceneId}")]
-    public IActionResult SaveSceneGraph(string sceneId, [FromBody] SceneGraphData sceneGraphData)
+    public async Task<IActionResult> SaveSceneGraph(string sceneId, [FromBody] SceneGraphData sceneGraphData)
     {
         try
         {
             var editor = _sessionService.GetEditor();
             var json = JsonSerializer.Serialize(sceneGraphData);
-            editor.SaveSceneGraph(sceneId, json);
+            await editor.SaveSceneGraphAsync(sceneId, json);
             return Ok(new { success = true, message = "场景图已保存" });
         }
         catch (Exception ex)

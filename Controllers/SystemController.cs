@@ -15,6 +15,12 @@ public class SystemController : ControllerBase
         _toastService = toastService;
     }
 
+    [HttpGet("health")]
+    public IActionResult Health()
+    {
+        return Ok(new { success = true, status = "ok" });
+    }
+
     [HttpPost("shutdown")]
     public IActionResult Shutdown()
     {

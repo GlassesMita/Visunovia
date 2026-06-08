@@ -145,7 +145,7 @@ public class YamlConversionController : ControllerBase
                 uuidService.ClearSceneData(sceneId);
             }
 
-            var sceneGraph = await converter.ImportYamlAsync(request.YamlContent, uuidService);
+            var sceneGraph = await converter.ImportYamlAsync(request.YamlContent, uuidService, sceneId);
 
             _logger.LogInformation("场景 {SceneId} 已从 YAML 导入，节点数: {NodeCount}, 连线数: {EdgeCount}",
                 sceneId, sceneGraph.Nodes?.Count ?? 0, sceneGraph.Edges?.Count ?? 0);
@@ -197,7 +197,7 @@ public class YamlConversionController : ControllerBase
             var uuidService = new UuidRegistryService(db);
             var converter = new BlueprintYamlConverter(editor);
 
-            var sceneGraph = await converter.ImportYamlAsync(yamlContent, uuidService);
+            var sceneGraph = await converter.ImportYamlAsync(yamlContent, uuidService, sceneId);
 
             _logger.LogInformation("场景 {SceneId} 已从文件 {FileName} 导入", sceneId, file.FileName);
 

@@ -80,8 +80,8 @@ builder.Services.AddVisunoviaLocalization(options =>
 // 注册 Vite 开发服务器服务（仅在开发环境使用）
 builder.Services.AddViteServices(options =>
 {
-    // 指定 package.json 所在目录（wwwroot 目录）
-    options.Server.PackageDirectory = Path.Combine(AppContext.BaseDirectory, "wwwroot");
+    // 指定 package.json 所在目录（独立 Vue/Vite 客户端项目）
+    options.Server.PackageDirectory = Path.Combine(AppContext.BaseDirectory, "visunovia.client");
     // 启用自动启动，确保 Vite 服务器与后端同时就绪
     options.Server.AutoRun = true;
     // 指定 Vite 开发服务器端口（与 vite.config.ts 中的 server.port 一致）
@@ -106,7 +106,11 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_HTTPS_PORT")) ||
+    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HTTPS_PORT")))
+{
+    app.UseHttpsRedirection();
+}
 
 // 前端路由重定向：将 kebab-case 路由重定向到 PascalCase 路由
 // 这样可以保持与旧路由一致，同时让 Vite/Vue Router 处理页面渲染
@@ -139,36 +143,27 @@ app.Use(async (context, next) =>
 // - Vite 不可用时（开发/生产）：使用预构建的静态文件提供 SPA 回退
 var baseDir = AppContext.BaseDirectory;
 var wwwrootPath = Path.Combine(baseDir, "wwwroot");
-var wwwBuildPath = Path.Combine(baseDir, "www_build");
+var workingDir = Directory.GetCurrentDirectory();
+var candidateSpaPaths = GetCandidateSpaPaths(baseDir, workingDir);
 
-// 检查 www_build 目录是否存在有效的构建产物
-var wwwBuildExists = Directory.Exists(Path.Combine(wwwBuildPath, "assets"));
-var wwwrootAssetsExists = Directory.Exists(Path.Combine(wwwrootPath, "assets"));
+// 检查 SPA 目录是否存在有效的构建产物：必须同时包含 index.html 和 assets 目录。
+// 仅有 assets 但没有 index.html 时不能视为有效 Vue 前端，否则根路径会继续落到 Razor Index。
+var staticFilesPath = candidateSpaPaths.FirstOrDefault(IsValidSpaDist) ?? candidateSpaPaths[0];
+var hasStaticAssets = IsValidSpaDist(staticFilesPath);
 
-// 优先使用 www_build（独立构建产物），其次是 wwwroot
-string staticFilesPath;
-if (wwwBuildExists)
-{
-    staticFilesPath = wwwBuildPath;
-}
-else if (wwwrootAssetsExists)
-{
-    staticFilesPath = wwwrootPath;
-}
-else
-{
-    staticFilesPath = wwwBuildPath;
-}
+// 兼容旧日志字段，便于排查发布/调试目录中的静态文件来源。
+var wwwBuildExists = candidateSpaPaths.Any(path => path.EndsWith("www_build", StringComparison.OrdinalIgnoreCase) && IsValidSpaDist(path));
+var wwwrootAssetsExists = IsValidSpaDist(wwwrootPath);
 
 Console.WriteLine($"[StaticFiles] BaseDirectory: {baseDir}");
+Console.WriteLine($"[StaticFiles] WorkingDirectory: {workingDir}");
 Console.WriteLine($"[StaticFiles] Environment: {app.Environment.EnvironmentName}");
 Console.WriteLine($"[StaticFiles] www_build exists: {wwwBuildExists}");
-Console.WriteLine($"[StaticFiles] wwwroot assets exists: {wwwrootAssetsExists}");
+Console.WriteLine($"[StaticFiles] wwwroot SPA exists: {wwwrootAssetsExists}");
 Console.WriteLine($"[StaticFiles] Static files path: {staticFilesPath}");
 
 // 构建产物静态文件服务 — 必须在 Vite 中间件之前注册
 // 这样 /assets/* 请求会被直接处理，不会到达 Vite 中间件
-bool hasStaticAssets = Directory.Exists(staticFilesPath) && Directory.Exists(Path.Combine(staticFilesPath, "assets"));
 if (hasStaticAssets)
 {
     app.UseStaticFiles(new StaticFileOptions
@@ -233,7 +228,7 @@ Console.WriteLine($"[StaticFiles] Vite server available: {viteServerAvailable}")
 if (!hasStaticAssets)
 {
     Console.WriteLine($"[StaticFiles] Warning: Static files directory not found at {staticFilesPath}");
-    Console.WriteLine($"[StaticFiles] Hint: Run 'npm run build' in wwwroot/ then restart the application");
+    Console.WriteLine($"[StaticFiles] Hint: Run 'npm run build' in visunovia.client/ then restart the application");
 }
 
 // 启动页面路由 — 根据 isFirstRun 配置决定显示安装向导还是主页面
@@ -400,11 +395,26 @@ Console.WriteLine("");
 
 if (!noNewTab)
 {
-    // 打开浏览器到后端 API 服务器（端口 32523），由后端代理 Vite 前端请求
-    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+    // 等待 Kestrel 完成监听后再打开浏览器。
+    // 直接在 app.Run() 之前打开会产生启动竞态：浏览器可能先请求到旧进程/旧页面，刷新后才恢复正常。
+    app.Lifetime.ApplicationStarted.Register(() =>
     {
-        FileName = $"http://127.0.0.1:{port}",
-        UseShellExecute = true
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(500);
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = $"http://127.0.0.1:{port}/",
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Startup] Failed to open browser automatically: {ex.Message}");
+            }
+        });
     });
 }
 else
@@ -462,5 +472,44 @@ static void SetViteNodeOptions()
             ? maxHeaderSize
             : $"{currentOptions.TrimEnd()} {maxHeaderSize}";
         Environment.SetEnvironmentVariable("NODE_OPTIONS", newOptions);
+    }
+}
+
+static bool IsValidSpaDist(string path)
+{
+    return Directory.Exists(path) &&
+           File.Exists(Path.Combine(path, "index.html")) &&
+           Directory.Exists(Path.Combine(path, "assets"));
+}
+
+static string[] GetCandidateSpaPaths(string baseDir, string workingDir)
+{
+    var candidates = new List<string>
+    {
+        // 发布目录：Vue 构建产物会被复制到应用同级 wwwroot，这是最稳定的生产入口。
+        Path.Combine(baseDir, "wwwroot"),
+        Path.Combine(baseDir, "www_build"),
+        // dotnet run / VS 调试：工作目录通常是项目根目录。
+        Path.Combine(workingDir, "www_build"),
+        Path.Combine(workingDir, "wwwroot"),
+    };
+
+    AddParentSpaCandidates(candidates, baseDir, maxDepth: 6);
+    AddParentSpaCandidates(candidates, workingDir, maxDepth: 6);
+
+    return candidates
+        .Select(Path.GetFullPath)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+}
+
+static void AddParentSpaCandidates(List<string> candidates, string startPath, int maxDepth)
+{
+    var current = new DirectoryInfo(Path.GetFullPath(startPath));
+
+    for (var depth = 0; current != null && depth < maxDepth; depth++, current = current.Parent)
+    {
+        candidates.Add(Path.Combine(current.FullName, "www_build"));
+        candidates.Add(Path.Combine(current.FullName, "wwwroot"));
     }
 }

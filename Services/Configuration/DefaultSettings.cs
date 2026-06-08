@@ -30,6 +30,9 @@ public static class DefaultSettings
     /// <summary>最近打开项目数量上限键名</summary>
     public const string RecentProjectsLimitKey = "RecentProjectsLimit";
 
+    /// <summary>最近打开项目列表键名（JSON 数组，存储在 .exe.config）</summary>
+    public const string RecentProjectsKey = "RecentProjects";
+
     /// <summary>预览窗口宽度键名</summary>
     public const string PreviewWidthKey = "PreviewWidth";
 
@@ -144,6 +147,7 @@ public static class DefaultSettings
             EditorFontSizeKey => DefaultEditorFontSize,
             AutoSaveIntervalKey => DefaultAutoSaveInterval,
             RecentProjectsLimitKey => DefaultRecentProjectsLimit,
+            RecentProjectsKey => "[]",
             PreviewWidthKey => DefaultPreviewWidth,
             PreviewHeightKey => DefaultPreviewHeight,
             AllowRemoteSessionKey => DefaultAllowRemoteSession,
@@ -167,6 +171,7 @@ public static class DefaultSettings
             EditorFontSizeKey,
             AutoSaveIntervalKey,
             RecentProjectsLimitKey,
+            RecentProjectsKey,
             PreviewWidthKey,
             PreviewHeightKey,
             AllowRemoteSessionKey,

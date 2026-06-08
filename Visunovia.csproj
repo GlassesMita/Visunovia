@@ -4,6 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <ClientProjectDirectory>$(ProjectDir)visunovia.client\</ClientProjectDirectory>
+    <ClientBuildOutputDirectory>$(ProjectDir)www_build\</ClientBuildOutputDirectory>
     <EnableDefaultContentItems>true</EnableDefaultContentItems>
     <!-- 禁用 StaticWebAssets 机制，避免嵌套目录和额外清单文件 -->
     <EnableStaticWebAssetsSupport>false</EnableStaticWebAssetsSupport>
@@ -16,13 +18,17 @@
     <!-- 排除工作目录和备份目录 -->
     <Compile Remove="_Visunovia\**" />
     <Compile Remove="_Visunovia_backup\**" />
+    <Compile Remove="visunovia.client\**" />
     <Content Remove="_Visunovia\**" />
     <Content Remove="_Visunovia_backup\**" />
+    <Content Remove="visunovia.client\**" />
     <None Remove="Git Cloned\**" />
     <None Remove="_Visunovia\**" />
     <None Remove="_Visunovia_backup\**" />
+    <None Remove="visunovia.client\**" />
     <EmbeddedResource Remove="_Visunovia\**" />
     <EmbeddedResource Remove="_Visunovia_backup\**" />
+    <EmbeddedResource Remove="visunovia.client\**" />
 
     <!-- 本地化文件 -->
     <Content Include="Localizations\*.po" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
@@ -37,6 +43,13 @@
     <PackageReference Include="Dapper" Version="2.1.66" />
   </ItemGroup>
 
+  <!-- 发布前按 Visual Studio ASP.NET Core + Vue 模板方式构建独立客户端项目 -->
+  <Target Name="BuildClientApp" BeforeTargets="ComputeFilesToPublish" Condition="Exists('$(ProjectDir)visunovia.client\package.json')">
+    <Message Text="Building Vue client app in $(ClientProjectDirectory)..." Importance="high" />
+    <Exec WorkingDirectory="$(ClientProjectDirectory)" Command="npm install" Condition="!Exists('$(ClientProjectDirectory)node_modules')" />
+    <Exec WorkingDirectory="$(ClientProjectDirectory)" Command="npm run build" />
+  </Target>
+
   <!-- Release 发布：用 www_build 构建产物替换发布目录中的 wwwroot -->
   <Target Name="ReplaceWwwrootWithBuild" AfterTargets="Publish" Condition="'$(Configuration)' == 'Release'">
     <Message Text="[Release] Replacing wwwroot with www_build artifacts..." Importance="high" />
@@ -45,12 +58,12 @@
     <!-- 重新创建 wwwroot 并复制构建产物 -->
     <MakeDir Directories="$(PublishDir)wwwroot" />
     <ItemGroup>
-      <VueBuildFiles Include="$(ProjectDir)www_build\**\*" />
+      <VueBuildFiles Include="$(ClientBuildOutputDirectory)**\*" />
     </ItemGroup>
     <Copy SourceFiles="@(VueBuildFiles)" DestinationFiles="@(VueBuildFiles->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <!-- 复制 wwwroot 中的非 Vite 资源文件（如 js/setup-wizard.js） -->
     <ItemGroup>
-      <WwwrootExtraFiles Include="$(ProjectDir)wwwroot\**\*" Exclude="$(ProjectDir)wwwroot\assets\**\*;$(ProjectDir)wwwroot\src\**\*;$(ProjectDir)wwwroot\css\**\*;$(ProjectDir)wwwroot\fonts\**\*;$(ProjectDir)wwwroot\index.html;$(ProjectDir)wwwroot\package.json;$(ProjectDir)wwwroot\vite.config.ts;$(ProjectDir)wwwroot\tsconfig.json;$(ProjectDir)wwwroot\tsconfig.node.json;$(ProjectDir)wwwroot\postcss.config.js;$(ProjectDir)wwwroot\_check_file.js" />
+      <WwwrootExtraFiles Include="$(ProjectDir)wwwroot\**\*" Exclude="$(ProjectDir)wwwroot\assets\**\*;$(ProjectDir)wwwroot\src-react-backup\**\*;$(ProjectDir)wwwroot\_check_file.js" />
     </ItemGroup>
     <Copy SourceFiles="@(WwwrootExtraFiles)" DestinationFiles="@(WwwrootExtraFiles->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <Message Text="[Release] wwwroot replaced with @(VueBuildFiles->Count()) build files + @(WwwrootExtraFiles->Count()) extra files." Importance="high" />

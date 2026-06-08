@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Security;
+using System.Text.Json;
+using System.Xml;
 using System.Xml.Linq;
 using Visunovia.Services;
+using Visunovia.Services.Configuration;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -12,11 +16,28 @@ public class ProjectController : ControllerBase
 {
     private readonly ILogger<ProjectController> _logger;
     private readonly EditorSessionService _sessionService;
+    private readonly SettingsService _settingsService;
+    private static DateTime _lastNoProjectLogUtc = DateTime.MinValue;
 
-    public ProjectController(ILogger<ProjectController> logger, EditorSessionService sessionService)
+    public ProjectController(ILogger<ProjectController> logger, EditorSessionService sessionService, SettingsService settingsService)
     {
         _logger = logger;
         _sessionService = sessionService;
+        _settingsService = settingsService;
+    }
+
+    /// <summary>
+    /// 获取最近打开的项目列表。
+    /// 列表持久化在应用程序 .exe.config 的 RecentProjects 配置项中。
+    /// </summary>
+    [HttpGet("recentProjects")]
+    public IActionResult GetRecentProjects()
+    {
+        return Ok(new
+        {
+            success = true,
+            data = LoadRecentProjects()
+        });
     }
 
     /// <summary>
@@ -29,6 +50,15 @@ public class ProjectController : ControllerBase
 
         if (editor.CurrentProject == null || string.IsNullOrEmpty(editor.CurrentProjectPath))
         {
+            if (DateTime.UtcNow - _lastNoProjectLogUtc > TimeSpan.FromSeconds(10))
+            {
+                _lastNoProjectLogUtc = DateTime.UtcNow;
+                LogProjectStep("currentProject", "当前没有打开的项目", new Dictionary<string, object?>
+                {
+                    ["hasProject"] = editor.CurrentProject != null,
+                    ["currentProjectPath"] = editor.CurrentProjectPath
+                });
+            }
             return Ok(new
             {
                 success = true,
@@ -39,9 +69,19 @@ public class ProjectController : ControllerBase
 
         var project = editor.CurrentProject;
         var projectPath = editor.CurrentProjectPath!;
+        LogProjectStep("currentProject", "开始获取当前项目状态");
+        LogProjectStep("currentProject", "已找到内存中的当前项目", new Dictionary<string, object?>
+        {
+            ["projectTitle"] = project.Metadata.Title,
+            ["currentProjectPath"] = projectPath
+        });
 
         // 获取项目根目录（.tlor 文件所在目录）
         var projectRoot = Path.GetDirectoryName(projectPath) ?? projectPath;
+        LogProjectStep("currentProject", "解析项目根目录", new Dictionary<string, object?>
+        {
+            ["projectRoot"] = projectRoot
+        });
 
         // 获取一级子目录（相对路径）
         var subDirectories = new List<string>();
@@ -58,7 +98,18 @@ public class ProjectController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "获取项目子目录失败: {Path}", projectRoot);
+            LogProjectStep("currentProject", "获取项目子目录失败", new Dictionary<string, object?>
+            {
+                ["projectRoot"] = projectRoot,
+                ["error"] = ex.Message
+            });
         }
+
+        LogProjectStep("currentProject", "返回当前项目信息", new Dictionary<string, object?>
+        {
+            ["projectName"] = project.Metadata.Title,
+            ["subDirectoryCount"] = subDirectories.Count
+        });
 
         return Ok(new
         {
@@ -129,22 +180,10 @@ public class ProjectController : ControllerBase
                 foreach (var tlorFile in tlorFiles)
                 {
                     var content = await System.IO.File.ReadAllTextAsync(tlorFile);
-                    content = System.Text.RegularExpressions.Regex.Replace(
-                        content,
-                        @"(<title>)(.*?)(</title>)",
-                        $"$1{request.Name}$3");
-                    content = System.Text.RegularExpressions.Regex.Replace(
-                        content,
-                        @"(<version>)(.*?)(</version>)",
-                        $"$1{request.Version}$3");
-                    content = System.Text.RegularExpressions.Regex.Replace(
-                        content,
-                        @"(<versionCode>)(.*?)(</versionCode>)",
-                        $"$1{request.VersionCode}$3");
-                    content = System.Text.RegularExpressions.Regex.Replace(
-                        content,
-                        @"(<companyName>)(.*?)(</companyName>)",
-                        $"$1{request.CompanyName}$3");
+                    content = ReplaceXmlElementValue(content, "title", request.Name);
+                    content = ReplaceXmlElementValue(content, "version", request.Version);
+                    content = ReplaceXmlElementValue(content, "versionCode", request.VersionCode);
+                    content = ReplaceXmlElementValue(content, "companyName", request.CompanyName);
                     await System.IO.File.WriteAllTextAsync(tlorFile, content);
                 }
             }
@@ -162,6 +201,7 @@ public class ProjectController : ControllerBase
             if (System.IO.File.Exists(tlorPath))
             {
                 await editor.LoadProjectAsync(tlorPath, projectDir);
+                AddRecentProject(projectDir, request.Name);
             }
 
             // 获取创建后的文件夹结构
@@ -217,10 +257,7 @@ public class ProjectController : ControllerBase
                 {
                     var newTlorPath = Path.Combine(projectDir, "Project.tlor");
                     var content = await System.IO.File.ReadAllTextAsync(oldTlorPath);
-                    content = System.Text.RegularExpressions.Regex.Replace(
-                        content,
-                        "(<title>)(.*?)(</title>)",
-                        $"$1{request.ProjectName}$3");
+                    content = ReplaceXmlElementValue(content, "title", request.ProjectName);
                     await System.IO.File.WriteAllTextAsync(newTlorPath, content);
                 }
             }
@@ -423,30 +460,359 @@ dialogues: []";
     [HttpPost("import")]
     public async Task<IActionResult> ImportProject([FromBody] ImportProjectRequest request)
     {
+        LogProjectStep("import", "收到导入项目请求", new Dictionary<string, object?>
+        {
+            ["requestProjectPath"] = request.ProjectPath
+        });
+
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
         {
+            LogProjectStep("import", "导入失败：项目路径为空");
             return BadRequest(new { success = false, error = "项目路径不能为空" });
         }
 
         try
         {
-            var result = await ParseProjectAsync(request.ProjectPath);
+            var (projectRoot, tlorPath) = ResolveProjectPaths(request.ProjectPath);
+            LogProjectStep("import", "项目路径已规范化", new Dictionary<string, object?>
+            {
+                ["projectRoot"] = projectRoot,
+                ["tlorPath"] = tlorPath,
+                ["projectRootExists"] = Directory.Exists(projectRoot),
+                ["tlorExists"] = System.IO.File.Exists(tlorPath)
+            });
+
+            if (!Directory.Exists(projectRoot))
+            {
+                LogProjectStep("import", "导入失败：项目根目录不存在", new Dictionary<string, object?>
+                {
+                    ["projectRoot"] = projectRoot
+                });
+                return NotFound(new { success = false, error = "项目路径不存在" });
+            }
+
+            if (!System.IO.File.Exists(tlorPath))
+            {
+                LogProjectStep("import", "导入失败：未找到 Project.tlor", new Dictionary<string, object?>
+                {
+                    ["tlorPath"] = tlorPath
+                });
+                return NotFound(new { success = false, error = "未找到 Project.tlor 文件" });
+            }
+
+            await RepairProjectFileIfNeededAsync(tlorPath, projectRoot, "导入项目前校验");
+
+            var result = await ParseProjectAsync(projectRoot);
+            LogProjectStep("import", "项目解析完成", new Dictionary<string, object?>
+            {
+                ["sceneCount"] = result.Scenes.Count
+            });
 
             // 将项目加载到 EditorService，使后续 API 能获取到当前项目
             var editor = _sessionService.GetEditor();
-            var tlorPath = Path.Combine(request.ProjectPath, "Project.tlor");
-            if (System.IO.File.Exists(tlorPath))
+            LogProjectStep("import", "开始加载项目到编辑器会话", new Dictionary<string, object?>
             {
-                await editor.LoadProjectAsync(tlorPath, request.ProjectPath);
+                ["tlorPath"] = tlorPath,
+                ["projectRoot"] = projectRoot
+            });
+
+            var loaded = await editor.LoadProjectAsync(tlorPath, projectRoot);
+            if (!loaded || editor.CurrentProject == null || string.IsNullOrEmpty(editor.CurrentProjectPath))
+            {
+                LogProjectStep("import", "导入失败：编辑器会话加载项目失败", new Dictionary<string, object?>
+                {
+                    ["loaded"] = loaded,
+                    ["currentProjectPath"] = editor.CurrentProjectPath
+                });
+                return StatusCode(500, new { success = false, error = "加载项目到编辑器会话失败" });
             }
+
+            LogProjectStep("import", "项目已加载为当前项目", new Dictionary<string, object?>
+            {
+                ["projectName"] = editor.CurrentProject.Metadata.Title,
+                ["currentProjectPath"] = editor.CurrentProjectPath
+            });
+
+            AddRecentProject(projectRoot, editor.CurrentProject.Metadata.Title);
 
             return Ok(new { success = true, data = result });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "导入项目失败: {Path}", request.ProjectPath);
+            LogProjectStep("import", "导入项目发生异常", new Dictionary<string, object?>
+            {
+                ["requestProjectPath"] = request.ProjectPath,
+                ["error"] = ex.Message
+            });
             return StatusCode(500, new { success = false, error = ex.Message });
         }
+    }
+
+    private (string ProjectRoot, string TlorPath) ResolveProjectPaths(string inputPath)
+    {
+        var normalizedPath = Path.GetFullPath(Uri.UnescapeDataString(inputPath.Trim()));
+        if (System.IO.File.Exists(normalizedPath) && string.Equals(Path.GetExtension(normalizedPath), ".tlor", StringComparison.OrdinalIgnoreCase))
+        {
+            var projectRoot = Path.GetDirectoryName(normalizedPath) ?? normalizedPath;
+            return (projectRoot, normalizedPath);
+        }
+
+        return (normalizedPath, Path.Combine(normalizedPath, "Project.tlor"));
+    }
+
+    private List<RecentProjectInfo> LoadRecentProjects()
+    {
+        try
+        {
+            var raw = _settingsService.GetRawValue(DefaultSettings.RecentProjectsKey);
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return [];
+            }
+
+            var projects = JsonSerializer.Deserialize<List<RecentProjectInfo>>(raw, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            }) ?? [];
+
+            return projects
+                .Where(project => !string.IsNullOrWhiteSpace(project.Path))
+                .GroupBy(project => NormalizePathKey(project.Path), StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .OrderByDescending(project => project.LastOpened ?? string.Empty)
+                .Take(GetRecentProjectsLimit())
+                .ToList();
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "最近项目配置解析失败，将返回空列表");
+            return [];
+        }
+    }
+
+    private void AddRecentProject(string projectRoot, string? projectName)
+    {
+        try
+        {
+            var normalizedRoot = Path.GetFullPath(projectRoot);
+            var displayName = string.IsNullOrWhiteSpace(projectName)
+                ? new DirectoryInfo(normalizedRoot).Name
+                : projectName.Trim();
+
+            var projects = LoadRecentProjects();
+            var normalizedKey = NormalizePathKey(normalizedRoot);
+            projects.RemoveAll(project => string.Equals(NormalizePathKey(project.Path), normalizedKey, StringComparison.OrdinalIgnoreCase));
+            projects.Insert(0, new RecentProjectInfo
+            {
+                Name = displayName,
+                Path = normalizedRoot,
+                LastOpened = DateTime.UtcNow.ToString("O")
+            });
+
+            var limit = GetRecentProjectsLimit();
+            if (projects.Count > limit)
+            {
+                projects = projects.Take(limit).ToList();
+            }
+
+            var json = JsonSerializer.Serialize(projects, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = false
+            });
+
+            if (!_settingsService.SetAndSave(DefaultSettings.RecentProjectsKey, json))
+            {
+                _logger.LogWarning("最近项目保存失败: {Path}", normalizedRoot);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "更新最近项目失败: {Path}", projectRoot);
+        }
+    }
+
+    private int GetRecentProjectsLimit()
+    {
+        return Math.Max(1, _settingsService.Get<int>(DefaultSettings.RecentProjectsLimitKey, DefaultSettings.DefaultRecentProjectsLimit));
+    }
+
+    private static string NormalizePathKey(string path)
+    {
+        return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+    }
+
+    private static string ReplaceXmlElementValue(string xml, string elementName, string value)
+    {
+        var escapedValue = SecurityElement.Escape(value ?? string.Empty) ?? string.Empty;
+        var pattern = $"(<{elementName}>)(.*?)(</{elementName}>)";
+        var replaced = System.Text.RegularExpressions.Regex.Replace(
+            xml,
+            pattern,
+            match => $"{match.Groups[1].Value}{escapedValue}{match.Groups[3].Value}",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);
+
+        if (!string.Equals(replaced, xml, StringComparison.Ordinal))
+        {
+            return replaced;
+        }
+
+        return System.Text.RegularExpressions.Regex.Replace(
+            xml,
+            "(</metadata>)",
+            $"  <{elementName}>{escapedValue}</{elementName}>{Environment.NewLine}$1",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    }
+
+    private async Task RepairProjectFileIfNeededAsync(string tlorPath, string projectRoot, string? reason = null)
+    {
+        if (!System.IO.File.Exists(tlorPath))
+        {
+            return;
+        }
+
+        var content = await System.IO.File.ReadAllTextAsync(tlorPath);
+        try
+        {
+            var doc = XDocument.Parse(content);
+            var root = doc.Root;
+            var metadata = root?.Element("metadata");
+            var changed = false;
+
+            if (root == null || !string.Equals(root.Name.LocalName, "project", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new XmlException("Project.tlor 缺少 project 根元素");
+            }
+
+            if (metadata == null)
+            {
+                metadata = new XElement("metadata");
+                root.AddFirst(metadata);
+                changed = true;
+            }
+
+            changed |= EnsureMetadataElement(metadata, "title", new DirectoryInfo(projectRoot).Name);
+            changed |= EnsureMetadataElement(metadata, "author", string.Empty);
+            changed |= EnsureMetadataElement(metadata, "version", "1.0");
+            changed |= EnsureMetadataElement(metadata, "versionCode", "1");
+            changed |= EnsureMetadataElement(metadata, "companyName", string.Empty);
+
+            var scenes = root.Element("scenes");
+            if (scenes == null)
+            {
+                scenes = new XElement("scenes");
+                root.Add(scenes);
+                changed = true;
+            }
+
+            if (!scenes.Elements("scene").Any())
+            {
+                foreach (var sceneId in GetSceneIdsFromDirectory(projectRoot))
+                {
+                    scenes.Add(new XElement("scene", new XAttribute("id", sceneId)));
+                }
+                changed = true;
+            }
+
+            if (changed)
+            {
+                await WriteRepairedProjectFileAsync(tlorPath, doc, reason ?? "补齐缺失节点");
+            }
+        }
+        catch (XmlException ex)
+        {
+            LogProjectStep("repair", "Project.tlor XML 损坏，开始重建", new Dictionary<string, object?>
+            {
+                ["tlorPath"] = tlorPath,
+                ["error"] = ex.Message,
+                ["reason"] = reason
+            });
+
+            var repairedDoc = BuildProjectDocumentFromDirectory(projectRoot, content);
+            await WriteRepairedProjectFileAsync(tlorPath, repairedDoc, reason ?? ex.Message);
+        }
+    }
+
+    private static bool EnsureMetadataElement(XElement metadata, string name, string defaultValue)
+    {
+        var element = metadata.Element(name);
+        if (element != null)
+        {
+            return false;
+        }
+
+        metadata.Add(new XElement(name, defaultValue));
+        return true;
+    }
+
+    private XDocument BuildProjectDocumentFromDirectory(string projectRoot, string oldContent)
+    {
+        return new XDocument(
+            new XElement("project",
+                new XAttribute("version", "1.0"),
+                new XElement("metadata",
+                    new XElement("title", ExtractXmlLikeTagValue(oldContent, "title") ?? new DirectoryInfo(projectRoot).Name),
+                    new XElement("author", ExtractXmlLikeTagValue(oldContent, "author") ?? string.Empty),
+                    new XElement("version", ExtractXmlLikeTagValue(oldContent, "version") ?? "1.0"),
+                    new XElement("versionCode", ExtractXmlLikeTagValue(oldContent, "versionCode") ?? "1"),
+                    new XElement("companyName", ExtractXmlLikeTagValue(oldContent, "companyName") ?? string.Empty)
+                ),
+                new XElement("scenes",
+                    GetSceneIdsFromDirectory(projectRoot).Select(sceneId => new XElement("scene", new XAttribute("id", sceneId)))
+                )
+            )
+        );
+    }
+
+    private static IEnumerable<string> GetSceneIdsFromDirectory(string projectRoot)
+    {
+        var scriptsMainPath = Path.Combine(projectRoot, "Scripts", "Main");
+        if (!Directory.Exists(scriptsMainPath))
+        {
+            return new[] { "start" };
+        }
+
+        var sceneIds = Directory.GetFiles(scriptsMainPath, "*.lor")
+            .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+            .Select(Path.GetFileNameWithoutExtension)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Cast<string>()
+            .ToArray();
+
+        return sceneIds.Length > 0 ? sceneIds : new[] { "start" };
+    }
+
+    private async Task WriteRepairedProjectFileAsync(string tlorPath, XDocument doc, string reason)
+    {
+        var backupPath = $"{tlorPath}.bak-{DateTime.Now:yyyyMMddHHmmss}";
+        System.IO.File.Copy(tlorPath, backupPath, overwrite: false);
+        await System.IO.File.WriteAllTextAsync(tlorPath, doc.ToString());
+        LogProjectStep("repair", "Project.tlor 已自动修复", new Dictionary<string, object?>
+        {
+            ["tlorPath"] = tlorPath,
+            ["backupPath"] = backupPath,
+            ["reason"] = reason
+        });
+    }
+
+    private static string? ExtractXmlLikeTagValue(string content, string tagName)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(
+            content,
+            $"<{tagName}>(.*?)</{tagName}>",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);
+        return match.Success ? match.Groups[1].Value.Trim() : null;
+    }
+
+    private void LogProjectStep(string operation, string step, Dictionary<string, object?>? details = null)
+    {
+        var detailText = details == null || details.Count == 0
+            ? string.Empty
+            : " | " + string.Join(", ", details.Select(kvp => $"{kvp.Key}={kvp.Value ?? "<null>"}"));
+        var message = $"[Project:{operation}] {step}{detailText}";
+        Console.WriteLine(message);
+        _logger.LogInformation("{Message}", message);
     }
 
     /// <summary>
@@ -455,16 +821,33 @@ dialogues: []";
     private async Task<ProjectParseResult> ParseProjectAsync(string projectPath)
     {
         var result = new ProjectParseResult();
+        LogProjectStep("parse", "开始解析项目", new Dictionary<string, object?>
+        {
+            ["projectPath"] = projectPath
+        });
 
         // 查找 .tlor 文件
         var tlorFiles = Directory.GetFiles(projectPath, "*.tlor", SearchOption.AllDirectories);
+        LogProjectStep("parse", "扫描 .tlor 文件完成", new Dictionary<string, object?>
+        {
+            ["tlorCount"] = tlorFiles.Length
+        });
         
         foreach (var tlorFile in tlorFiles)
         {
+            LogProjectStep("parse", "解析 .tlor 文件", new Dictionary<string, object?>
+            {
+                ["tlorFile"] = tlorFile
+            });
             var scene = await ParseTlorFileAsync(tlorFile);
             if (scene != null)
             {
                 result.Scenes.Add(scene);
+                LogProjectStep("parse", "从 .tlor 解析到场景", new Dictionary<string, object?>
+                {
+                    ["sceneId"] = scene.Id,
+                    ["lorFilePath"] = scene.LorFilePath
+                });
             }
         }
 
@@ -475,6 +858,11 @@ dialogues: []";
             if (Directory.Exists(scriptsMainPath))
             {
                 var lorFiles = Directory.GetFiles(scriptsMainPath, "*.lor");
+                LogProjectStep("parse", "未从 .tlor 找到场景，扫描 Scripts/Main", new Dictionary<string, object?>
+                {
+                    ["scriptsMainPath"] = scriptsMainPath,
+                    ["lorCount"] = lorFiles.Length
+                });
                 foreach (var lorFile in lorFiles)
                 {
                     var scene = new SceneInfo
@@ -488,6 +876,11 @@ dialogues: []";
             }
         }
 
+        LogProjectStep("parse", "项目解析结束", new Dictionary<string, object?>
+        {
+            ["sceneCount"] = result.Scenes.Count
+        });
+
         return result;
     }
 
@@ -497,7 +890,20 @@ dialogues: []";
     private async Task<SceneInfo?> ParseTlorFileAsync(string tlorFilePath)
     {
         var xml = await System.IO.File.ReadAllTextAsync(tlorFilePath);
-        var doc = XDocument.Parse(xml);
+        XDocument doc;
+        try
+        {
+            doc = XDocument.Parse(xml);
+        }
+        catch (XmlException ex)
+        {
+            LogProjectStep("parse", "跳过格式损坏的 .tlor 文件，将回退扫描 .lor 文件", new Dictionary<string, object?>
+            {
+                ["tlorFile"] = tlorFilePath,
+                ["error"] = ex.Message
+            });
+            return null;
+        }
 
         // 尝试多种可能的 XML 命名空间和元素名称
         var projectElement = doc.Root;
@@ -743,4 +1149,14 @@ public class CurrentProjectResponse
     public string CompanyName { get; set; } = string.Empty;
     public string ProjectPath { get; set; } = string.Empty;
     public List<string> SubDirectories { get; set; } = new();
+}
+
+/// <summary>
+/// 最近打开的项目信息。
+/// </summary>
+public class RecentProjectInfo
+{
+    public string Name { get; set; } = string.Empty;
+    public string Path { get; set; } = string.Empty;
+    public string? LastOpened { get; set; }
 }

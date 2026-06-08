@@ -94,11 +94,13 @@ public class BlueprintYamlConverter
                 var subType = ExtractSubType(node);
                 var nodeDisplayName = ExtractDisplayName(node, nodeType);
 
+                var position = NormalizeBlueprintPosition(node.Position?.X ?? 0, node.Position?.Y ?? 0);
+
                 // 注册到 UUID 注册表
                 if (uuidService != null)
                 {
                     uuidService.RegisterNodeWithUuid(nodeUuid, nodeType, subType, nodeDisplayName,
-                        node.Position?.X ?? 0, node.Position?.Y ?? 0, node.Properties);
+                    position.X, position.Y, node.Properties);
                 }
 
                 document.UuidRegistry.Add(new YamlUuidEntry
@@ -149,8 +151,8 @@ public class BlueprintYamlConverter
                     DisplayName = nodeDisplayName,
                     Position = new YamlPosition
                     {
-                        X = node.Position?.X ?? 0,
-                        Y = node.Position?.Y ?? 0
+                        X = position.X,
+                        Y = position.Y
                     },
                     Properties = node.Properties ?? new Dictionary<string, object>(),
                     Inputs = inputs,
@@ -225,7 +227,8 @@ public class BlueprintYamlConverter
     /// </summary>
     public async Task<SceneGraphData> YamlToBlueprintAsync(
         string yamlContent,
-        UuidRegistryService? uuidService = null)
+        UuidRegistryService? uuidService = null,
+        string? targetSceneId = null)
     {
         var document = _yamlDeserializer.Deserialize<YamlSceneDocument>(yamlContent);
         if (document == null)
@@ -233,7 +236,9 @@ public class BlueprintYamlConverter
             throw new InvalidOperationException("YAML 解析失败：文档为空");
         }
 
-        var sceneId = document.Metadata?.SceneId ?? Guid.NewGuid().ToString();
+        var sceneId = !string.IsNullOrWhiteSpace(targetSceneId)
+            ? targetSceneId
+            : document.Metadata?.SceneId ?? Guid.NewGuid().ToString();
 
         // 注册场景
         if (uuidService != null && document.Metadata != null)
@@ -266,15 +271,17 @@ public class BlueprintYamlConverter
         {
             foreach (var yamlNode in document.Nodes)
             {
+                var position = NormalizeBlueprintPosition(yamlNode.Position?.X ?? 0, yamlNode.Position?.Y ?? 0);
+
                 var nodeData = new NodeData
                 {
                     Uuid = yamlNode.Uuid,
-                    Type = yamlNode.NodeType,
+                    Type = NormalizeNodeType(yamlNode.NodeType),
                     SubType = yamlNode.SubType,
                     Position = new PositionData
                     {
-                        X = yamlNode.Position?.X ?? 0,
-                        Y = yamlNode.Position?.Y ?? 0
+                        X = position.X,
+                        Y = position.Y
                     },
                     Properties = yamlNode.Properties ?? new Dictionary<string, object>(),
                     Inputs = yamlNode.Inputs?.Select(p => new PortData
@@ -301,11 +308,11 @@ public class BlueprintYamlConverter
                 {
                     uuidService.RegisterNodeWithUuid(
                         yamlNode.Uuid,
-                        yamlNode.NodeType,
+                        NormalizeNodeType(yamlNode.NodeType),
                         yamlNode.SubType,
                         yamlNode.DisplayName,
-                        yamlNode.Position?.X ?? 0,
-                        yamlNode.Position?.Y ?? 0,
+                        position.X,
+                        position.Y,
                         yamlNode.Properties);
                 }
             }
@@ -343,7 +350,7 @@ public class BlueprintYamlConverter
         }
 
         // 保存到 EditorService
-        var json = JsonSerializer.Serialize(document);
+        var json = JsonSerializer.Serialize(sceneGraph);
         _editorService.SaveSceneGraph(sceneId, json);
 
         return sceneGraph;
@@ -354,9 +361,10 @@ public class BlueprintYamlConverter
     /// </summary>
     public async Task<SceneGraphData> ImportYamlAsync(
         string yamlContent,
-        UuidRegistryService? uuidService = null)
+        UuidRegistryService? uuidService = null,
+        string? targetSceneId = null)
     {
-        return await YamlToBlueprintAsync(yamlContent, uuidService);
+        return await YamlToBlueprintAsync(yamlContent, uuidService, targetSceneId);
     }
 
     // ==================== 辅助方法 ====================
@@ -389,5 +397,34 @@ public class BlueprintYamlConverter
             }
         }
         return nodeType;
+    }
+
+    /// <summary>
+    /// 蓝图编辑器使用绝对坐标：编辑器最左侧中部为 (0, 0)，不支持 X 小于 0。
+    /// Y 允许为负值以表示中线以上的位置。
+    /// </summary>
+    private static PositionData NormalizeBlueprintPosition(double x, double y)
+    {
+        return new PositionData
+        {
+            X = Math.Max(0, x),
+            Y = y
+        };
+    }
+
+    private static string NormalizeNodeType(string? nodeType)
+    {
+        return nodeType switch
+        {
+            "Start" => "StartNode",
+            "End" => "EndNode",
+            "Event" => "EventNode",
+            "Dialogue" => "DialogueNode",
+            "Branch" => "BranchNode",
+            "Logic" => "LogicNode",
+            "Resource" => "ResourceNode",
+            "Choice" => "ChoiceNode",
+            _ => nodeType ?? "UnknownNode"
+        };
     }
 }

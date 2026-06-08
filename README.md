@@ -40,7 +40,7 @@ Visunovia/
 ├── Pages/                   # Razor Pages
 ├── Properties/              # 项目属性
 ├── Services/                # 业务服务层
-├── wwwroot/                 # 前端源码
+├── visunovia.client/        # Vue/Vite 独立客户端项目
 │   ├── src/
 │   │   ├── components/     # Vue 组件
 │   │   │   ├── baklava-nodes/  # BaklavaJS 节点定义
@@ -53,11 +53,15 @@ Visunovia/
 │   │   ├── router/        # 路由配置
 │   │   ├── stores/        # Pinia 状态管理
 │   │   └── types/         # TypeScript 类型定义
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.ts
+├── wwwroot/                 # Razor Pages 静态资源
 │   ├── css/               # 样式文件
 │   ├── fonts/              # 字体文件
 │   ├── js/                # JavaScript 文件
-│   ├── lib/               # 第三方库
-│   └── www_build/         # 前端构建产物
+│   └── lib/               # 第三方库
+├── www_build/              # Vue 前端构建产物
 ├── scripts/                # 构建脚本
 ├── Program.cs              # 程序入口
 ├── Visunovia.csproj        # 项目文件
@@ -76,7 +80,7 @@ Visunovia/
 
 ```bash
 # 安装前端依赖
-cd wwwroot
+cd visunovia.client
 npm install
 ```
 
@@ -84,14 +88,14 @@ npm install
 
 #### 方式 1：前端独立开发
 ```bash
-cd wwwroot
+cd visunovia.client
 npm run dev
 ```
 
 #### 方式 2：完整开发（推荐）
 ```bash
 # 终端 1：启动前端开发服务器
-cd wwwroot
+cd visunovia.client
 npm run dev
 
 # 终端 2：启动后端服务
@@ -99,13 +103,13 @@ cd ..
 dotnet run
 ```
 
-服务器将在 `http://127.0.0.1:28478` 启动，并自动打开浏览器。
+服务器将在 `http://127.0.0.1:32523` 启动，并自动打开浏览器。
 
 ### 生产构建
 
 ```bash
 # 1. 构建前端
-cd wwwroot
+cd visunovia.client
 npm run build
 
 # 2. 编译后端（自动复制前端构建产物）
@@ -186,7 +190,7 @@ AppLayout
 
 ### 添加新节点
 
-1. 在 `wwwroot/src/components/baklava-nodes/` 创建节点文件：
+1. 在 `visunovia.client/src/components/baklava-nodes/` 创建节点文件：
 ```typescript
 // EventNode.ts
 import { defineNode, ExecInterface } from 'baklavajs'

@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
+using System.Xml;
 using System.Xml.Linq;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -442,11 +444,16 @@ public class EditorService
     {
         try
         {
+            Console.WriteLine($"[EditorService:LoadProject] 开始加载项目 | path={path}, projectRoot={projectRoot ?? "<null>"}");
             var effectiveProjectRoot = projectRoot ?? Path.GetDirectoryName(path) ?? path;
             if (string.IsNullOrEmpty(effectiveProjectRoot))
             {
                 effectiveProjectRoot = path;
             }
+            effectiveProjectRoot = Path.GetFullPath(effectiveProjectRoot);
+            path = Path.GetFullPath(path);
+
+            Console.WriteLine($"[EditorService:LoadProject] 规范化路径 | path={path}, effectiveProjectRoot={effectiveProjectRoot}");
 
             if (!File.Exists(path))
             {
@@ -454,21 +461,35 @@ public class EditorService
                 if (File.Exists(tlorPath))
                 {
                     path = tlorPath;
-                    effectiveProjectRoot = path;
+                    effectiveProjectRoot = Path.GetDirectoryName(tlorPath) ?? path;
+                    Console.WriteLine($"[EditorService:LoadProject] 输入为目录，已找到 Project.tlor | tlorPath={tlorPath}, effectiveProjectRoot={effectiveProjectRoot}");
                 }
                 else
                 {
+                    Console.WriteLine($"[EditorService:LoadProject] 加载失败：未找到 Project.tlor | checkedPath={tlorPath}");
                     ErrorOccurred?.Invoke("未找到 Project.tlor 文件");
                     return false;
                 }
             }
 
+            Console.WriteLine($"[EditorService:LoadProject] 读取项目文件 | tlorPath={path}");
             var content = await File.ReadAllTextAsync(path);
-            var doc = XDocument.Parse(content);
+            XDocument doc;
+            try
+            {
+                doc = XDocument.Parse(content);
+            }
+            catch (XmlException ex)
+            {
+                Console.WriteLine($"[EditorService:LoadProject] Project.tlor XML 格式损坏，启用目录扫描容错加载 | error={ex.Message}");
+                await LoadProjectFromDirectoryFallbackAsync(path, effectiveProjectRoot, content);
+                return true;
+            }
             var root = doc.Root;
 
             if (root == null)
             {
+                Console.WriteLine("[EditorService:LoadProject] 加载失败：项目文件根元素为空");
                 ErrorOccurred?.Invoke("项目文件格式错误");
                 return false;
             }
@@ -485,12 +506,14 @@ public class EditorService
 
             CurrentProject.Scenes = new List<VNScene>();
             var sceneElements = root.Element("scenes")?.Elements("scene");
+            Console.WriteLine($"[EditorService:LoadProject] 元数据加载完成 | title={CurrentProject.Metadata.Title}, sceneElementCount={sceneElements?.Count() ?? 0}");
             if (sceneElements != null)
             {
                 foreach (var sceneElem in sceneElements)
                 {
                     var sceneId = sceneElem.Attribute("id")?.Value ?? "unknown";
                     var scriptPath = Path.Combine(effectiveProjectRoot, "Scripts", "Main", $"{sceneId}.lor");
+                    Console.WriteLine($"[EditorService:LoadProject] 加载场景 | sceneId={sceneId}, scriptPath={scriptPath}, exists={File.Exists(scriptPath)}");
 
                     if (File.Exists(scriptPath))
                     {
@@ -516,6 +539,7 @@ public class EditorService
             var variablesPath = Path.Combine(effectiveProjectRoot, "Settings", "Variables.json");
             if (File.Exists(variablesPath))
             {
+                Console.WriteLine($"[EditorService:LoadProject] 加载变量文件 | variablesPath={variablesPath}");
                 var varsContent = await File.ReadAllTextAsync(variablesPath);
                 CurrentProject.Variables = JsonSerializer.Deserialize<Dictionary<string, object>>(varsContent) ?? new();
             }
@@ -525,14 +549,88 @@ public class EditorService
             _undoRedoManager.ClearHistory();
             StatusChanged?.Invoke($"已加载项目: {CurrentProject.Metadata.Title}");
             ProjectChanged?.Invoke();
+            Console.WriteLine($"[EditorService:LoadProject] 项目加载成功 | title={CurrentProject.Metadata.Title}, currentProjectPath={CurrentProjectPath}, sceneCount={CurrentProject.Scenes.Count}");
             return true;
         }
         // 加载项目时可能因文件不存在、格式错误或权限不足导致异常
         catch (Exception ex)
         {
+            Console.WriteLine($"[EditorService:LoadProject] 加载项目异常 | path={path}, error={ex.Message}");
             ErrorOccurred?.Invoke($"加载项目失败: {ex.Message}");
             return false;
         }
+    }
+
+    private async Task LoadProjectFromDirectoryFallbackAsync(string tlorPath, string projectRoot, string tlorContent)
+    {
+        var projectName = ExtractTagValue(tlorContent, "title")
+            ?? new DirectoryInfo(projectRoot).Name
+            ?? "未命名项目";
+
+        CurrentProject = new VNProject
+        {
+            Metadata = new VNMetadata
+            {
+                Title = projectName,
+                Author = ExtractTagValue(tlorContent, "author") ?? string.Empty,
+                Version = ExtractTagValue(tlorContent, "version") ?? "1.0",
+                VersionCode = ExtractTagValue(tlorContent, "versionCode") ?? "1",
+                CompanyName = ExtractTagValue(tlorContent, "companyName") ?? string.Empty
+            },
+            Variables = new Dictionary<string, object>(),
+            Scenes = new List<VNScene>()
+        };
+
+        var scriptsMainPath = Path.Combine(projectRoot, "Scripts", "Main");
+        Console.WriteLine($"[EditorService:LoadProject] 容错扫描场景目录 | scriptsMainPath={scriptsMainPath}, exists={Directory.Exists(scriptsMainPath)}");
+
+        if (Directory.Exists(scriptsMainPath))
+        {
+            foreach (var scriptPath in Directory.GetFiles(scriptsMainPath, "*.lor").OrderBy(p => p, StringComparer.OrdinalIgnoreCase))
+            {
+                var sceneId = Path.GetFileNameWithoutExtension(scriptPath);
+                Console.WriteLine($"[EditorService:LoadProject] 容错加载场景 | sceneId={sceneId}, scriptPath={scriptPath}");
+                var scene = await ImportScriptAsync(scriptPath);
+                CurrentProject.Scenes.Add(scene ?? new VNScene
+                {
+                    Id = sceneId,
+                    Bgm = new VNBgm(),
+                    Dialogues = new List<VNDialogue>()
+                });
+                CurrentProject.Scenes[^1].Id = sceneId;
+            }
+        }
+
+        if (CurrentProject.Scenes.Count == 0)
+        {
+            CurrentProject.Scenes.Add(new VNScene
+            {
+                Id = "start",
+                Bgm = new VNBgm(),
+                Dialogues = new List<VNDialogue>()
+            });
+        }
+
+        var variablesPath = Path.Combine(projectRoot, "Settings", "Variables.json");
+        if (File.Exists(variablesPath))
+        {
+            Console.WriteLine($"[EditorService:LoadProject] 容错加载变量文件 | variablesPath={variablesPath}");
+            var varsContent = await File.ReadAllTextAsync(variablesPath);
+            CurrentProject.Variables = JsonSerializer.Deserialize<Dictionary<string, object>>(varsContent) ?? new();
+        }
+
+        CurrentProjectPath = tlorPath;
+        HasUnsavedChanges = false;
+        _undoRedoManager.ClearHistory();
+        StatusChanged?.Invoke($"已加载项目: {CurrentProject.Metadata.Title}");
+        ProjectChanged?.Invoke();
+        Console.WriteLine($"[EditorService:LoadProject] 容错加载项目成功 | title={CurrentProject.Metadata.Title}, currentProjectPath={CurrentProjectPath}, sceneCount={CurrentProject.Scenes.Count}");
+    }
+
+    private static string? ExtractTagValue(string xmlLikeContent, string tagName)
+    {
+        var match = Regex.Match(xmlLikeContent, $"<{tagName}>(.*?)</{tagName}>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        return match.Success ? match.Groups[1].Value.Trim() : null;
     }
 
     /// <summary>
@@ -1323,21 +1421,336 @@ public class EditorService
         return null;
     }
 
-    public void SaveSceneGraph(string sceneId, string jsonData)
+    public async Task SaveSceneGraphAsync(string sceneId, string jsonData)
     {
         try
         {
-            var data = JsonSerializer.Deserialize<SceneGraphData>(jsonData);
+            sceneId = NormalizeSceneId(sceneId);
+            var data = JsonSerializer.Deserialize<SceneGraphData>(jsonData, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
             if (data != null)
             {
+                data.Id = sceneId;
                 _sceneGraphs[sceneId] = data;
+                UpdateCurrentProjectSceneFromGraph(sceneId, data);
+                await PersistSceneGraphToProjectAsync(sceneId);
                 HasUnsavedChanges = true;
+                Console.WriteLine($"[EditorService:SaveSceneGraph] 场景图已保存并持久化 | sceneId={sceneId}, nodes={data.Nodes.Count}, edges={data.Edges.Count}, currentProjectPath={CurrentProjectPath ?? "<null>"}");
             }
         }
         catch (Exception ex)
         {
             ErrorOccurred?.Invoke($"保存场景图失败: {ex.Message}");
+            Console.WriteLine($"[EditorService:SaveSceneGraph] 保存失败 | sceneId={sceneId}, error={ex.Message}");
+            throw;
         }
+    }
+
+    public void SaveSceneGraph(string sceneId, string jsonData)
+    {
+        SaveSceneGraphAsync(sceneId, jsonData).GetAwaiter().GetResult();
+    }
+
+    private async Task PersistSceneGraphToProjectAsync(string sceneId)
+    {
+        if (CurrentProject == null || string.IsNullOrWhiteSpace(CurrentProjectPath))
+        {
+            Console.WriteLine($"[EditorService:SaveSceneGraph] 跳过持久化：当前没有打开的项目 | sceneId={sceneId}");
+            return;
+        }
+
+        var projectRoot = File.Exists(CurrentProjectPath)
+            ? Path.GetDirectoryName(CurrentProjectPath)
+            : CurrentProjectPath;
+
+        if (string.IsNullOrWhiteSpace(projectRoot))
+        {
+            Console.WriteLine($"[EditorService:SaveSceneGraph] 跳过持久化：无法解析项目根目录 | currentProjectPath={CurrentProjectPath}");
+            return;
+        }
+
+        var scriptPath = Path.Combine(projectRoot, "Scripts", "Main", $"{sceneId}.lor");
+        await ExportScriptAsync(sceneId, scriptPath);
+
+        var tlorPath = Path.Combine(projectRoot, "Project.tlor");
+        await SaveProjectFileAsync(tlorPath);
+    }
+
+    private void UpdateCurrentProjectSceneFromGraph(string sceneId, SceneGraphData graph)
+    {
+        if (CurrentProject == null)
+        {
+            return;
+        }
+
+        var scene = ConvertGraphToScene(sceneId, graph);
+        var index = CurrentProject.Scenes.FindIndex(s => string.Equals(s.Id, sceneId, StringComparison.OrdinalIgnoreCase));
+        if (index >= 0)
+        {
+            CurrentProject.Scenes[index] = scene;
+        }
+        else
+        {
+            CurrentProject.Scenes.Add(scene);
+        }
+    }
+
+    private VNScene ConvertGraphToScene(string sceneId, SceneGraphData graph)
+    {
+        var orderedNodes = OrderExecutableNodes(graph);
+        var scene = new VNScene
+        {
+            Id = sceneId,
+            Background = graph.SceneConfig?.Background ?? string.Empty,
+            Bgm = graph.SceneConfig?.Bgm == null
+                ? new VNBgm()
+                : new VNBgm
+                {
+                    Path = graph.SceneConfig.Bgm.Path ?? string.Empty,
+                    Volume = graph.SceneConfig.Bgm.Volume,
+                    Loop = graph.SceneConfig.Bgm.Loop
+                },
+            Dialogues = new List<VNDialogue>()
+        };
+
+        foreach (var node in orderedNodes)
+        {
+            var nodeType = node.Type ?? string.Empty;
+            if (nodeType.Equals("StartNode", StringComparison.OrdinalIgnoreCase) || nodeType.Equals("EndNode", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (nodeType.Equals("DialogueNode", StringComparison.OrdinalIgnoreCase))
+            {
+                scene.Dialogues.Add(ConvertDialogueNode(node));
+            }
+            else if (nodeType.Equals("EventNode", StringComparison.OrdinalIgnoreCase))
+            {
+                scene.Dialogues.Add(ConvertEventNode(node));
+            }
+            else if (nodeType.Equals("BranchNode", StringComparison.OrdinalIgnoreCase))
+            {
+                scene.Dialogues.Add(ConvertBranchNode(node));
+            }
+        }
+
+        return scene;
+    }
+
+    private List<NodeData> OrderExecutableNodes(SceneGraphData graph)
+    {
+        var nodesById = graph.Nodes.ToDictionary(n => n.Id, n => n);
+        var nextBySource = graph.Edges
+            .Where(e => !string.IsNullOrWhiteSpace(e.SourceNodeUuid) && !string.IsNullOrWhiteSpace(e.TargetNodeUuid) && IsExecutableEdge(e))
+            .GroupBy(e => e.SourceNodeUuid)
+            .ToDictionary(g => g.Key, g => g.OrderBy(e => e.Uuid, StringComparer.OrdinalIgnoreCase).Select(e => e.TargetNodeUuid).ToList());
+
+        var startId = graph.Nodes.FirstOrDefault(n => string.Equals(n.Type, "StartNode", StringComparison.OrdinalIgnoreCase))?.Id
+            ?? graph.Nodes.FirstOrDefault()?.Id;
+        var ordered = new List<NodeData>();
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void Visit(string? nodeId)
+        {
+            if (string.IsNullOrWhiteSpace(nodeId) || !visited.Add(nodeId) || !nodesById.TryGetValue(nodeId, out var node))
+            {
+                return;
+            }
+
+            ordered.Add(node);
+            if (nextBySource.TryGetValue(nodeId, out var nextIds))
+            {
+                foreach (var nextId in nextIds)
+                {
+                    Visit(nextId);
+                }
+            }
+        }
+
+        Visit(startId);
+        ordered.AddRange(graph.Nodes.Where(n => !visited.Contains(n.Id)).OrderBy(n => n.Position.Y).ThenBy(n => n.Position.X));
+        return ordered;
+    }
+
+    private static bool IsExecutableEdge(EdgeData edge)
+    {
+        if (edge.Type.Equals("exec", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return edge.SourcePort.StartsWith("exec", StringComparison.OrdinalIgnoreCase)
+            || edge.TargetPort.StartsWith("exec", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private VNDialogue ConvertDialogueNode(NodeData node)
+    {
+        return new VNDialogue
+        {
+            Uuid = EnsureUuid(node.Id),
+            Type = VNDialogueType.Dialogue,
+            Speaker = GetStringProperty(node, "speaker"),
+            Text = GetStringProperty(node, "text"),
+            Voice = GetStringProperty(node, "voice"),
+            Sprites = GetSpritesProperty(node, "sprites"),
+            TextEffect = GetObjectProperty<VNTextEffect>(node, "textEffect") ?? new VNTextEffect(),
+            Animation = GetObjectProperty<VNAnimation>(node, "animation") ?? new VNAnimation(),
+            Transition = new VNTransition { Effect = VNTransitionEffect.None, Duration = 300 },
+            PositionX = node.Position.X,
+            PositionY = node.Position.Y
+        };
+    }
+
+    private VNDialogue ConvertEventNode(NodeData node)
+    {
+        var subType = node.SubType;
+        if (string.IsNullOrWhiteSpace(subType))
+        {
+            subType = GetStringProperty(node, "subType");
+        }
+
+        var eventType = subType switch
+        {
+            "playBgm" => VNEventType.ChangeBgm,
+            "changeBackground" => VNEventType.ChangeBackground,
+            "showCharacter" => VNEventType.ShowCharacter,
+            "hideCharacter" => VNEventType.HideCharacter,
+            "playSfx" => VNEventType.PlaySound,
+            "customEvent" => VNEventType.SendSystemNotification,
+            _ => ParseEnum(GetStringProperty(node, "eventName"), VNEventType.Custom)
+        };
+
+        var parameters = new Dictionary<string, object>();
+        switch (eventType)
+        {
+            case VNEventType.ChangeBgm:
+                parameters["bgmFile"] = GetStringProperty(node, "bgmPath");
+                parameters["targetScene"] = GetStringProperty(node, "targetScene");
+                break;
+            case VNEventType.ChangeBackground:
+                parameters["background"] = GetStringProperty(node, "imagePath");
+                break;
+            case VNEventType.ShowCharacter:
+                parameters["character"] = GetStringProperty(node, "characterId");
+                parameters["position"] = GetStringProperty(node, "position");
+                parameters["expression"] = GetStringProperty(node, "expression");
+                break;
+            case VNEventType.PlaySound:
+                parameters["soundFile"] = GetStringProperty(node, "sfxPath");
+                break;
+            default:
+                parameters["eventName"] = GetStringProperty(node, "eventName");
+                parameters["params"] = GetRawProperty(node, "params") ?? string.Empty;
+                break;
+        }
+
+        return new VNDialogue
+        {
+            Uuid = EnsureUuid(node.Id),
+            Type = VNDialogueType.Event,
+            Sprites = new List<VNSprite>(),
+            Event = new VNEvent { EventType = eventType, Parameters = parameters },
+            Transition = new VNTransition { Effect = VNTransitionEffect.None, Duration = 300 },
+            PositionX = node.Position.X,
+            PositionY = node.Position.Y
+        };
+    }
+
+    private VNDialogue ConvertBranchNode(NodeData node)
+    {
+        return new VNDialogue
+        {
+            Uuid = EnsureUuid(node.Id),
+            Type = VNDialogueType.Branch,
+            Branch = BuildBranch(node),
+            Transition = new VNTransition { Effect = VNTransitionEffect.None, Duration = 300 },
+            PositionX = node.Position.X,
+            PositionY = node.Position.Y
+        };
+    }
+
+    private static VNBranch BuildBranch(NodeData node)
+    {
+        var branch = GetObjectProperty<VNBranch>(node, "branch")
+            ?? GetObjectProperty<VNBranch>(node, "choices")
+            ?? new VNBranch();
+
+        if (branch.Choices.Count == 0)
+        {
+            var condition = GetStringProperty(node, "condition");
+            if (!string.IsNullOrWhiteSpace(condition))
+            {
+                branch.Choices.Add(new VNChoiceOption { Text = condition });
+            }
+        }
+
+        return branch;
+    }
+
+    private static string NormalizeSceneId(string sceneId)
+    {
+        var fileName = Path.GetFileName(sceneId.Replace('\\', Path.DirectorySeparatorChar));
+        return Path.GetFileNameWithoutExtension(fileName);
+    }
+
+    private static string EnsureUuid(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? Guid.NewGuid().ToString() : value;
+    }
+
+    private static TEnum ParseEnum<TEnum>(string value, TEnum fallback) where TEnum : struct
+    {
+        return Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed) ? parsed : fallback;
+    }
+
+    private static object? GetRawProperty(NodeData node, string key)
+    {
+        return node.Properties.TryGetValue(key, out var value) ? value : null;
+    }
+
+    private static string GetStringProperty(NodeData node, string key)
+    {
+        var value = GetRawProperty(node, key);
+        return value switch
+        {
+            null => string.Empty,
+            JsonElement element when element.ValueKind == JsonValueKind.String => element.GetString() ?? string.Empty,
+            JsonElement element when element.ValueKind == JsonValueKind.Null => string.Empty,
+            JsonElement element => element.ToString(),
+            _ => value.ToString() ?? string.Empty
+        };
+    }
+
+    private static T? GetObjectProperty<T>(NodeData node, string key)
+    {
+        var value = GetRawProperty(node, key);
+        if (value == null)
+        {
+            return default;
+        }
+
+        try
+        {
+            if (value is JsonElement element)
+            {
+                return element.Deserialize<T>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+
+            var json = JsonSerializer.Serialize(value);
+            return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        catch
+        {
+            return default;
+        }
+    }
+
+    private static List<VNSprite> GetSpritesProperty(NodeData node, string key)
+    {
+        return GetObjectProperty<List<VNSprite>>(node, key) ?? new List<VNSprite>();
     }
 
     public object CreateNode(string sceneId, NodeCreateRequest request)
@@ -1477,6 +1890,7 @@ public class SceneGraphData
     public string Id { get; set; } = "";
     public ViewportData Viewport { get; set; } = new();
     public List<NodeData> Nodes { get; set; } = new();
+    [JsonPropertyName("connections")]
     public List<EdgeData> Edges { get; set; } = new();
     public SceneConfigData? SceneConfig { get; set; }
 }
@@ -1498,6 +1912,7 @@ public class NodeData
     /// <summary>
     /// 节点类型名称（如 DialogueNode, EventNode, BranchNode 等）。
     /// </summary>
+    [JsonPropertyName("nodeType")]
     public string Type { get; set; } = "";
 
     /// <summary>
@@ -1588,7 +2003,18 @@ public class EdgeData
     /// <summary>
     /// 连线类型（exec, data, resource）。
     /// </summary>
-    public string Type { get; set; } = "exec";
+    private string _type = "";
+    public string Type
+    {
+        get => string.IsNullOrWhiteSpace(_type) && IsExecPort(SourcePort, TargetPort) ? "exec" : _type;
+        set => _type = value ?? string.Empty;
+    }
+
+    private static bool IsExecPort(string sourcePort, string targetPort)
+    {
+        return sourcePort.StartsWith("exec", StringComparison.OrdinalIgnoreCase)
+            || targetPort.StartsWith("exec", StringComparison.OrdinalIgnoreCase);
+    }
 
     // 兼容旧代码的属性（不序列化，避免与 Uuid/SourceNodeUuid/TargetNodeUuid 重复）
     [JsonIgnore]
