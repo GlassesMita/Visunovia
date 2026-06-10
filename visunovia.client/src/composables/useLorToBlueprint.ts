@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import type { SerializedNode, SerializedConnection, SerializedSceneGraph } from './useNodeOperations'
+import { normalizeAssetProperties } from '@/utils/assetPaths'
 
 /**
  * Lor 剧本文件的数据结构定义
@@ -77,10 +78,12 @@ export interface LorEvent {
  */
 const EVENT_TYPE_MAP: Record<string, string> = {
   ChangeBGM: 'playBgm',
+  ChangeBgm: 'playBgm',
   StopBGM: 'stopBgm',
   PlaySFX: 'playSfx',
   PlayVoice: 'playVoice',
   ChangeBackground: 'changeBackground',
+  ChangeBG: 'changeBackground',
   ShowCharacter: 'showCharacter',
   HideCharacter: 'hideCharacter',
   CameraShake: 'cameraShake',
@@ -208,7 +211,7 @@ export function useLorToBlueprint() {
         id: uuid,
         nodeType: 'DialogueNode',
         position,
-        properties: {
+        properties: normalizeAssetProperties({
           speaker: dialogue.speaker || '',
           speaker2: asArray((dialogue as any).speakers)[1] || '',
           speaker3: asArray((dialogue as any).speakers)[2] || '',
@@ -229,7 +232,7 @@ export function useLorToBlueprint() {
           sprites,
           textEffect: dialogue.textEffect || { type: '', speed: 0, shake: false, fadeDuration: 0, delayBeforeStart: 0 },
           animation: dialogue.animation || { type: '', duration: 0 },
-        },
+        }),
         nextNodeUuids: [],
       }
     }
@@ -252,11 +255,16 @@ export function useLorToBlueprint() {
 
       const subType = EVENT_TYPE_MAP[dialogue.event.eventType] || 'customEvent'
       const properties: Record<string, any> = { subType }
+      const resourcePath = dialogue.event.parameters.resource
+        || dialogue.event.parameters.path
+        || dialogue.event.parameters.file
+        || dialogue.event.parameters.filePath
       
       // 根据事件类型映射参数
       switch (dialogue.event.eventType) {
         case 'ChangeBGM':
-          properties.bgmPath = dialogue.event.parameters.bgmFile || ''
+        case 'ChangeBgm':
+          properties.bgmPath = dialogue.event.parameters.bgmFile || dialogue.event.parameters.bgm || dialogue.event.parameters.bgmPath || dialogue.event.parameters.musicFile || resourcePath || ''
           properties.volume = 0.8
           properties.loop = true
           break
@@ -266,7 +274,8 @@ export function useLorToBlueprint() {
           properties.expression = 'default'
           break
         case 'ChangeBackground':
-          properties.imagePath = dialogue.event.parameters.background || ''
+        case 'ChangeBG':
+          properties.imagePath = dialogue.event.parameters.background || dialogue.event.parameters.bgFile || dialogue.event.parameters.bg || dialogue.event.parameters.imagePath || resourcePath || ''
           properties.transition = 'fade'
           properties.duration = 1.0
           break
@@ -274,8 +283,11 @@ export function useLorToBlueprint() {
           properties.fadeOutDuration = 0.5
           break
         case 'PlaySFX':
-          properties.sfxPath = dialogue.event.parameters.soundFile || ''
+          properties.sfxPath = dialogue.event.parameters.soundFile || dialogue.event.parameters.sfx || resourcePath || ''
           properties.volume = 1.0
+          break
+        case 'PlayVoice':
+          properties.voicePath = dialogue.event.parameters.voiceFile || dialogue.event.parameters.voice || resourcePath || ''
           break
         case 'CameraShake':
           properties.intensity = 1.0
@@ -292,7 +304,7 @@ export function useLorToBlueprint() {
         nodeType: 'EventNode',
         subType,
         position,
-        properties,
+        properties: normalizeAssetProperties(properties),
         nextNodeUuids: [],
       }
     }
@@ -348,7 +360,7 @@ export function useLorToBlueprint() {
         ...node,
         uuid: node.uuid || node.id,
         id: node.id || node.uuid,
-        properties: node.properties || {},
+        properties: normalizeAssetProperties(node.properties || {}),
         position: normalizeBlueprintPosition(node.position || { x: 0, y: 0 }),
         nextNodeUuids: node.nextNodeUuids || [],
       }))
@@ -428,11 +440,11 @@ export function useLorToBlueprint() {
         nodeType: 'EventNode',
         subType: 'playBgm',
         position: { x: 300, y: 50 },
-        properties: {
+        properties: normalizeAssetProperties({
           bgmPath: scene.bgm.path,
           volume: scene.bgm.volume / 100,
           loop: scene.bgm.loop,
-        },
+        }),
         nextNodeUuids: [],
       })
       connections.push(createConnection(previousUuid!, bgmUuid))
@@ -448,11 +460,11 @@ export function useLorToBlueprint() {
         nodeType: 'EventNode',
         subType: 'changeBackground',
         position: { x: 300, y: 200 },
-        properties: {
+        properties: normalizeAssetProperties({
           imagePath: scene.background,
           transition: 'fade',
           duration: 1.0,
-        },
+        }),
         nextNodeUuids: [],
       })
       connections.push(createConnection(previousUuid!, bgUuid))

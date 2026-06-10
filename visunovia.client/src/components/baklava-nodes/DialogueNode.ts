@@ -26,6 +26,7 @@ export default defineNode({
     characterControl3: createCharacterControlPort(`${CONTROL_SYMBOL} 3`),
     characterControl4: createCharacterControlPort(`${CONTROL_SYMBOL} 4`),
     characterControl5: createCharacterControlPort(`${CONTROL_SYMBOL} 5`),
+    characterControl6: createCharacterControlPort(`${CONTROL_SYMBOL} 6`),
     text: () => new TextInputInterface(tSync('props.text', 'Text'), ''),
   },
   outputs: {

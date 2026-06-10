@@ -13,11 +13,13 @@ export const useUIStore = defineStore('ui', () => {
   const showNewProjectModal = ref(false)
   const showProjectPreferences = ref(false)
   const showCharacterManager = ref(false)
+  const showPreviewPopup = ref(false)
   const activePanel = ref<string | null>(null)
   const theme = ref<'light' | 'dark'>('dark')
   const openingFilePath = ref<string | null>(null)
   const showWelcomeModal = ref(false)
   const projectTreeRefreshToken = ref(0)
+  const previewReloadToken = ref(0)
 
   function togglePanel(panelName: string) {
     switch (panelName) {
@@ -99,6 +101,15 @@ export const useUIStore = defineStore('ui', () => {
     showCharacterManager.value = false
   }
 
+  function openPreviewPopup() {
+    showPreviewPopup.value = true
+    previewReloadToken.value += 1
+  }
+
+  function closePreviewPopup() {
+    showPreviewPopup.value = false
+  }
+
   function openFileByPath(path: string) {
     openingFilePath.value = path
   }
@@ -145,6 +156,10 @@ export const useUIStore = defineStore('ui', () => {
     showCharacterManager,
     openCharacterManager,
     closeCharacterManager,
+    showPreviewPopup,
+    previewReloadToken,
+    openPreviewPopup,
+    closePreviewPopup,
     openingFilePath,
     openFileByPath,
     showWelcomeModal,

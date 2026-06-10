@@ -19,6 +19,15 @@ public class ResourceController : ControllerBase
         "sprites", "backgrounds", "bgm", "voice", "sfx"
     };
 
+    private static readonly Dictionary<string, string[]> AssetFolderFallbacks = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Backgrounds"] = new[] { "Background", "BG", "Bgs" },
+        ["Musics"] = new[] { "Music", "BGM", "Bgms" },
+        ["Characters"] = new[] { "Character", "Sprites", "Sprite" },
+        ["Sfx"] = new[] { "SFX", "SFXs", "Sounds", "Sound" },
+        ["Voices"] = new[] { "Voice" },
+    };
+
     public ResourceController(EditorSessionService sessionService)
     {
         _sessionService = sessionService;
@@ -96,6 +105,9 @@ public class ResourceController : ControllerBase
                 return Forbid("不允许访问项目目录之外的文件");
 
             if (!System.IO.File.Exists(fullPath))
+                fullPath = TryResolveAssetFolderFallback(projectRoot, path) ?? fullPath;
+
+            if (!System.IO.File.Exists(fullPath))
                 return NotFound(new { error = "文件不存在" });
 
             if (!_contentTypeProvider.TryGetContentType(fullPath, out var contentType))
@@ -107,5 +119,30 @@ public class ResourceController : ControllerBase
         {
             return BadRequest(new { error = $"获取资源文件失败: {ex.Message}" });
         }
+    }
+
+    private static string? TryResolveAssetFolderFallback(string projectRoot, string path)
+    {
+        var parts = path.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 3 || !string.Equals(parts[0], "Assets", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        if (!AssetFolderFallbacks.TryGetValue(parts[1], out var fallbackFolders))
+            return null;
+
+        foreach (var fallbackFolder in fallbackFolders)
+        {
+            var candidateParts = parts.ToArray();
+            candidateParts[1] = fallbackFolder;
+            var candidatePath = Path.GetFullPath(Path.Combine(projectRoot, Path.Combine(candidateParts)));
+
+            if (!candidatePath.StartsWith(Path.GetFullPath(projectRoot), StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (System.IO.File.Exists(candidatePath))
+                return candidatePath;
+        }
+
+        return null;
     }
 }

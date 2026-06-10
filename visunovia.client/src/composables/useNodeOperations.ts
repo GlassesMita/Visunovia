@@ -3,6 +3,7 @@ import { useEditorStore } from '@/stores/useEditorStore'
 import { useCharacterStore } from '@/stores/useCharacterStore'
 import { sceneGraphApi } from '@/api'
 import type { Editor } from '@baklavajs/core'
+import { normalizeAssetProperties } from '@/utils/assetPaths'
 
 export interface SerializedNode {
   /** 节点唯一标识符（UUID） */
@@ -143,12 +144,16 @@ function buildCharacterControlsForDialogue(editor: Editor, dialogueNode: any) {
     })
     .filter(Boolean)
     .map((item) => {
+      const connectedSlot = item!.targetPort.replace('characterControl', '')
+      const slot = connectedSlot || String(getInterfaceValue(item!.controlNode, 'slot') ?? '').trim() || '1'
       return {
-        slot: String(getInterfaceValue(item!.controlNode, 'slot') ?? '').trim() || item!.targetPort.replace('characterControl', '') || '1',
-        character: String(getInterfaceValue(item!.controlNode, 'character') ?? '').trim(),
+        slot,
+        character: slot === '6'
+          ? String(getInterfaceValue(item!.controlNode, 'unmanagedCharacter') || getInterfaceValue(item!.controlNode, 'character') || '').trim()
+          : String(getInterfaceValue(item!.controlNode, 'character') ?? '').trim(),
         action: String(getInterfaceValue(item!.controlNode, 'action') ?? 'show').trim() || 'show',
-        sprite: String(getInterfaceValue(item!.controlNode, 'sprite') ?? '').trim(),
-        sfx: String(getInterfaceValue(item!.controlNode, 'sfx') ?? '').trim(),
+          sprite: slot === '6' ? '' : String(normalizeAssetProperties({ sprite: getInterfaceValue(item!.controlNode, 'sprite') }).sprite ?? '').trim(),
+          sfx: String(normalizeAssetProperties({ sfx: getInterfaceValue(item!.controlNode, 'sfx') }).sfx ?? '').trim(),
         expression: String(getInterfaceValue(item!.controlNode, 'expression') ?? '').trim(),
         position: String(getInterfaceValue(item!.controlNode, 'position') ?? 'center').trim() || 'center',
         animation: String(getInterfaceValue(item!.controlNode, 'animation') ?? 'fade').trim() || 'fade',
@@ -266,7 +271,7 @@ function blueprintToEditorPosition(position: { x: number; y: number } | undefine
 function serializeEditorGraph(editor: Editor): SerializedSceneGraph {
   const nodes: SerializedNode[] = editor.graph.nodes.map((node) => {
     const nodeType = normalizeNodeType(extractNodeType(node))
-    const properties = extractNodeProperties(node)
+    const properties = normalizeAssetProperties(extractNodeProperties(node))
     if (nodeType === 'DialogueNode') {
       const characterControls = buildCharacterControlsForDialogue(editor, node)
       if (characterControls.length > 0) {

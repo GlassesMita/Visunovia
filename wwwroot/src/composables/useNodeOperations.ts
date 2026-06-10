@@ -216,11 +216,15 @@ function serializeEditorGraph(editor: Editor): SerializedSceneGraph {
       id,
       sourceNodeUuid: source.nodeId,
       source: source.nodeId,
+        const connectedSlot = item!.targetPort.replace('characterControl', '')
+        const slot = connectedSlot || String(getInterfaceValue(item!.controlNode, 'slot') ?? '').trim() || '1'
       sourcePort: source.portKey,
-      targetNodeUuid: target.nodeId,
-      target: target.nodeId,
+          slot,
+          character: slot === '6'
+            ? String(getInterfaceValue(item!.controlNode, 'unmanagedCharacter') || getInterfaceValue(item!.controlNode, 'character') || '').trim()
+            : String(getInterfaceValue(item!.controlNode, 'character') ?? '').trim(),
       targetPort: target.portKey
-    }
+          sprite: slot === '6' ? '' : String(getInterfaceValue(item!.controlNode, 'sprite') ?? '').trim(),
   })
   
   return {

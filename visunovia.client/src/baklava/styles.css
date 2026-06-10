@@ -81,6 +81,116 @@
   stroke: var(--connection-character-control) !important;
 }
 
+.vn-sprite-select {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.vn-sprite-select-control,
+.vn-sprite-slot6-name {
+  width: 100%;
+  min-height: 26px;
+  border: 1px solid #3f3f46;
+  border-radius: 4px;
+  background: #1f1f2b;
+  color: #e5e7eb;
+  font-size: 12px;
+  padding: 3px 6px;
+}
+
+.vn-sprite-select-preview {
+  width: 100%;
+  max-height: 92px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: #111827;
+}
+
+.vn-sprite-select-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  max-height: 132px;
+  overflow-y: auto;
+}
+
+.vn-sprite-select-option {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: #27272a;
+  color: #d4d4d8;
+  cursor: pointer;
+  padding: 3px;
+}
+
+.vn-sprite-select-option:hover,
+.vn-sprite-select-option.selected {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.18);
+}
+
+.vn-sprite-select-option img {
+  width: 100%;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 3px;
+  background: #111827;
+}
+
+.vn-sprite-select-option span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+.vn-sprite-slot6 {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #c4b5fd;
+  font-size: 11px;
+}
+
+.vn-sprite-select-error {
+  color: #fca5a5;
+  font-size: 11px;
+}
+
+.vn-asset-select {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.vn-asset-select-control {
+  width: 100%;
+  min-height: 26px;
+  border: 1px solid #3f3f46;
+  border-radius: 4px;
+  background: #1f1f2b;
+  color: #e5e7eb;
+  font-size: 12px;
+  padding: 3px 6px;
+}
+
+.vn-asset-select-preview {
+  width: 100%;
+  max-height: 92px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: #111827;
+}
+
+.vn-asset-select-error {
+  color: #fca5a5;
+  font-size: 11px;
+}
+
 /* ===== 资源类型连线颜色 (ResourceNode 动态) ===== */
 /* 注意：使用 .baklava-connection 选择器（与基础类型保持一致） */
 .baklava-connection[data-resource-type="image"] { stroke: #AD1457 !important; }

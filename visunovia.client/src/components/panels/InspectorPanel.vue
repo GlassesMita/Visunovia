@@ -292,6 +292,7 @@ const dynamicProperties = computed((): PropertyConfig[] => {
     ],
     CharacterControlNode: [
       { name: 'character', type: 'character', defaultValue: '', label: 'CharacterID' },
+      { name: 'unmanagedCharacter', type: 'string', defaultValue: '', label: 'Slot 6 角色名' },
       {
         name: 'slot',
         type: 'select',
@@ -303,6 +304,7 @@ const dynamicProperties = computed((): PropertyConfig[] => {
           { value: '3', label: '角色 3' },
           { value: '4', label: '角色 4' },
           { value: '5', label: '角色 5' },
+          { value: '6', label: '角色 6（无立绘）' },
         ],
       },
       {
@@ -521,6 +523,7 @@ async function loadCharacterSpriteFiles() {
     const imageExts = RESOURCE_TYPE_EXTENSIONS.image
     currentResourceFiles.value = toResourcePickerFiles(result.entries)
       .filter(file => imageExts.includes(file.name.slice(file.name.lastIndexOf('.')).toLowerCase()))
+      .filter(file => !/[\\/]Avatars[\\/]/i.test(file.path || ''))
   } catch (error) {
     console.warn('[InspectorPanel] Failed to load character sprite folder:', error)
     currentResourceFiles.value = []

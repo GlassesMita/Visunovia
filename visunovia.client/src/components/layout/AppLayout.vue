@@ -57,6 +57,13 @@
     <!-- 角色管理器 -->
     <CharacterManagerModal />
 
+    <!-- 项目预览 -->
+    <PreviewPopup
+      :visible="uiStore.showPreviewPopup"
+      :reload-token="uiStore.previewReloadToken"
+      @close="uiStore.closePreviewPopup()"
+    />
+
     <!-- Project 面板 — 右侧弹出模态框 -->
     <Transition name="slide-fade">
       <div
@@ -100,6 +107,7 @@ import FileExplorer from '@/components/FileExplorer.vue'
 import NewProjectModal from '@/components/NewProjectModal.vue'
 import ProjectPreferencesModal from '@/components/ProjectPreferencesModal.vue'
 import CharacterManagerModal from '@/components/CharacterManagerModal.vue'
+import PreviewPopup from '@/components/PreviewPopup.vue'
 import WelcomeModal from '@/components/WelcomeModal.vue'
 import { getCurrentProject } from '@/api/projectApi'
 

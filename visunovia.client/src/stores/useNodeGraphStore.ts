@@ -3,12 +3,55 @@ import { ref, computed } from 'vue'
 import { Editor } from '@baklavajs/core'
 import { sceneGraphApi } from '@/api'
 import { useUndoRedoStore } from './useUndoRedoStore'
+import { normalizeAssetProperties } from '@/utils/assetPaths'
 
 function findInterfaceKey(interfaces: Record<string, any> | undefined, iface: any, fallback: string): string {
   if (!interfaces || !iface) return fallback
 
   const entry = Object.entries(interfaces).find(([, candidate]) => candidate === iface)
-  return entry?.[0] || fallback
+  return entry?.[0] || normalizePortName(fallback, interfaces)
+}
+
+function normalizePortName(portName: string | undefined, interfaces?: Record<string, any>): string {
+  const name = String(portName || '').trim()
+  if (!name) return ''
+  if (interfaces?.[name]) return name
+  if (name === '→') {
+    if (interfaces?.execOut) return 'execOut'
+    if (interfaces?.execIn) return 'execIn'
+  }
+  if (name === 'exec_out') return interfaces?.execOut ? 'execOut' : 'execOut'
+  if (name === 'exec_in') return interfaces?.execIn ? 'execIn' : 'execIn'
+
+  const characterControlMatch = name.match(/(?:◆|characterControl)\s*(\d+)/i)
+  if (characterControlMatch) {
+    const key = `characterControl${characterControlMatch[1]}`
+    if (!interfaces || interfaces[key]) return key
+  }
+
+  return name
+}
+
+function resolveConnectionEndpoint(editorInstance: Editor, endpoint: any, direction: 'input' | 'output') {
+  const collectionKey = direction === 'input' ? 'inputs' : 'outputs'
+  const nodeByEndpointId = editorInstance.graph.nodes.find((node) => node.id === endpoint?.nodeId) as any
+  if (nodeByEndpointId) {
+    const portKey = findInterfaceKey(nodeByEndpointId[collectionKey], endpoint, endpoint?.name || endpoint?.port)
+    return { nodeId: nodeByEndpointId.id, portKey }
+  }
+
+  for (const node of editorInstance.graph.nodes as any[]) {
+    const interfaces = node?.[collectionKey]
+    const match = Object.entries(interfaces || {}).find(([, candidate]) => candidate === endpoint)
+    if (match) {
+      return { nodeId: node.id, portKey: match[0] }
+    }
+  }
+
+  return {
+    nodeId: String(endpoint?.nodeId || ''),
+    portKey: normalizePortName(endpoint?.name || endpoint?.port),
+  }
 }
 
 function extractNodeType(node: any): string {
@@ -150,7 +193,7 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
           nodeType: node.type,
           subType: extractSubTypeFromNode(editor.value as Editor, node.id),
           position: node.position,
-          properties: extractPropertiesFromNode(editor.value as Editor, node.id)
+                properties: normalizeAssetProperties(extractPropertiesFromNode(editor.value as Editor, node.id))
         })),
         connections: graphData.connections.map(connection => ({
           uuid: connection.id,
@@ -221,12 +264,16 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
       })
       .filter(Boolean)
       .map((item) => {
+        const connectedSlot = item!.targetPort.replace('characterControl', '')
+        const slot = connectedSlot || String(getInterfaceValue(item!.controlNode, 'slot') ?? '').trim() || '1'
         return {
-          slot: String(getInterfaceValue(item!.controlNode, 'slot') ?? '').trim() || item!.targetPort.replace('characterControl', '') || '1',
-          character: String(getInterfaceValue(item!.controlNode, 'character') ?? '').trim(),
+          slot,
+          character: slot === '6'
+            ? String(getInterfaceValue(item!.controlNode, 'unmanagedCharacter') || getInterfaceValue(item!.controlNode, 'character') || '').trim()
+            : String(getInterfaceValue(item!.controlNode, 'character') ?? '').trim(),
           action: String(getInterfaceValue(item!.controlNode, 'action') ?? 'show').trim() || 'show',
-          sprite: String(getInterfaceValue(item!.controlNode, 'sprite') ?? '').trim(),
-          sfx: String(getInterfaceValue(item!.controlNode, 'sfx') ?? '').trim(),
+          sprite: slot === '6' ? '' : String(normalizeAssetProperties({ sprite: getInterfaceValue(item!.controlNode, 'sprite') }).sprite ?? '').trim(),
+          sfx: String(normalizeAssetProperties({ sfx: getInterfaceValue(item!.controlNode, 'sfx') }).sfx ?? '').trim(),
           expression: String(getInterfaceValue(item!.controlNode, 'expression') ?? '').trim(),
           position: String(getInterfaceValue(item!.controlNode, 'position') ?? 'center').trim() || 'center',
           animation: String(getInterfaceValue(item!.controlNode, 'animation') ?? 'fade').trim() || 'fade',
@@ -244,7 +291,7 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
       id: node.id,
       type: node.type,
       position: { x: node.position.x, y: node.position.y },
-      data: extractPropertiesFromNode(editor.value as Editor, node.id)
+      data: normalizeAssetProperties(extractPropertiesFromNode(editor.value as Editor, node.id))
     }))
   }
 
@@ -252,20 +299,18 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
     if (!editor.value) return
 
     connections.value = editor.value.graph.connections.map(conn => {
-      const sourceNode = editor.value!.graph.nodes.find(node => node.id === conn.from.nodeId) as any
-      const targetNode = editor.value!.graph.nodes.find(node => node.id === conn.to.nodeId) as any
-      const sourcePort = findInterfaceKey(sourceNode?.outputs, conn.from, conn.from.name)
-      const targetPort = findInterfaceKey(targetNode?.inputs, conn.to, conn.to.name)
+      const source = resolveConnectionEndpoint(editor.value as Editor, conn.from, 'output')
+      const target = resolveConnectionEndpoint(editor.value as Editor, conn.to, 'input')
 
       return {
-        id: `${conn.from.nodeId}:${sourcePort}->${conn.to.nodeId}:${targetPort}`,
+        id: `${source.nodeId}:${source.portKey}->${target.nodeId}:${target.portKey}`,
         from: {
-          nodeId: conn.from.nodeId,
-          port: sourcePort
+          nodeId: source.nodeId,
+          port: source.portKey
         },
         to: {
-          nodeId: conn.to.nodeId,
-          port: targetPort
+          nodeId: target.nodeId,
+          port: target.portKey
         }
       }
     })

@@ -36,6 +36,13 @@
       >
         <Save :size="18" />
       </button>
+      <button
+        class="toolbar-button"
+        title="预览项目"
+        @click="uiStore.openPreviewPopup()"
+      >
+        <Play :size="18" />
+      </button>
     </div>
 
     <div class="toolbar-divider"></div>
@@ -66,7 +73,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { FilePlus, FolderOpen, RefreshCw, Save, Undo2, Redo2, Users } from 'lucide-vue-next'
+import { FilePlus, FolderOpen, RefreshCw, Save, Undo2, Redo2, Users, Play } from 'lucide-vue-next'
 import { useLocalization } from '@/composables/useLocalization'
 import { useUIStore } from '@/stores/useUIStore'
 import { useEditorStore } from '@/stores/useEditorStore'

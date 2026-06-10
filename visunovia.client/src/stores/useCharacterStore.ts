@@ -177,7 +177,7 @@ export const useCharacterStore = defineStore('characters', () => {
     const character = characters.value.find(item => item.id === id)
     if (!character) return
 
-    character.name = character.id
+    character.name = String(updates.name ?? character.name).trim() || character.id
     character.displayId = String(updates.displayId ?? character.displayId).trim() || character.id
     character.color = updates.color || character.color
     character.avatar = updates.avatar ?? character.avatar

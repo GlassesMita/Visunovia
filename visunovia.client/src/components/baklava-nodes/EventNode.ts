@@ -7,6 +7,7 @@ import {
 } from '@baklavajs/renderer-vue'
 import { EventType, eventTypeConfig, eventTypeLabels } from '@/types'
 import { tSync } from '@/services/translationService'
+import { AssetSelectInterface, type AssetSelectKind } from '@/components/baklava-interfaces/AssetSelectInterface'
 import {
   ARROW_SYMBOL,
   createExecInPort,
@@ -15,6 +16,13 @@ import {
 } from './BaseNode'
 
 export const NODE_COLOR = '#FF9800'
+
+function getAssetKind(subType: EventType, propName: string): AssetSelectKind {
+  if (subType === EventType.ChangeBackground || propName === 'imagePath') return 'background'
+  if (subType === EventType.PlayBGM || propName === 'bgmPath') return 'bgm'
+  if (subType === EventType.PlayVoice || propName === 'voicePath') return 'voice'
+  return 'sfx'
+}
 
 export default defineDynamicNode({
   type: 'EventNode',
@@ -47,9 +55,12 @@ export default defineDynamicNode({
 
       switch (prop.type) {
         case 'string':
-        case 'resource':
           inputs[prop.name] = () =>
             new TextInputInterface(label, prop.defaultValue || '')
+          break
+        case 'resource':
+          inputs[prop.name] = () =>
+            new AssetSelectInterface(label, prop.defaultValue || '', getAssetKind(subType as EventType, prop.name))
           break
         case 'number':
           inputs[prop.name] = () =>

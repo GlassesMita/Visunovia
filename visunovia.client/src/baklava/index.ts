@@ -2,7 +2,6 @@ import { Editor } from '@baklavajs/core'
 import { DependencyEngine } from '@baklavajs/engine'
 import { BaklavaInterfaceTypes, NodeInterfaceType } from '@baklavajs/interface-types'
 import type { IConnection } from '@baklavajs/core'
-import type { IAddConnectionEventData } from '@baklavajs/core'
 
 export function createBaklavaEditor(): Editor {
   const editor = new Editor()
@@ -26,28 +25,43 @@ function setupEventListeners(editor: Editor): void {
 
   const eventToken = {}
 
+  function getNodeType(node: any) {
+    return String(node?.type || node?.constructor?.type || node?.constructor?.name || '')
+  }
+
+  function findInterfaceKey(interfaces: Record<string, any> | undefined, iface: any, fallback?: string) {
+    if (!interfaces || !iface) return fallback || ''
+    const entry = Object.entries(interfaces).find(([, candidate]) => candidate === iface)
+    return entry?.[0] || fallback || ''
+  }
+
+  function setInterfaceValue(iface: any, value: string) {
+    if (!iface) return
+    if (typeof iface.setValue === 'function') {
+      iface.setValue(value)
+    } else {
+      iface.value = value
+    }
+  }
+
+  function syncCharacterControlSlot(connection: IConnection) {
+    const sourceNode = graph.nodes.find(node => node.id === connection.from.nodeId) as any
+    const targetNode = graph.nodes.find(node => node.id === connection.to.nodeId) as any
+    if (getNodeType(sourceNode) !== 'CharacterControlNode' || getNodeType(targetNode) !== 'DialogueNode') return
+
+    const targetPort = findInterfaceKey(targetNode.inputs, connection.to, connection.to.name)
+    const slotMatch = String(targetPort || '').match(/^characterControl(\d+)$/)
+    if (!slotMatch) return
+
+    const slot = slotMatch[1]
+    setInterfaceValue(sourceNode.inputs?.slot, slot)
+    if (slot === '6') {
+      setInterfaceValue(sourceNode.inputs?.sprite, '')
+    }
+  }
+
   graph.events.addConnection.subscribe(eventToken, (connection: IConnection) => {
-    console.log('[BaklavaEvents] 连接已建立:', {
-      id: connection.id,
-      from: `${connection.from.nodeId}:${connection.from.id}`,
-      to: `${connection.to.nodeId}:${connection.to.id}`,
-    })
+    syncCharacterControlSlot(connection)
   })
 
-  graph.events.removeConnection.subscribe(eventToken, (connection: IConnection) => {
-    console.log('[BaklavaEvents] 连接已断开:', {
-      id: connection.id,
-      from: `${connection.from.nodeId}:${connection.from.id}`,
-      to: `${connection.to.nodeId}:${connection.to.id}`,
-    })
-  })
-
-  graph.events.beforeAddConnection.subscribe(eventToken, (data: IAddConnectionEventData) => {
-    console.log('[BaklavaEvents] 即将建立连接:', {
-      from: `${data.from.nodeId}:${data.from.id}`,
-      to: `${data.to.nodeId}:${data.to.id}`,
-    })
-  })
-
-  console.log('[BaklavaEvents] 事件监听器已初始化')
 }
