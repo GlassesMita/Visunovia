@@ -54,6 +54,9 @@
     <!-- 项目首选项模态框 -->
     <ProjectPreferencesModal />
 
+    <!-- 角色管理器 -->
+    <CharacterManagerModal />
+
     <!-- Project 面板 — 右侧弹出模态框 -->
     <Transition name="slide-fade">
       <div
@@ -96,6 +99,7 @@ import BaklavaEditor from '@/components/BaklavaEditor.vue'
 import FileExplorer from '@/components/FileExplorer.vue'
 import NewProjectModal from '@/components/NewProjectModal.vue'
 import ProjectPreferencesModal from '@/components/ProjectPreferencesModal.vue'
+import CharacterManagerModal from '@/components/CharacterManagerModal.vue'
 import WelcomeModal from '@/components/WelcomeModal.vue'
 import { getCurrentProject } from '@/api/projectApi'
 

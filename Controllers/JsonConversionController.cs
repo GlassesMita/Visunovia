@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 using Visunovia.Models.Engine;
 using Visunovia.Services;
 using Visunovia.Services.Configuration;
@@ -6,32 +7,32 @@ using Visunovia.Services.Configuration;
 namespace Visunovia.Controllers;
 
 /// <summary>
-/// YAML ↔ Blueprint 双向转换 API 控制器。
-/// 提供蓝图导出为 YAML、YAML 导入为蓝图、UUID 注册表查询等功能。
+/// JSON ↔ Blueprint 双向转换 API 控制器。
+/// 提供蓝图导出为 JSON、JSON 导入为蓝图、UUID 注册表查询等功能。
 /// </summary>
 [ApiController]
-[Route("api/yaml")]
-public class YamlConversionController : ControllerBase
+[Route("api/json")]
+public class JsonConversionController : ControllerBase
 {
     private readonly EditorSessionService _sessionService;
-    private readonly ILogger<YamlConversionController> _logger;
+    private readonly ILogger<JsonConversionController> _logger;
 
-    public YamlConversionController(
+    public JsonConversionController(
         EditorSessionService sessionService,
-        ILogger<YamlConversionController> logger)
+        ILogger<JsonConversionController> logger)
     {
         _sessionService = sessionService;
         _logger = logger;
     }
 
-    // ==================== 导出：Blueprint → YAML ====================
+    // ==================== 导出：Blueprint → JSON ====================
 
     /// <summary>
-    /// 将指定场景的蓝图导出为 YAML 格式。
-    /// 为所有节点、连线分配 UUID，写入数据库，并返回 YAML 内容。
+    /// 将指定场景的蓝图导出为 JSON 格式。
+    /// 为所有节点、连线分配 UUID，写入数据库，并返回 JSON 内容。
     /// </summary>
     [HttpGet("export/{sceneId}")]
-    public async Task<IActionResult> ExportYaml(
+    public async Task<IActionResult> ExportJson(
         string sceneId,
         [FromQuery] string displayName = "",
         [FromQuery] string description = "",
@@ -49,12 +50,12 @@ public class YamlConversionController : ControllerBase
 
             using var db = new UuidRegistryDbContext(projectPath);
             var uuidService = new UuidRegistryService(db);
-            var converter = new BlueprintYamlConverter(editor);
+            var converter = new BlueprintJsonConverter(editor);
 
-            var yamlContent = await converter.ExportYamlAsync(
+            var jsonContent = await converter.ExportJsonAsync(
                 sceneId, uuidService, displayName, description, author);
 
-            _logger.LogInformation("场景 {SceneId} 已导出为 YAML", sceneId);
+            _logger.LogInformation("场景 {SceneId} 已导出为 JSON", sceneId);
 
             return Ok(new
             {
@@ -62,23 +63,23 @@ public class YamlConversionController : ControllerBase
                 data = new
                 {
                     sceneId,
-                    yamlContent,
+                    jsonContent,
                     exportedAt = DateTime.UtcNow.ToString("O")
                 }
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "导出 YAML 失败: {SceneId}", sceneId);
+            _logger.LogError(ex, "导出 JSON 失败: {SceneId}", sceneId);
             return BadRequest(new { success = false, error = ex.Message });
         }
     }
 
     /// <summary>
-    /// 将指定场景的蓝图导出为 YAML 文件并下载。
+    /// 将指定场景的蓝图导出为 JSON 文件并下载。
     /// </summary>
     [HttpGet("download/{sceneId}")]
-    public async Task<IActionResult> DownloadYaml(
+    public async Task<IActionResult> DownloadJson(
         string sceneId,
         [FromQuery] string displayName = "",
         [FromQuery] string description = "",
@@ -96,34 +97,34 @@ public class YamlConversionController : ControllerBase
 
             using var db = new UuidRegistryDbContext(projectPath);
             var uuidService = new UuidRegistryService(db);
-            var converter = new BlueprintYamlConverter(editor);
+            var converter = new BlueprintJsonConverter(editor);
 
-            var yamlContent = await converter.ExportYamlAsync(
+            var jsonContent = await converter.ExportJsonAsync(
                 sceneId, uuidService, displayName, description, author);
 
-            var fileName = $"{sceneId}.yaml";
+            var fileName = $"{sceneId}.lor";
             return File(
-                System.Text.Encoding.UTF8.GetBytes(yamlContent),
-                "application/x-yaml",
+                System.Text.Encoding.UTF8.GetBytes(jsonContent),
+                "application/json",
                 fileName);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "下载 YAML 失败: {SceneId}", sceneId);
+            _logger.LogError(ex, "下载 JSON 失败: {SceneId}", sceneId);
             return BadRequest(new { success = false, error = ex.Message });
         }
     }
 
-    // ==================== 导入：YAML → Blueprint ====================
+    // ==================== 导入：JSON → Blueprint ====================
 
     /// <summary>
-    /// 从 YAML 内容导入蓝图到指定场景。
+    /// 从 JSON 内容导入蓝图到指定场景。
     /// 解析 UUID 注册表，重建节点和连线关系。
     /// </summary>
     [HttpPost("import/{sceneId}")]
-    public async Task<IActionResult> ImportYaml(
+    public async Task<IActionResult> ImportJson(
         string sceneId,
-        [FromBody] YamlImportRequest request)
+        [FromBody] JsonImportRequest request)
     {
         try
         {
@@ -137,17 +138,16 @@ public class YamlConversionController : ControllerBase
 
             using var db = new UuidRegistryDbContext(projectPath);
             var uuidService = new UuidRegistryService(db);
-            var converter = new BlueprintYamlConverter(editor);
+            var converter = new BlueprintJsonConverter(editor);
 
-            // 如果指定了清除现有数据
             if (request.ClearExisting)
             {
                 uuidService.ClearSceneData(sceneId);
             }
 
-            var sceneGraph = await converter.ImportYamlAsync(request.YamlContent, uuidService, sceneId);
+            var sceneGraph = await converter.ImportJsonAsync(request.JsonContent, uuidService, sceneId);
 
-            _logger.LogInformation("场景 {SceneId} 已从 YAML 导入，节点数: {NodeCount}, 连线数: {EdgeCount}",
+            _logger.LogInformation("场景 {SceneId} 已从 JSON 导入，节点数: {NodeCount}, 连线数: {EdgeCount}",
                 sceneId, sceneGraph.Nodes?.Count ?? 0, sceneGraph.Edges?.Count ?? 0);
 
             return Ok(new
@@ -164,16 +164,16 @@ public class YamlConversionController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "导入 YAML 失败: {SceneId}", sceneId);
+            _logger.LogError(ex, "导入 JSON 失败: {SceneId}", sceneId);
             return BadRequest(new { success = false, error = ex.Message });
         }
     }
 
     /// <summary>
-    /// 上传 YAML 文件并导入为蓝图。
+    /// 上传 JSON 文件并导入为蓝图。
     /// </summary>
     [HttpPost("upload/{sceneId}")]
-    public async Task<IActionResult> UploadYaml(string sceneId, IFormFile file)
+    public async Task<IActionResult> UploadJson(string sceneId, IFormFile file)
     {
         try
         {
@@ -183,7 +183,7 @@ public class YamlConversionController : ControllerBase
             }
 
             using var reader = new StreamReader(file.OpenReadStream());
-            var yamlContent = await reader.ReadToEndAsync();
+            var jsonContent = await reader.ReadToEndAsync();
 
             var editor = _sessionService.GetEditor();
             var projectPath = editor.CurrentProjectPath;
@@ -195,9 +195,9 @@ public class YamlConversionController : ControllerBase
 
             using var db = new UuidRegistryDbContext(projectPath);
             var uuidService = new UuidRegistryService(db);
-            var converter = new BlueprintYamlConverter(editor);
+            var converter = new BlueprintJsonConverter(editor);
 
-            var sceneGraph = await converter.ImportYamlAsync(yamlContent, uuidService, sceneId);
+            var sceneGraph = await converter.ImportJsonAsync(jsonContent, uuidService, sceneId);
 
             _logger.LogInformation("场景 {SceneId} 已从文件 {FileName} 导入", sceneId, file.FileName);
 
@@ -216,7 +216,7 @@ public class YamlConversionController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "上传 YAML 失败: {SceneId}", sceneId);
+            _logger.LogError(ex, "上传 JSON 失败: {SceneId}", sceneId);
             return BadRequest(new { success = false, error = ex.Message });
         }
     }
@@ -363,13 +363,13 @@ public class YamlConversionController : ControllerBase
         }
     }
 
-    // ==================== YAML 快照 ====================
+    // ==================== JSON 快照 ====================
 
     /// <summary>
-    /// 获取场景的最新 YAML 快照。
+    /// 获取场景的最新 JSON 快照。
     /// </summary>
     [HttpGet("snapshot/{sceneId}")]
-    public IActionResult GetYamlSnapshot(string sceneId)
+    public IActionResult GetJsonSnapshot(string sceneId)
     {
         try
         {
@@ -384,10 +384,10 @@ public class YamlConversionController : ControllerBase
             using var db = new UuidRegistryDbContext(projectPath);
             var uuidService = new UuidRegistryService(db);
 
-            var snapshot = uuidService.GetLatestYamlSnapshot(sceneId);
+            var snapshot = uuidService.GetLatestJsonSnapshot(sceneId);
             if (snapshot == null)
             {
-                return NotFound(new { success = false, error = $"场景 {sceneId} 没有 YAML 快照" });
+                return NotFound(new { success = false, error = $"场景 {sceneId} 没有 JSON 快照" });
             }
 
             return Ok(new
@@ -396,13 +396,13 @@ public class YamlConversionController : ControllerBase
                 data = new
                 {
                     sceneId,
-                    yamlContent = snapshot
+                    jsonContent = snapshot
                 }
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "获取 YAML 快照失败: {SceneId}", sceneId);
+            _logger.LogError(ex, "获取 JSON 快照失败: {SceneId}", sceneId);
             return BadRequest(new { success = false, error = ex.Message });
         }
     }
@@ -410,15 +410,14 @@ public class YamlConversionController : ControllerBase
     // ==================== 验证 ====================
 
     /// <summary>
-    /// 验证 YAML 格式是否有效，不实际导入。
+    /// 验证 JSON 格式是否有效，不实际导入。
     /// </summary>
     [HttpPost("validate")]
-    public async Task<IActionResult> ValidateYaml([FromBody] YamlImportRequest request)
+    public IActionResult ValidateJson([FromBody] JsonImportRequest request)
     {
         try
         {
-            var deserializer = YamlSerializerFactory.CreateDeserializer();
-            var document = deserializer.Deserialize<YamlSceneDocument>(request.YamlContent);
+            var document = DeserializeLorSceneDocument(request.JsonContent);
 
             if (document == null)
             {
@@ -426,33 +425,29 @@ public class YamlConversionController : ControllerBase
                 {
                     success = false,
                     valid = false,
-                    errors = new[] { "YAML 解析失败：文档为空" }
+                    errors = new[] { "Lor JSON 解析失败：文档为空" }
                 });
             }
 
             var errors = new List<string>();
             var warnings = new List<string>();
 
-            // 验证版本
             if (string.IsNullOrEmpty(document.Version))
             {
                 warnings.Add("缺少版本信息");
             }
 
-            // 验证元数据
             if (document.Metadata == null || string.IsNullOrEmpty(document.Metadata.SceneId))
             {
                 errors.Add("缺少场景 ID (metadata.scene_id)");
             }
 
-            // 验证 UUID 注册表
             if (document.UuidRegistry == null || document.UuidRegistry.Count == 0)
             {
                 warnings.Add("UUID 注册表为空");
             }
             else
             {
-                // 检查 UUID 唯一性
                 var duplicateUuids = document.UuidRegistry
                     .GroupBy(e => e.Uuid)
                     .Where(g => g.Count() > 1)
@@ -465,11 +460,10 @@ public class YamlConversionController : ControllerBase
                 }
             }
 
-            // 验证节点引用
             if (document.Nodes != null)
             {
                 var nodeUuids = document.Nodes.Select(n => n.Uuid).ToHashSet();
-                foreach (var edge in document.Edges ?? new List<YamlEdgeEntry>())
+                foreach (var edge in document.Edges ?? new List<JsonEdgeEntry>())
                 {
                     if (!nodeUuids.Contains(edge.SourceNodeUuid))
                     {
@@ -503,17 +497,26 @@ public class YamlConversionController : ControllerBase
             {
                 success = false,
                 valid = false,
-                errors = new[] { $"YAML 格式错误: {ex.Message}" }
+                errors = new[] { $"Lor JSON 格式错误: {ex.Message}" }
             });
         }
+    }
+
+    private static JsonSceneDocument? DeserializeLorSceneDocument(string content)
+    {
+        return JsonSerializer.Deserialize<JsonSceneDocument>(content, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            PropertyNameCaseInsensitive = true
+        });
     }
 }
 
 /// <summary>
-/// YAML 导入请求
+/// JSON 导入请求。
 /// </summary>
-public class YamlImportRequest
+public class JsonImportRequest
 {
-    public string YamlContent { get; set; } = "";
+    public string JsonContent { get; set; } = "";
     public bool ClearExisting { get; set; } = true;
 }

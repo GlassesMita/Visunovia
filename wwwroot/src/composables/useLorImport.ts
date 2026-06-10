@@ -24,7 +24,7 @@ export function useLorImport() {
    * 从文件内容导入 Lor 剧本
    */
   async function importFromContent(
-    yamlContent: string,
+    lorContent: string,
     sceneId: string,
     options: { validate?: boolean; autoLayout?: boolean } = {}
   ): Promise<boolean> {
@@ -38,7 +38,7 @@ export function useLorImport() {
     try {
       // 可选：验证文件格式
       if (validate) {
-        validationResult.value = lorConverter.validateLorFile(yamlContent)
+        validationResult.value = lorConverter.validateLorFile(lorContent)
         if (!validationResult.value.valid) {
           importError.value = `文件格式验证失败:\n${validationResult.value.errors.join('\n')}`
           return false
@@ -46,7 +46,7 @@ export function useLorImport() {
       }
       
       // 转换 Lor 为蓝图
-      const blueprint = await lorConverter.convertFromYaml(yamlContent)
+      const blueprint = await lorConverter.convertFromJson(lorContent)
       blueprint.id = sceneId
       
       // 加载蓝图到编辑器
@@ -138,13 +138,13 @@ export function useLorImport() {
   /**
    * 预览 Lor 文件转换结果（不实际加载到编辑器）
    */
-  async function previewConversion(yamlContent: string): Promise<{
+  async function previewConversion(lorContent: string): Promise<{
     nodeCount: number
     connectionCount: number
     nodeTypes: Record<string, number>
   } | null> {
     try {
-      const blueprint = await lorConverter.convertFromYaml(yamlContent)
+      const blueprint = await lorConverter.convertFromJson(lorContent)
       
       const nodeTypes: Record<string, number> = {}
       blueprint.nodes.forEach(node => {
@@ -186,3 +186,4 @@ export function useLorImport() {
     clearImportState,
   }
 }
+

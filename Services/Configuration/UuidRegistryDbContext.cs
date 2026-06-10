@@ -88,10 +88,10 @@ public class UuidRegistryDbContext : IDisposable
                 FOREIGN KEY (Uuid) REFERENCES UuidRegistry(Uuid) ON DELETE CASCADE
             );
 
-            CREATE TABLE IF NOT EXISTS YamlSnapshots (
+            CREATE TABLE IF NOT EXISTS JsonSnapshots (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 SceneId TEXT NOT NULL,
-                YamlContent TEXT NOT NULL,
+                JsonContent TEXT NOT NULL,
                 CreatedAt TEXT NOT NULL DEFAULT (datetime('now')),
                 Description TEXT NOT NULL DEFAULT ''
             );

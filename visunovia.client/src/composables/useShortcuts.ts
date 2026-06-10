@@ -106,7 +106,7 @@ export function useShortcuts() {
         action: 'delete',
         handler: deleteSelectedNodes,
         description: 'Delete Selected Nodes',
-        preventDefault: false
+        preventDefault: true
       }
     },
     {
@@ -115,7 +115,7 @@ export function useShortcuts() {
         action: 'delete',
         handler: deleteSelectedNodes,
         description: 'Delete Selected Nodes (Backspace)',
-        preventDefault: false
+        preventDefault: true
       }
     },
     {
@@ -218,9 +218,27 @@ export function useShortcuts() {
   }
 
   function deleteSelectedNodes() {
-    if (!editorStore.selectedNodeId) return
-
     if (isInInputElement()) return
+
+    const graph = getBaklavaGraph()
+    const selectedNodes = getSelectedBaklavaNodes()
+
+    if (graph && selectedNodes.length > 0) {
+      undoRedoStore.pushState(nodeGraphStore.serializeGraph()!, selectedNodes.length > 1 ? 'Delete Nodes' : 'Delete Node')
+
+      for (const node of selectedNodes) {
+        if (graph.nodes?.includes(node)) {
+          graph.removeNode(node)
+        }
+      }
+
+      graph.selectedNodes = []
+      editorStore.selectNode(null)
+      nodeGraphStore.isDirty = true
+      return
+    }
+
+    if (!editorStore.selectedNodeId) return
 
     undoRedoStore.pushState(nodeGraphStore.serializeGraph()!, 'Delete Node')
     nodeGraphStore.removeNode(editorStore.selectedNodeId)
@@ -228,10 +246,25 @@ export function useShortcuts() {
   }
 
   function selectAllNodes() {
-    console.log('[Shortcuts] Select all - selecting first node')
+    const graph = getBaklavaGraph()
+    if (graph?.nodes && graph?.selectedNodes) {
+      graph.selectedNodes = [...graph.nodes]
+      return
+    }
+
     if (nodeGraphStore.nodes.length > 0) {
       editorStore.selectNode(nodeGraphStore.nodes[0].id)
     }
+  }
+
+  function getBaklavaGraph(): any | null {
+    return (window as any).__baklavaViewModel?.displayedGraph || (window as any).__editor?.graph || null
+  }
+
+  function getSelectedBaklavaNodes(): any[] {
+    const graph = getBaklavaGraph()
+    if (!graph?.selectedNodes) return []
+    return [...graph.selectedNodes]
   }
 
   function handleNew() {

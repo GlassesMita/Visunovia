@@ -78,9 +78,29 @@ public class VNSoundEffect
 public class VNSprite
 {
     public string Path { get; set; } = string.Empty;
+    public string Character { get; set; } = string.Empty;
     public string Position { get; set; } = "center";
     public int Layer { get; set; }
     public VNAnimation Animation { get; set; } = new();
+}
+
+public class VNVoiceLine
+{
+    public string Speaker { get; set; } = string.Empty;
+    public string Path { get; set; } = string.Empty;
+}
+
+public class VNCharacterControl
+{
+    public string Slot { get; set; } = "1";
+    public string Character { get; set; } = string.Empty;
+    public string Action { get; set; } = "show";
+    public string Sprite { get; set; } = string.Empty;
+    public string Sfx { get; set; } = string.Empty;
+    public string Expression { get; set; } = string.Empty;
+    public string Position { get; set; } = "center";
+    public string Animation { get; set; } = "fade";
+    public double Duration { get; set; } = 0.3;
 }
 
 public class VNScene
@@ -89,6 +109,37 @@ public class VNScene
     public string Background { get; set; } = string.Empty;
     public VNBgm? Bgm { get; set; }
     public List<VNDialogue> Dialogues { get; set; } = new();
+    public List<VNBlueprintNode> Nodes { get; set; } = new();
+    public List<VNBlueprintConnection> Connections { get; set; } = new();
+}
+
+public class VNBlueprintNode
+{
+    public string Uuid { get; set; } = string.Empty;
+    public string Id { get; set; } = string.Empty;
+    public string NodeType { get; set; } = string.Empty;
+    public string SubType { get; set; } = string.Empty;
+    public VNBlueprintPosition Position { get; set; } = new();
+    public Dictionary<string, object> Properties { get; set; } = new();
+    public List<string> NextNodeUuids { get; set; } = new();
+}
+
+public class VNBlueprintConnection
+{
+    public string Uuid { get; set; } = string.Empty;
+    public string Id { get; set; } = string.Empty;
+    public string SourceNodeUuid { get; set; } = string.Empty;
+    public string Source { get; set; } = string.Empty;
+    public string SourcePort { get; set; } = string.Empty;
+    public string TargetNodeUuid { get; set; } = string.Empty;
+    public string Target { get; set; } = string.Empty;
+    public string TargetPort { get; set; } = string.Empty;
+}
+
+public class VNBlueprintPosition
+{
+    public double X { get; set; }
+    public double Y { get; set; }
 }
 
 public enum VNDialogueType
@@ -157,9 +208,12 @@ public class VNDialogue
     public string Uuid { get; set; } = string.Empty;
     public VNDialogueType Type { get; set; } = VNDialogueType.Dialogue;
     public string Speaker { get; set; } = string.Empty;
+    public List<string> Speakers { get; set; } = new();
     public string Text { get; set; } = string.Empty;
     public List<VNSprite> Sprites { get; set; } = new();
     public string Voice { get; set; } = string.Empty;
+    public List<VNVoiceLine> Voices { get; set; } = new();
+    public List<VNCharacterControl> CharacterControls { get; set; } = new();
     public VNTextEffect? TextEffect { get; set; }
     public VNAnimation? Animation { get; set; }
     public VNBranch? Branch { get; set; }

@@ -17,6 +17,13 @@
       </button>
       <button
         class="toolbar-button"
+        title="角色管理器"
+        @click="uiStore.openCharacterManager()"
+      >
+        <Users :size="18" />
+      </button>
+      <button
+        class="toolbar-button"
         :title="t('menu.new')"
         @click="handleNew"
       >
@@ -52,44 +59,6 @@
       </button>
     </div>
 
-    <div class="toolbar-divider"></div>
-
-    <div class="toolbar-group">
-      <button
-        class="toolbar-button"
-        :title="t('menu.cut')"
-        @click="handleCut"
-      >
-        <Scissors :size="18" />
-      </button>
-      <button
-        class="toolbar-button"
-        :title="t('menu.copy')"
-        @click="handleCopy"
-      >
-        <Copy :size="18" />
-      </button>
-      <button
-        class="toolbar-button"
-        :title="t('menu.paste')"
-        @click="handlePaste"
-      >
-        <Clipboard :size="18" />
-      </button>
-    </div>
-
-    <div class="toolbar-divider"></div>
-
-    <div class="toolbar-group">
-      <button
-        class="toolbar-button"
-        :title="t('menu.delete')"
-        @click="handleDelete"
-      >
-        <Trash2 :size="18" />
-      </button>
-    </div>
-
     <!-- Spacer -->
     <div class="toolbar-spacer"></div>
   </div>
@@ -97,7 +66,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { FilePlus, FolderOpen, RefreshCw, Save, Undo2, Redo2, Scissors, Copy, Clipboard, Trash2 } from 'lucide-vue-next'
+import { FilePlus, FolderOpen, RefreshCw, Save, Undo2, Redo2, Users } from 'lucide-vue-next'
 import { useLocalization } from '@/composables/useLocalization'
 import { useUIStore } from '@/stores/useUIStore'
 import { useEditorStore } from '@/stores/useEditorStore'
@@ -143,26 +112,6 @@ function handleRedo() {
       nodes: state.nodes,
       connections: state.connections
     })
-  }
-}
-
-function handleCut() {
-  console.log('Cut')
-}
-
-function handleCopy() {
-  console.log('Copy')
-}
-
-function handlePaste() {
-  console.log('Paste')
-}
-
-function handleDelete() {
-  if (editorStore.selectedNodeId) {
-    undoRedoStore.pushState(nodeGraphStore.serializeGraph()!, 'Delete Node')
-    nodeGraphStore.removeNode(editorStore.selectedNodeId)
-    editorStore.selectNode(null)
   }
 }
 </script>

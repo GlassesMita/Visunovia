@@ -5,8 +5,6 @@ using System.Xml;
 using System.Xml.Linq;
 using Visunovia.Services;
 using Visunovia.Services.Configuration;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Visunovia.Controllers;
 
@@ -14,6 +12,7 @@ namespace Visunovia.Controllers;
 [Route("api/[controller]")]
 public class ProjectController : ControllerBase
 {
+    private const string DefaultSceneId = "start";
     private readonly ILogger<ProjectController> _logger;
     private readonly EditorSessionService _sessionService;
     private readonly SettingsService _settingsService;
@@ -24,6 +23,22 @@ public class ProjectController : ControllerBase
         _logger = logger;
         _sessionService = sessionService;
         _settingsService = settingsService;
+    }
+
+    private static string CreateBlankLorJson(string sceneId)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            id = sceneId,
+            background = string.Empty,
+            bgm = new
+            {
+                path = string.Empty,
+                volume = 80,
+                loop = true
+            },
+            dialogues = Array.Empty<object>()
+        }, new JsonSerializerOptions { WriteIndented = true });
     }
 
     /// <summary>
@@ -171,7 +186,7 @@ public class ProjectController : ControllerBase
                 // 复制模板文件（排除二进制资源文件，只复制配置/文本文件）
                 var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    ".tlor", ".lor", ".json", ".yaml", ".yml", ".xml", ".txt", ".md", ".resona", ".po", ".css", ".js", ".ts", ".html"
+                    ".tlor", ".lor", ".json", ".xml", ".txt", ".md", ".resona", ".po", ".css", ".js", ".ts", ".html"
                 };
                 CopyTemplateFiles(templatePath, projectDir, allowedExtensions);
 
@@ -347,7 +362,7 @@ public class ProjectController : ControllerBase
 
         var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            ".resona", ".json", ".xml", ".yaml", ".yml", ".txt", ".md", ".po", ".css", ".js", ".ts", ".html"
+            ".resona", ".json", ".xml", ".txt", ".md", ".po", ".css", ".js", ".ts", ".html"
         };
 
         var extension = Path.GetExtension(fullPath);
@@ -381,6 +396,354 @@ public class ProjectController : ControllerBase
             _logger.LogError(ex, "读取项目文件内容失败: {Path}", fullPath);
             return StatusCode(500, new { success = false, error = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// 读取当前项目 Assets/Characters/Characters.json 角色附加配置。
+    /// 角色目录本身仍以 Assets/Characters 下的文件夹为准，此配置仅保存头像、颜色、备注等可编辑属性。
+    /// </summary>
+    [HttpGet("characters/config")]
+    public async Task<IActionResult> GetCharacterConfig()
+    {
+        if (!TryGetCharactersConfigPath(out var configPath, out var error))
+        {
+            return BadRequest(new { success = false, error });
+        }
+
+        try
+        {
+            if (!System.IO.File.Exists(configPath))
+            {
+                return Ok(new { success = true, data = new CharacterConfigResponse() });
+            }
+
+            var json = await System.IO.File.ReadAllTextAsync(configPath);
+            var config = JsonSerializer.Deserialize<CharacterConfigResponse>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            }) ?? new CharacterConfigResponse();
+
+            return Ok(new { success = true, data = config });
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "角色配置文件格式无效: {Path}", configPath);
+            return BadRequest(new { success = false, error = "角色配置文件格式无效: " + ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "读取角色配置失败: {Path}", configPath);
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 写入当前项目 Assets/Characters/Characters.json 角色附加配置。
+    /// </summary>
+    [HttpPut("characters/config")]
+    public async Task<IActionResult> SaveCharacterConfig([FromBody] CharacterConfigResponse request)
+    {
+        if (!TryGetCharactersConfigPath(out var configPath, out var error))
+        {
+            return BadRequest(new { success = false, error });
+        }
+
+        try
+        {
+            var charactersRoot = Path.GetDirectoryName(configPath)!;
+            Directory.CreateDirectory(charactersRoot);
+
+            var sanitized = new CharacterConfigResponse
+            {
+                Characters = (request?.Characters ?? new List<CharacterConfigEntry>())
+                    .Where(character => !string.IsNullOrWhiteSpace(character.Id))
+                    .Select(character => new CharacterConfigEntry
+                    {
+                        Id = Path.GetFileName(character.Id.Trim()),
+                        DisplayId = character.DisplayId?.Trim() ?? string.Empty,
+                        Color = character.Color?.Trim() ?? string.Empty,
+                        Avatar = character.Avatar?.Trim() ?? string.Empty,
+                        Note = character.Note?.Trim() ?? string.Empty
+                    })
+                    .Where(character => !string.IsNullOrWhiteSpace(character.Id))
+                    .ToList()
+            };
+
+            var json = JsonSerializer.Serialize(sanitized, new JsonSerializerOptions { WriteIndented = true });
+            await System.IO.File.WriteAllTextAsync(configPath, json);
+
+            return Ok(new { success = true, data = sanitized });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "保存角色配置失败: {Path}", configPath);
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 导入单个资产文件到当前项目的 Assets 子目录。
+    /// </summary>
+    [HttpPost("assets/import")]
+    [RequestSizeLimit(100 * 1024 * 1024)]
+    public async Task<IActionResult> ImportAsset([FromForm] string targetDirectory, [FromForm] IFormFile file, [FromForm] string? relativePath)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new { success = false, error = "请选择要导入的资产文件" });
+        }
+
+        if (!TryResolveAssetsPath(targetDirectory, mustBeUnderAssets: true, out var targetPath, out _, out var error))
+        {
+            return BadRequest(new { success = false, error });
+        }
+
+        if (!Directory.Exists(targetPath))
+        {
+            return BadRequest(new { success = false, error = "目标资产目录不存在" });
+        }
+
+        var uploadPath = string.IsNullOrWhiteSpace(relativePath) ? file.FileName : relativePath;
+        uploadPath = uploadPath.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+        var fileName = Path.GetFileName(uploadPath);
+        if (string.IsNullOrWhiteSpace(fileName) || fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        {
+            return BadRequest(new { success = false, error = "文件名无效" });
+        }
+
+        var relativeDirectory = Path.GetDirectoryName(uploadPath) ?? string.Empty;
+        if (relativeDirectory.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)
+            .Any(part => part == "." || part == ".." || part.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0))
+        {
+            return BadRequest(new { success = false, error = "目录路径无效" });
+        }
+
+        var destinationDirectory = Path.GetFullPath(Path.Combine(targetPath, relativeDirectory));
+        if (!IsPathInside(targetPath, destinationDirectory))
+        {
+            return BadRequest(new { success = false, error = "目录路径无效" });
+        }
+
+        var destinationPath = Path.GetFullPath(Path.Combine(destinationDirectory, fileName));
+        if (!IsPathInside(targetPath, destinationPath))
+        {
+            return BadRequest(new { success = false, error = "文件路径无效" });
+        }
+
+        if (System.IO.File.Exists(destinationPath))
+        {
+            return Conflict(new { success = false, error = "目标目录已存在同名资产" });
+        }
+
+        try
+        {
+            Directory.CreateDirectory(destinationDirectory);
+            await using var stream = System.IO.File.Create(destinationPath);
+            await file.CopyToAsync(stream);
+
+            var fileInfo = new FileInfo(destinationPath);
+            return Ok(new
+            {
+                success = true,
+                data = new FolderNode
+                {
+                    Name = fileInfo.Name,
+                    Path = fileInfo.FullName,
+                    IsDirectory = false,
+                    Extension = fileInfo.Extension.ToLowerInvariant(),
+                    Size = fileInfo.Length,
+                    LastModified = fileInfo.LastWriteTime.ToString("o"),
+                    Children = null
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "导入资产失败: {Path}", destinationPath);
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 删除当前项目 Assets 目录内的资产文件或空目录。
+    /// </summary>
+    [HttpDelete("assets")]
+    public IActionResult DeleteAsset([FromQuery] string path)
+    {
+        if (!TryResolveAssetsPath(path, mustBeUnderAssets: true, out var fullPath, out _, out var error))
+        {
+            return BadRequest(new { success = false, error });
+        }
+
+        try
+        {
+            if (System.IO.File.Exists(fullPath))
+            {
+                System.IO.File.Delete(fullPath);
+                return Ok(new { success = true });
+            }
+
+            if (Directory.Exists(fullPath))
+            {
+                Directory.Delete(fullPath, recursive: true);
+                return Ok(new { success = true });
+            }
+
+            return NotFound(new { success = false, error = "资产不存在" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "删除资产失败: {Path}", fullPath);
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 重命名当前项目 Assets 目录内的资产文件或文件夹。
+    /// </summary>
+    [HttpPut("assets/rename")]
+    public IActionResult RenameAsset([FromBody] RenameAssetRequest request)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.Path))
+        {
+            return BadRequest(new { success = false, error = "资产路径不能为空" });
+        }
+
+        if (!TryResolveAssetsPath(request.Path, mustBeUnderAssets: true, out var fullPath, out var assetsRoot, out var error))
+        {
+            return BadRequest(new { success = false, error });
+        }
+
+        var newName = request.NewName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(newName) || newName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || newName == "." || newName == "..")
+        {
+            return BadRequest(new { success = false, error = "新名称无效" });
+        }
+
+        var parentPath = Path.GetDirectoryName(fullPath);
+        if (string.IsNullOrWhiteSpace(parentPath) || !IsPathInside(assetsRoot, parentPath))
+        {
+            return BadRequest(new { success = false, error = "不允许重命名 Assets 根目录" });
+        }
+
+        var destinationPath = Path.GetFullPath(Path.Combine(parentPath, newName));
+        if (!IsPathInside(assetsRoot, destinationPath))
+        {
+            return BadRequest(new { success = false, error = "目标路径无效" });
+        }
+
+        if (System.IO.File.Exists(destinationPath) || Directory.Exists(destinationPath))
+        {
+            return Conflict(new { success = false, error = "目标目录已存在同名资产" });
+        }
+
+        try
+        {
+            if (System.IO.File.Exists(fullPath))
+            {
+                System.IO.File.Move(fullPath, destinationPath);
+                var fileInfo = new FileInfo(destinationPath);
+                return Ok(new
+                {
+                    success = true,
+                    data = new FolderNode
+                    {
+                        Name = fileInfo.Name,
+                        Path = fileInfo.FullName,
+                        IsDirectory = false,
+                        Extension = fileInfo.Extension.ToLowerInvariant(),
+                        Size = fileInfo.Length,
+                        LastModified = fileInfo.LastWriteTime.ToString("o"),
+                        Children = null
+                    }
+                });
+            }
+
+            if (Directory.Exists(fullPath))
+            {
+                Directory.Move(fullPath, destinationPath);
+                return Ok(new { success = true, data = BuildFolderTree(destinationPath) });
+            }
+
+            return NotFound(new { success = false, error = "资产不存在" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "重命名资产失败: {Path} -> {NewName}", fullPath, newName);
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    private bool TryResolveAssetsPath(string path, bool mustBeUnderAssets, out string fullPath, out string assetsRoot, out string error)
+    {
+        fullPath = string.Empty;
+        assetsRoot = string.Empty;
+        error = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            error = "路径不能为空";
+            return false;
+        }
+
+        var editor = _sessionService.GetEditor();
+        if (string.IsNullOrWhiteSpace(editor.CurrentProjectPath))
+        {
+            error = "当前没有打开的项目";
+            return false;
+        }
+
+        var projectRoot = Path.GetFullPath(Path.GetDirectoryName(editor.CurrentProjectPath) ?? editor.CurrentProjectPath);
+        assetsRoot = Path.GetFullPath(Path.Combine(projectRoot, "Assets"));
+        fullPath = Path.GetFullPath(path);
+
+        if (!Directory.Exists(assetsRoot))
+        {
+            error = "当前项目缺少 Assets 目录";
+            return false;
+        }
+
+        if (mustBeUnderAssets && !IsPathInside(assetsRoot, fullPath))
+        {
+            error = "只能管理 Assets 目录内的资产";
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool TryGetCharactersConfigPath(out string configPath, out string error)
+    {
+        configPath = string.Empty;
+        error = string.Empty;
+
+        var editor = _sessionService.GetEditor();
+        if (string.IsNullOrWhiteSpace(editor.CurrentProjectPath))
+        {
+            error = "当前没有打开的项目";
+            return false;
+        }
+
+        var projectRoot = Path.GetFullPath(Path.GetDirectoryName(editor.CurrentProjectPath) ?? editor.CurrentProjectPath);
+        var assetsRoot = Path.GetFullPath(Path.Combine(projectRoot, "Assets"));
+        var charactersRoot = Path.GetFullPath(Path.Combine(assetsRoot, "Characters"));
+        configPath = Path.GetFullPath(Path.Combine(charactersRoot, "Characters.json"));
+
+        if (!IsPathInside(assetsRoot, configPath))
+        {
+            error = "角色配置路径无效";
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool IsPathInside(string root, string candidate)
+    {
+        var normalizedRoot = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var normalizedCandidate = Path.GetFullPath(candidate).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        return normalizedCandidate.Equals(normalizedRoot.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase)
+            || normalizedCandidate.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -508,16 +871,9 @@ public class ProjectController : ControllerBase
 </project>";
         System.IO.File.WriteAllText(tlorPath, tlorContent);
 
-        // 创建默认场景文件 (.lor)
-        var mainLorPath = Path.Combine(projectDir, "Scripts", "Main", "start.lor");
-        var lorContent = @"id: start
-background: ''
-bgm:
-  path: ''
-  volume: 80
-  loop: true
-dialogues: []";
-        System.IO.File.WriteAllText(mainLorPath, lorContent);
+            // 创建默认场景文件 (.lor)，内容使用后端内嵌的空白 JSON 结构。
+            var mainLorPath = Path.Combine(projectDir, "Scripts", "Main", $"{DefaultSceneId}.lor");
+            System.IO.File.WriteAllText(mainLorPath, CreateBlankLorJson(DefaultSceneId));
     }
 
     /// <summary>
@@ -568,6 +924,7 @@ dialogues: []";
                 return NotFound(new { success = false, error = "未找到 Project.tlor 文件" });
             }
 
+            await EnsureProjectHasScriptFilesAsync(projectRoot, "导入项目前校验");
             await RepairProjectFileIfNeededAsync(tlorPath, projectRoot, "导入项目前校验");
 
             var result = await ParseProjectAsync(projectRoot);
@@ -774,13 +1131,32 @@ dialogues: []";
                 changed = true;
             }
 
-            if (!scenes.Elements("scene").Any())
+            var sceneElements = scenes.Elements("scene")
+                .Concat(scenes.Elements("Scene"))
+                .ToList();
+
+            if (sceneElements.Count == 0)
             {
                 foreach (var sceneId in GetSceneIdsFromDirectory(projectRoot))
                 {
                     scenes.Add(new XElement("scene", new XAttribute("id", sceneId)));
                 }
                 changed = true;
+            }
+            else if (!sceneElements.Any(scene => SceneReferenceHasExistingScript(scene, projectRoot, tlorPath)))
+            {
+                scenes.RemoveNodes();
+                foreach (var sceneId in GetSceneIdsFromDirectory(projectRoot))
+                {
+                    scenes.Add(new XElement("scene", new XAttribute("id", sceneId)));
+                }
+                changed = true;
+
+                LogProjectStep("repair", "Project.tlor 场景引用全部失效，已改为实际脚本列表", new Dictionary<string, object?>
+                {
+                    ["projectRoot"] = projectRoot,
+                    ["reason"] = reason
+                });
             }
 
             if (changed)
@@ -800,6 +1176,49 @@ dialogues: []";
             var repairedDoc = BuildProjectDocumentFromDirectory(projectRoot, content);
             await WriteRepairedProjectFileAsync(tlorPath, repairedDoc, reason ?? ex.Message);
         }
+    }
+
+    private async Task EnsureProjectHasScriptFilesAsync(string projectRoot, string reason)
+    {
+        var scriptsMainPath = Path.Combine(projectRoot, "Scripts", "Main");
+        Directory.CreateDirectory(scriptsMainPath);
+
+        if (Directory.GetFiles(scriptsMainPath, "*.lor").Length > 0)
+        {
+            return;
+        }
+
+        var defaultScriptPath = Path.Combine(scriptsMainPath, $"{DefaultSceneId}.lor");
+        await System.IO.File.WriteAllTextAsync(defaultScriptPath, CreateBlankLorJson(DefaultSceneId));
+
+        LogProjectStep("repair", "项目没有任何脚本文件，已创建内嵌空白 Lor JSON", new Dictionary<string, object?>
+        {
+            ["projectRoot"] = projectRoot,
+            ["scriptPath"] = defaultScriptPath,
+            ["reason"] = reason
+        });
+    }
+
+    private static bool SceneReferenceHasExistingScript(XElement sceneElement, string projectRoot, string tlorPath)
+    {
+        var explicitPath = sceneElement.Element("path")?.Value ?? sceneElement.Element("Path")?.Value;
+        if (!string.IsNullOrWhiteSpace(explicitPath))
+        {
+            var resolvedPath = Path.Combine(Path.GetDirectoryName(tlorPath) ?? projectRoot, explicitPath);
+            if (System.IO.File.Exists(resolvedPath))
+            {
+                return true;
+            }
+        }
+
+        var sceneId = sceneElement.Attribute("id")?.Value ?? sceneElement.Attribute("Id")?.Value;
+        if (string.IsNullOrWhiteSpace(sceneId))
+        {
+            return false;
+        }
+
+        return System.IO.File.Exists(Path.Combine(projectRoot, "Scripts", "Main", $"{sceneId}.lor"))
+            || System.IO.File.Exists(Path.Combine(projectRoot, $"{sceneId}.lor"));
     }
 
     private static bool EnsureMetadataElement(XElement metadata, string name, string defaultValue)
@@ -1069,6 +1488,16 @@ dialogues: []";
         {
             content = await System.IO.File.ReadAllTextAsync(lorFilePath);
         }
+        else
+        {
+            LogProjectStep("parse", "跳过不存在的场景脚本引用，将回退扫描 .lor 文件", new Dictionary<string, object?>
+            {
+                ["tlorFile"] = tlorFilePath,
+                ["sceneId"] = lorFileName,
+                ["resolvedPath"] = lorFilePath
+            });
+            return null;
+        }
 
         var sceneId = targetScene.Attribute("id")?.Value 
             ?? targetScene.Attribute("Id")?.Value
@@ -1172,6 +1601,35 @@ public class UpdateProjectSettingsRequest
 public class ImportProjectRequest
 {
     public string ProjectPath { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// 重命名资产请求
+/// </summary>
+public class RenameAssetRequest
+{
+    public string Path { get; set; } = string.Empty;
+    public string NewName { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// 项目角色附加配置。
+/// </summary>
+public class CharacterConfigResponse
+{
+    public List<CharacterConfigEntry> Characters { get; set; } = new();
+}
+
+/// <summary>
+/// 单个角色的可编辑附加配置。角色 ID/名称由 Assets/Characters 下的文件夹名称决定。
+/// </summary>
+public class CharacterConfigEntry
+{
+    public string Id { get; set; } = string.Empty;
+    public string DisplayId { get; set; } = string.Empty;
+    public string Color { get; set; } = string.Empty;
+    public string Avatar { get; set; } = string.Empty;
+    public string Note { get; set; } = string.Empty;
 }
 
 /// <summary>

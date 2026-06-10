@@ -37,6 +37,7 @@ import { useLocalization } from '@/composables/useLocalization'
 import { useUIStore } from '@/stores/useUIStore'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useNodeOperations } from '@/composables/useNodeOperations'
+import { quitApplication } from '@/api/systemApi'
 
 interface MenuItem {
   key: string
@@ -80,11 +81,6 @@ const menus = computed<Menu[]>(() => [
     items: [
       { key: 'undo', labelKey: 'menu.undo', action: 'undo', shortcut: 'Ctrl+Z', disabled: !editorStore.canUndo },
       { key: 'redo', labelKey: 'menu.redo', action: 'redo', shortcut: 'Ctrl+Y', disabled: !editorStore.canRedo },
-      { key: 'divider1', labelKey: '', divider: true },
-      { key: 'cut', labelKey: 'menu.cut', action: 'cut', shortcut: 'Ctrl+X' },
-      { key: 'copy', labelKey: 'menu.copy', action: 'copy', shortcut: 'Ctrl+C' },
-      { key: 'paste', labelKey: 'menu.paste', action: 'paste', shortcut: 'Ctrl+V' },
-      { key: 'delete', labelKey: 'menu.delete', action: 'delete', shortcut: 'Del' },
     ],
   },
   {
@@ -104,6 +100,8 @@ const menus = computed<Menu[]>(() => [
         checked: uiStore.showConsolePanel 
       },
       { key: 'divider1', labelKey: '', divider: true },
+      { key: 'fullscreen', labelKey: '全屏', action: 'toggleFullscreen', shortcut: 'F11', checked: Boolean(document.fullscreenElement) },
+      { key: 'divider2', labelKey: '', divider: true },
       { key: 'preferences', labelKey: 'menu.preferences', action: 'openPreferences' },
     ],
   },
@@ -151,25 +149,15 @@ function executeAction(action: string) {
       break
     }
     case 'exitApp':
-      console.log('Exit app')
+      quitApplication().finally(() => {
+        window.close()
+      })
       break
     case 'undo':
       editorStore.undo()
       break
     case 'redo':
       editorStore.redo()
-      break
-    case 'cut':
-      console.log('Cut action')
-      break
-    case 'copy':
-      console.log('Copy action')
-      break
-    case 'paste':
-      console.log('Paste action')
-      break
-    case 'delete':
-      console.log('Delete action')
       break
     case 'toggleProject':
       if (uiStore.showProjectPopup) {
@@ -180,6 +168,9 @@ function executeAction(action: string) {
       break
     case 'toggleConsole':
       uiStore.togglePanel('console')
+      break
+    case 'toggleFullscreen':
+      toggleFullscreen()
       break
     case 'openPreferences':
       // 使用 window.open 打开独立的 Preferences 窗口（Popup）
@@ -193,6 +184,14 @@ function executeAction(action: string) {
       break
     default:
       console.log('Action not implemented:', action)
+  }
+}
+
+function toggleFullscreen() {
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(error => console.warn('Exit fullscreen failed:', error))
+  } else {
+    document.documentElement.requestFullscreen().catch(error => console.warn('Enter fullscreen failed:', error))
   }
 }
 

@@ -1,4 +1,5 @@
 import { apiClient } from './index'
+import type { AxiosError } from 'axios'
 
 export interface SceneInfo {
   id: string
@@ -30,6 +31,11 @@ export interface FolderNode {
   size: number
   lastModified: string
   children: FolderNode[] | null
+}
+
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  const axiosError = error as AxiosError<{ error?: string; message?: string }>
+  return axiosError.response?.data?.error || axiosError.response?.data?.message || (error instanceof Error ? error.message : fallback)
 }
 
 export interface NewProjectResult {
@@ -159,6 +165,73 @@ export async function getProjectFileContent(path: string): Promise<{ path: strin
   return response.data.data
 }
 
+/**
+ * 导入资产文件到指定 Assets 子目录。
+ */
+export async function importProjectAsset(targetDirectory: string, file: File, relativePath?: string): Promise<FolderNode> {
+  const formData = new FormData()
+  formData.append('targetDirectory', targetDirectory)
+  formData.append('file', file)
+  if (relativePath) {
+    formData.append('relativePath', relativePath)
+  }
+
+  const response = await apiClient.post<{
+    success: boolean
+    data: FolderNode
+    error?: string
+  }>('/project/assets/import', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+
+  if (!response.data?.success) {
+    throw new Error(response.data?.error || '导入资产失败')
+  }
+
+  return response.data.data
+}
+
+/**
+ * 删除项目 Assets 目录内的资产文件或空目录。
+ */
+export async function deleteProjectAsset(path: string): Promise<void> {
+  try {
+    const response = await apiClient.delete<{
+      success: boolean
+      error?: string
+    }>('/project/assets', {
+      params: { path },
+    })
+
+    if (!response.data?.success) {
+      throw new Error(response.data?.error || '删除资产失败')
+    }
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, '删除资产失败'))
+  }
+}
+
+/**
+ * 重命名项目 Assets 目录内的资产文件或文件夹。
+ */
+export async function renameProjectAsset(path: string, newName: string): Promise<FolderNode> {
+  try {
+    const response = await apiClient.put<{
+      success: boolean
+      data: FolderNode
+      error?: string
+    }>('/project/assets/rename', { path, newName })
+
+    if (!response.data?.success) {
+      throw new Error(response.data?.error || '重命名资产失败')
+    }
+
+    return response.data.data
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, '重命名资产失败'))
+  }
+}
+
 export interface CurrentProjectInfo {
   projectName: string
   version: string
@@ -173,6 +246,43 @@ export interface UpdateProjectSettingsRequest {
   companyName?: string
   version?: string
   versionCode?: string
+}
+
+export interface CharacterConfigEntry {
+  id: string
+  displayId?: string
+  color?: string
+  avatar?: string
+  note?: string
+}
+
+export interface CharacterConfigResponse {
+  characters: CharacterConfigEntry[]
+}
+
+type RawCharacterConfigEntry = CharacterConfigEntry & {
+  Id?: string
+  DisplayId?: string
+  Color?: string
+  Avatar?: string
+  Note?: string
+}
+
+type RawCharacterConfigResponse = CharacterConfigResponse & {
+  Characters?: RawCharacterConfigEntry[]
+}
+
+function normalizeCharacterConfig(config?: RawCharacterConfigResponse): CharacterConfigResponse {
+  const rawCharacters = config?.characters || config?.Characters || []
+  return {
+    characters: rawCharacters.map(character => ({
+      id: character.id || character.Id || '',
+      displayId: character.displayId || character.DisplayId || '',
+      color: character.color || character.Color || '',
+      avatar: character.avatar || character.Avatar || '',
+      note: character.note || character.Note || '',
+    })).filter(character => character.id)
+  }
 }
 
 /**
@@ -196,6 +306,40 @@ export async function updateProjectSettings(
     success: boolean
   }>('/project/settings', settings)
   return response.data
+}
+
+/**
+ * 读取当前项目 Assets/Characters/characters.json 角色附加配置。
+ */
+export async function getCharacterConfig(): Promise<CharacterConfigResponse> {
+  const response = await apiClient.get<{
+    success: boolean
+    data: RawCharacterConfigResponse
+    error?: string
+  }>('/project/characters/config')
+
+  if (!response.data?.success) {
+    throw new Error(response.data?.error || '读取角色配置失败')
+  }
+
+  return normalizeCharacterConfig(response.data.data)
+}
+
+/**
+ * 写入当前项目 Assets/Characters/characters.json 角色附加配置。
+ */
+export async function saveCharacterConfig(config: CharacterConfigResponse): Promise<CharacterConfigResponse> {
+  const response = await apiClient.put<{
+    success: boolean
+    data: CharacterConfigResponse
+    error?: string
+  }>('/project/characters/config', config)
+
+  if (!response.data?.success) {
+    throw new Error(response.data?.error || '保存角色配置失败')
+  }
+
+  return response.data.data || config
 }
 
 /**

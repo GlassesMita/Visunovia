@@ -1,10 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 using Visunovia.Models.Engine;
 
 namespace Visunovia.Services;
@@ -14,8 +13,13 @@ namespace Visunovia.Services;
 /// </summary>
 public class EditorService
 {
-    private readonly ISerializer _yamlSerializer;
-    private readonly IDeserializer _yamlDeserializer;
+    private static readonly JsonSerializerOptions LorJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }
+    };
     private readonly UndoRedoManager _undoRedoManager;
 
     public VNProject? CurrentProject { get; private set; }
@@ -32,15 +36,6 @@ public class EditorService
 
     public EditorService()
     {
-        _yamlSerializer = new SerializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .Build();
-
-        _yamlDeserializer = new DeserializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .IgnoreUnmatchedProperties()
-            .Build();
-
         _undoRedoManager = new UndoRedoManager();
         _undoRedoManager.HistoryChanged += () => ProjectChanged?.Invoke();
     }
@@ -522,6 +517,7 @@ public class EditorService
                         {
                             scene.Id = sceneId;
                             CurrentProject.Scenes.Add(scene);
+                            RestoreSceneGraphFromScene(sceneId, scene);
                         }
                     }
                     else
@@ -598,6 +594,7 @@ public class EditorService
                     Dialogues = new List<VNDialogue>()
                 });
                 CurrentProject.Scenes[^1].Id = sceneId;
+                RestoreSceneGraphFromScene(sceneId, CurrentProject.Scenes[^1]);
             }
         }
 
@@ -634,7 +631,7 @@ public class EditorService
     }
 
     /// <summary>
-    /// 将指定场景导出为 YAML 脚本文件
+    /// 将指定场景导出为 JSON 格式的 Lor 脚本文件
     /// </summary>
     /// <param name="sceneId">场景 ID</param>
     /// <param name="path">脚本文件保存路径</param>
@@ -651,12 +648,12 @@ public class EditorService
             Directory.CreateDirectory(scriptDir);
         }
 
-        var yaml = _yamlSerializer.Serialize(scene);
-        await File.WriteAllTextAsync(path, yaml);
+        var json = JsonSerializer.Serialize(scene, LorJsonOptions);
+        await File.WriteAllTextAsync(path, json, new UTF8Encoding(false));
     }
 
     /// <summary>
-    /// 从 YAML 脚本文件导入场景
+    /// 从 JSON 格式的 Lor 脚本文件导入场景。
     /// </summary>
     /// <param name="path">脚本文件路径</param>
     public async Task<VNScene?> ImportScriptAsync(string path)
@@ -670,7 +667,7 @@ public class EditorService
             }
 
             var content = await File.ReadAllTextAsync(path);
-            var scene = _yamlDeserializer.Deserialize<VNScene>(content);
+            var scene = DeserializeLorScene(content);
 
             if (scene == null)
             {
@@ -680,7 +677,7 @@ public class EditorService
 
             if (scene.Dialogues == null || scene.Dialogues.Count == 0)
             {
-                ErrorOccurred?.Invoke($"警告: 导入脚本 {path} 的对话列表为空，请检查 YAML 格式");
+                ErrorOccurred?.Invoke($"警告: 导入脚本 {path} 的对话列表为空，请检查 Lor JSON 格式");
             }
 
             return scene;
@@ -691,6 +688,11 @@ public class EditorService
             ErrorOccurred?.Invoke($"导入脚本失败: {ex.Message}");
             return null;
         }
+    }
+
+    private VNScene? DeserializeLorScene(string content)
+    {
+        return JsonSerializer.Deserialize<VNScene>(content, LorJsonOptions);
     }
 
     /// <summary>
@@ -1433,6 +1435,7 @@ public class EditorService
             if (data != null)
             {
                 data.Id = sceneId;
+                NormalizeSceneGraphAliases(data);
                 _sceneGraphs[sceneId] = data;
                 UpdateCurrentProjectSceneFromGraph(sceneId, data);
                 await PersistSceneGraphToProjectAsync(sceneId);
@@ -1451,6 +1454,24 @@ public class EditorService
     public void SaveSceneGraph(string sceneId, string jsonData)
     {
         SaveSceneGraphAsync(sceneId, jsonData).GetAwaiter().GetResult();
+    }
+
+    private static void NormalizeSceneGraphAliases(SceneGraphData graph)
+    {
+        foreach (var edge in graph.Edges)
+        {
+            if (string.IsNullOrWhiteSpace(edge.SourceNodeUuid) && edge.From != null)
+            {
+                edge.SourceNodeUuid = edge.From.NodeId;
+                edge.SourcePort = edge.From.Port;
+            }
+
+            if (string.IsNullOrWhiteSpace(edge.TargetNodeUuid) && edge.To != null)
+            {
+                edge.TargetNodeUuid = edge.To.NodeId;
+                edge.TargetPort = edge.To.Port;
+            }
+        }
     }
 
     private async Task PersistSceneGraphToProjectAsync(string sceneId)
@@ -1518,14 +1539,18 @@ public class EditorService
         foreach (var node in orderedNodes)
         {
             var nodeType = node.Type ?? string.Empty;
-            if (nodeType.Equals("StartNode", StringComparison.OrdinalIgnoreCase) || nodeType.Equals("EndNode", StringComparison.OrdinalIgnoreCase))
+            if (nodeType.Equals("StartNode", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
 
             if (nodeType.Equals("DialogueNode", StringComparison.OrdinalIgnoreCase))
             {
-                scene.Dialogues.Add(ConvertDialogueNode(node));
+                scene.Dialogues.Add(ConvertDialogueNode(node, graph));
+            }
+            else if (nodeType.Equals("ChoiceNode", StringComparison.OrdinalIgnoreCase))
+            {
+                scene.Dialogues.Add(ConvertChoiceNode(node, graph));
             }
             else if (nodeType.Equals("EventNode", StringComparison.OrdinalIgnoreCase))
             {
@@ -1535,18 +1560,118 @@ public class EditorService
             {
                 scene.Dialogues.Add(ConvertBranchNode(node));
             }
+            else if (nodeType.Equals("EndNode", StringComparison.OrdinalIgnoreCase))
+            {
+                scene.Dialogues.Add(ConvertEndNode(node));
+            }
         }
 
+        scene.Nodes = graph.Nodes.Select(ConvertGraphNodeToBlueprintNode).ToList();
+        scene.Connections = graph.Edges.Select(ConvertGraphEdgeToBlueprintConnection).ToList();
+
         return scene;
+    }
+
+    private void RestoreSceneGraphFromScene(string sceneId, VNScene scene)
+    {
+        if (scene.Nodes.Count == 0)
+        {
+            return;
+        }
+
+        var graph = new SceneGraphData
+        {
+            Id = sceneId,
+            Nodes = scene.Nodes.Select(ConvertBlueprintNodeToGraphNode).ToList(),
+            Edges = scene.Connections.Select(ConvertBlueprintConnectionToGraphEdge).ToList(),
+            SceneConfig = new SceneConfigData
+            {
+                Background = scene.Background,
+                Bgm = scene.Bgm == null
+                    ? null
+                    : new BgmData
+                    {
+                        Path = scene.Bgm.Path,
+                        Volume = scene.Bgm.Volume,
+                        Loop = scene.Bgm.Loop
+                    }
+            }
+        };
+
+        NormalizeSceneGraphAliases(graph);
+        _sceneGraphs[sceneId] = graph;
+    }
+
+    private static VNBlueprintNode ConvertGraphNodeToBlueprintNode(NodeData node)
+    {
+        return new VNBlueprintNode
+        {
+            Uuid = node.Id,
+            Id = node.Id,
+            NodeType = node.Type,
+            SubType = node.SubType,
+            Position = new VNBlueprintPosition { X = node.Position.X, Y = node.Position.Y },
+            Properties = node.Properties,
+            NextNodeUuids = node.NextNodeUuids
+        };
+    }
+
+    private static VNBlueprintConnection ConvertGraphEdgeToBlueprintConnection(EdgeData edge)
+    {
+        return new VNBlueprintConnection
+        {
+            Uuid = edge.Id,
+            Id = edge.Id,
+            SourceNodeUuid = edge.SourceNodeUuid,
+            Source = edge.SourceNodeUuid,
+            SourcePort = edge.SourcePort,
+            TargetNodeUuid = edge.TargetNodeUuid,
+            Target = edge.TargetNodeUuid,
+            TargetPort = edge.TargetPort
+        };
+    }
+
+    private static NodeData ConvertBlueprintNodeToGraphNode(VNBlueprintNode node)
+    {
+        var nodeId = FirstNonEmpty(node.Uuid, node.Id);
+        return new NodeData
+        {
+            Id = nodeId,
+            Type = node.NodeType,
+            SubType = node.SubType,
+            Position = new PositionData { X = node.Position.X, Y = node.Position.Y },
+            Properties = node.Properties,
+            NextNodeUuids = node.NextNodeUuids
+        };
+    }
+
+    private static EdgeData ConvertBlueprintConnectionToGraphEdge(VNBlueprintConnection connection)
+    {
+        var source = FirstNonEmpty(connection.SourceNodeUuid, connection.Source);
+        var target = FirstNonEmpty(connection.TargetNodeUuid, connection.Target);
+        return new EdgeData
+        {
+            Id = FirstNonEmpty(connection.Uuid, connection.Id),
+            SourceNodeUuid = source,
+            SourcePort = connection.SourcePort,
+            TargetNodeUuid = target,
+            TargetPort = connection.TargetPort
+        };
     }
 
     private List<NodeData> OrderExecutableNodes(SceneGraphData graph)
     {
         var nodesById = graph.Nodes.ToDictionary(n => n.Id, n => n);
-        var nextBySource = graph.Edges
+        var executableEdges = graph.Edges
             .Where(e => !string.IsNullOrWhiteSpace(e.SourceNodeUuid) && !string.IsNullOrWhiteSpace(e.TargetNodeUuid) && IsExecutableEdge(e))
+            .ToList();
+        var nextBySource = executableEdges
+            .Where(e => !IsChoiceOutput(e.SourcePort))
             .GroupBy(e => e.SourceNodeUuid)
             .ToDictionary(g => g.Key, g => g.OrderBy(e => e.Uuid, StringComparer.OrdinalIgnoreCase).Select(e => e.TargetNodeUuid).ToList());
+        var choiceEdges = executableEdges
+            .Where(e => IsChoiceOutput(e.SourcePort))
+            .ToList();
 
         var startId = graph.Nodes.FirstOrDefault(n => string.Equals(n.Type, "StartNode", StringComparison.OrdinalIgnoreCase))?.Id
             ?? graph.Nodes.FirstOrDefault()?.Id;
@@ -1571,8 +1696,45 @@ public class EditorService
         }
 
         Visit(startId);
+        foreach (var choiceNodeId in ordered
+            .Where(n => string.Equals(n.Type, "ChoiceNode", StringComparison.OrdinalIgnoreCase))
+            .Select(n => n.Id)
+            .ToList())
+        {
+            foreach (var targetId in choiceEdges
+                .Where(e => string.Equals(e.SourceNodeUuid, choiceNodeId, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(e => GetChoicePortIndex(e.SourcePort))
+                .ThenBy(e => e.Uuid, StringComparer.OrdinalIgnoreCase)
+                .Select(e => e.TargetNodeUuid))
+            {
+                Visit(targetId);
+            }
+        }
+
+        foreach (var targetId in choiceEdges
+            .OrderBy(e => GetChoicePortIndex(e.SourcePort))
+            .ThenBy(e => e.Uuid, StringComparer.OrdinalIgnoreCase)
+            .Select(e => e.TargetNodeUuid))
+        {
+            Visit(targetId);
+        }
+
         ordered.AddRange(graph.Nodes.Where(n => !visited.Contains(n.Id)).OrderBy(n => n.Position.Y).ThenBy(n => n.Position.X));
         return ordered;
+    }
+
+    private static bool IsChoiceOutput(string sourcePort)
+    {
+        return sourcePort.StartsWith("execOut_", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static int GetChoicePortIndex(string sourcePort)
+    {
+        var suffix = sourcePort.StartsWith("execOut_", StringComparison.OrdinalIgnoreCase)
+            ? sourcePort["execOut_".Length..]
+            : string.Empty;
+
+        return int.TryParse(suffix, out var index) ? index : int.MaxValue;
     }
 
     private static bool IsExecutableEdge(EdgeData edge)
@@ -1586,7 +1748,7 @@ public class EditorService
             || edge.TargetPort.StartsWith("exec", StringComparison.OrdinalIgnoreCase);
     }
 
-    private VNDialogue ConvertDialogueNode(NodeData node)
+    private VNDialogue ConvertDialogueNode(NodeData node, SceneGraphData graph)
     {
         return new VNDialogue
         {
@@ -1596,6 +1758,7 @@ public class EditorService
             Text = GetStringProperty(node, "text"),
             Voice = GetStringProperty(node, "voice"),
             Sprites = GetSpritesProperty(node, "sprites"),
+            CharacterControls = GetCharacterControls(node, graph),
             TextEffect = GetObjectProperty<VNTextEffect>(node, "textEffect") ?? new VNTextEffect(),
             Animation = GetObjectProperty<VNAnimation>(node, "animation") ?? new VNAnimation(),
             Transition = new VNTransition { Effect = VNTransitionEffect.None, Duration = 300 },
@@ -1666,6 +1829,84 @@ public class EditorService
             Uuid = EnsureUuid(node.Id),
             Type = VNDialogueType.Branch,
             Branch = BuildBranch(node),
+            Transition = new VNTransition { Effect = VNTransitionEffect.None, Duration = 300 },
+            PositionX = node.Position.X,
+            PositionY = node.Position.Y
+        };
+    }
+
+    private VNDialogue ConvertChoiceNode(NodeData node, SceneGraphData graph)
+    {
+        var optionCountText = GetStringProperty(node, "optionCount");
+        var optionCount = int.TryParse(optionCountText, out var parsedCount)
+            ? Math.Max(1, parsedCount)
+            : Math.Max(1, node.Properties.Keys.Count(k => k.StartsWith("choiceText_", StringComparison.OrdinalIgnoreCase)));
+
+        var outgoingEdgeList = graph.Edges
+            .Where(e => string.Equals(e.SourceNodeUuid, node.Id, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(e => e.SourcePort, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(e => e.Uuid, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var outgoingEdgesByPort = outgoingEdgeList
+            .GroupBy(e => e.SourcePort, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().TargetNodeUuid, StringComparer.OrdinalIgnoreCase);
+
+        var branch = new VNBranch();
+        for (var i = 1; i <= optionCount; i++)
+        {
+            var optionText = GetStringProperty(node, $"choiceText_{i}");
+            var targetNodeUuid = outgoingEdgesByPort.TryGetValue($"execOut_{i}", out var exactTarget)
+                ? exactTarget
+                : i <= outgoingEdgeList.Count ? outgoingEdgeList[i - 1].TargetNodeUuid : string.Empty;
+
+            if (string.IsNullOrWhiteSpace(optionText) && string.IsNullOrWhiteSpace(targetNodeUuid))
+            {
+                continue;
+            }
+
+            branch.Choices.Add(new VNChoiceOption
+            {
+                Text = optionText,
+                TargetScene = targetNodeUuid
+            });
+        }
+
+        return new VNDialogue
+        {
+            Uuid = EnsureUuid(node.Id),
+            Type = VNDialogueType.Branch,
+            Branch = branch,
+            Transition = new VNTransition { Effect = VNTransitionEffect.None, Duration = 300 },
+            PositionX = node.Position.X,
+            PositionY = node.Position.Y
+        };
+    }
+
+    private VNDialogue ConvertEndNode(NodeData node)
+    {
+        var eventType = GetStringProperty(node, "eventType");
+        if (string.IsNullOrWhiteSpace(eventType))
+        {
+            eventType = "end_game";
+        }
+
+        var parameters = new Dictionary<string, object>
+        {
+            ["eventName"] = eventType
+        };
+
+        var sceneId = GetStringProperty(node, "sceneId");
+        if (!string.IsNullOrWhiteSpace(sceneId))
+        {
+            parameters["targetScene"] = sceneId;
+        }
+
+        return new VNDialogue
+        {
+            Uuid = EnsureUuid(node.Id),
+            Type = VNDialogueType.Event,
+            Sprites = new List<VNSprite>(),
+            Event = new VNEvent { EventType = VNEventType.Custom, Parameters = parameters },
             Transition = new VNTransition { Effect = VNTransitionEffect.None, Duration = 300 },
             PositionX = node.Position.X,
             PositionY = node.Position.Y
@@ -1751,6 +1992,56 @@ public class EditorService
     private static List<VNSprite> GetSpritesProperty(NodeData node, string key)
     {
         return GetObjectProperty<List<VNSprite>>(node, key) ?? new List<VNSprite>();
+    }
+
+    private static List<VNCharacterControl> GetCharacterControls(NodeData dialogueNode, SceneGraphData graph)
+    {
+        var embedded = GetObjectProperty<List<VNCharacterControl>>(dialogueNode, "characterControls");
+        if (embedded is { Count: > 0 })
+        {
+            return embedded;
+        }
+
+        var nodeById = graph.Nodes.ToDictionary(node => node.Id, node => node, StringComparer.OrdinalIgnoreCase);
+        return graph.Edges
+            .Where(edge => string.Equals(edge.TargetNodeUuid, dialogueNode.Id, StringComparison.OrdinalIgnoreCase))
+            .Select(edge => nodeById.TryGetValue(edge.SourceNodeUuid, out var controlNode) ? new { edge, controlNode } : null)
+            .Where(item => item != null && string.Equals(item.controlNode.Type, "CharacterControlNode", StringComparison.OrdinalIgnoreCase))
+            .Select(item => new VNCharacterControl
+            {
+                Slot = FirstNonEmpty(GetStringProperty(item!.controlNode, "slot"), ExtractCharacterControlSlot(item.edge.TargetPort), "1"),
+                Character = GetStringProperty(item.controlNode, "character"),
+                Action = FirstNonEmpty(GetStringProperty(item.controlNode, "action"), "show"),
+                Sprite = GetStringProperty(item.controlNode, "sprite"),
+                Sfx = GetStringProperty(item.controlNode, "sfx"),
+                Expression = GetStringProperty(item.controlNode, "expression"),
+                Position = FirstNonEmpty(GetStringProperty(item.controlNode, "position"), "center"),
+                Animation = FirstNonEmpty(GetStringProperty(item.controlNode, "animation"), "fade"),
+                Duration = double.TryParse(GetStringProperty(item.controlNode, "duration"), out var duration) ? duration : 0.3
+            })
+            .OrderBy(control => int.TryParse(control.Slot, out var slot) ? slot : int.MaxValue)
+            .ToList();
+    }
+
+    private static string ExtractCharacterControlSlot(string targetPort)
+    {
+        if (string.IsNullOrWhiteSpace(targetPort))
+        {
+            return string.Empty;
+        }
+
+        if (targetPort.StartsWith("characterControl", StringComparison.OrdinalIgnoreCase))
+        {
+            return targetPort["characterControl".Length..];
+        }
+
+        var match = Regex.Match(targetPort, @"\d+");
+        return match.Success ? match.Value : string.Empty;
+    }
+
+    private static string FirstNonEmpty(params string[] values)
+    {
+        return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
     }
 
     public object CreateNode(string sceneId, NodeCreateRequest request)
@@ -1905,7 +2196,7 @@ public class ViewportData
 public class NodeData
 {
     /// <summary>
-    /// 节点的唯一标识符（UUID），用于 YAML 序列化和蓝图视图中的节点对应。
+    /// 节点的唯一标识符（UUID），用于 JSON 序列化和蓝图视图中的节点对应。
     /// </summary>
     public string Uuid { get; set; } = "";
 
@@ -1949,7 +2240,7 @@ public class NodeData
     /// <summary>
     /// 兼容旧代码的 Id 属性，映射到 Uuid。
     /// </summary>
-    [JsonIgnore]
+    [JsonPropertyName("id")]
     public string Id
     {
         get => Uuid;
@@ -2016,27 +2307,53 @@ public class EdgeData
             || targetPort.StartsWith("exec", StringComparison.OrdinalIgnoreCase);
     }
 
-    // 兼容旧代码的属性（不序列化，避免与 Uuid/SourceNodeUuid/TargetNodeUuid 重复）
-    [JsonIgnore]
+    /// <summary>
+    /// 兼容旧代码的连线 ID，映射到 Uuid。
+    /// </summary>
+    [JsonPropertyName("id")]
     public string Id
     {
         get => Uuid;
         set => Uuid = value;
     }
 
-    [JsonIgnore]
+    /// <summary>
+    /// 兼容旧代码的源节点 UUID，映射到 SourceNodeUuid。
+    /// </summary>
+    [JsonPropertyName("source")]
     public string Source
     {
         get => SourceNodeUuid;
         set => SourceNodeUuid = value;
     }
 
-    [JsonIgnore]
+    /// <summary>
+    /// 兼容旧代码的目标节点 UUID，映射到 TargetNodeUuid。
+    /// </summary>
+    [JsonPropertyName("target")]
     public string Target
     {
         get => TargetNodeUuid;
         set => TargetNodeUuid = value;
     }
+
+    /// <summary>
+    /// 兼容 Pinia 图存储的嵌套端点格式：from.nodeId/from.port。
+    /// </summary>
+    [JsonPropertyName("from")]
+    public EdgeEndpointData? From { get; set; }
+
+    /// <summary>
+    /// 兼容 Pinia 图存储的嵌套端点格式：to.nodeId/to.port。
+    /// </summary>
+    [JsonPropertyName("to")]
+    public EdgeEndpointData? To { get; set; }
+}
+
+public class EdgeEndpointData
+{
+    public string NodeId { get; set; } = string.Empty;
+    public string Port { get; set; } = string.Empty;
 }
 
 public class SceneConfigData

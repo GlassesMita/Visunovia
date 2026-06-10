@@ -16,7 +16,7 @@ const emit = defineEmits<{
 const lorImport = useLorImport()
 
 const activeTab = ref<'explorer' | 'content'>('explorer')
-const yamlContent = ref('')
+const jsonContent = ref('')
 const showPreview = ref(false)
 const conversionPreview = ref<{
   nodeCount: number
@@ -119,7 +119,7 @@ async function handleImport() {
     success = await lorImport.importFromProject(selectedProjectPath.value, selectedSceneId.value)
   } else {
     if (!selectedSceneId.value) return
-    success = await lorImport.importFromContent(yamlContent.value, selectedSceneId.value)
+    success = await lorImport.importFromContent(jsonContent.value, selectedSceneId.value)
   }
 
   if (success) {
@@ -132,8 +132,8 @@ async function handleImport() {
 
 /** 预览转换结果 */
 async function handlePreview() {
-  if (activeTab.value === 'content' && yamlContent.value) {
-    conversionPreview.value = await lorImport.previewConversion(yamlContent.value)
+  if (activeTab.value === 'content' && jsonContent.value) {
+    conversionPreview.value = await lorImport.previewConversion(jsonContent.value)
     showPreview.value = true
   }
 }
@@ -147,7 +147,7 @@ function handleClose() {
 watch(() => props.visible, (newVal) => {
   if (newVal) {
     activeTab.value = 'explorer'
-    yamlContent.value = ''
+    jsonContent.value = ''
     showPreview.value = false
     conversionPreview.value = null
     selectedProjectPath.value = ''
@@ -239,18 +239,18 @@ watch(() => props.visible, (newVal) => {
             </div>
 
             <div class="form-group">
-              <label>YAML 内容</label>
+              <label>JSON 内容</label>
               <textarea 
-                v-model="yamlContent" 
+                v-model="jsonContent" 
                 rows="8" 
-                placeholder="粘贴 Lor 剧本 YAML 内容..."
+                placeholder="粘贴 Lor 剧本 JSON 内容..."
                 :disabled="isLoading"
               />
             </div>
             <button 
               class="preview-btn" 
               @click="handlePreview"
-              :disabled="!yamlContent || isLoading"
+              :disabled="!jsonContent || isLoading"
             >
               预览转换结果
             </button>
@@ -705,3 +705,4 @@ watch(() => props.visible, (newVal) => {
   cursor: not-allowed;
 }
 </style>
+

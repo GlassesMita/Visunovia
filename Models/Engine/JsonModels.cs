@@ -1,41 +1,39 @@
 using System.Text.Json.Serialization;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Visunovia.Models.Engine;
 
-// ==================== YAML 序列化根模型 ====================
+// ==================== JSON 序列化根模型 ====================
 
 /// <summary>
-/// YAML 场景文件根模型。
-/// 每个 YAML 文件对应一个场景的完整蓝图定义，包含版本信息、元数据、节点列表、资源列表和连线列表。
+/// JSON 场景文件根模型。
+/// 每个 JSON 文件对应一个场景的完整蓝图定义，包含版本信息、元数据、节点列表、资源列表和连线列表。
 /// 所有实体通过 UUID 引用关联。
 /// </summary>
-public class YamlSceneDocument
+public class JsonSceneDocument
 {
     [JsonPropertyName("version")]
     public string Version { get; set; } = "1.0.0";
 
     [JsonPropertyName("metadata")]
-    public YamlSceneMetadata Metadata { get; set; } = new();
+    public JsonSceneMetadata Metadata { get; set; } = new();
 
     [JsonPropertyName("uuid_registry")]
-    public List<YamlUuidEntry> UuidRegistry { get; set; } = new();
+    public List<JsonUuidEntry> UuidRegistry { get; set; } = new();
 
     [JsonPropertyName("resources")]
-    public List<YamlResourceEntry> Resources { get; set; } = new();
+    public List<JsonResourceEntry> Resources { get; set; } = new();
 
     [JsonPropertyName("nodes")]
-    public List<YamlNodeEntry> Nodes { get; set; } = new();
+    public List<JsonNodeEntry> Nodes { get; set; } = new();
 
     [JsonPropertyName("edges")]
-    public List<YamlEdgeEntry> Edges { get; set; } = new();
+    public List<JsonEdgeEntry> Edges { get; set; } = new();
 }
 
 /// <summary>
-/// 场景元数据
+/// 场景元数据。
 /// </summary>
-public class YamlSceneMetadata
+public class JsonSceneMetadata
 {
     [JsonPropertyName("scene_id")]
     public string SceneId { get; set; } = "";
@@ -68,7 +66,7 @@ public class YamlSceneMetadata
 /// UUID 注册表条目，集中存储所有实体的 UUID 映射信息。
 /// 其他部分通过 UUID 引用此表中的实体。
 /// </summary>
-public class YamlUuidEntry
+public class JsonUuidEntry
 {
     [JsonPropertyName("uuid")]
     public string Uuid { get; set; } = "";
@@ -86,9 +84,9 @@ public class YamlUuidEntry
 // ==================== 资源条目 ====================
 
 /// <summary>
-/// YAML 中的资源条目，通过 UUID 标识。
+/// JSON 中的资源条目，通过 UUID 标识。
 /// </summary>
-public class YamlResourceEntry
+public class JsonResourceEntry
 {
     [JsonPropertyName("uuid")]
     public string Uuid { get; set; } = "";
@@ -109,10 +107,10 @@ public class YamlResourceEntry
 // ==================== 节点条目 ====================
 
 /// <summary>
-/// YAML 中的节点条目，通过 UUID 标识。
+/// JSON 中的节点条目，通过 UUID 标识。
 /// 包含节点类型、绝对坐标位置、属性、端口定义以及多目标执行步骤。
 /// </summary>
-public class YamlNodeEntry
+public class JsonNodeEntry
 {
     [JsonPropertyName("uuid")]
     public string Uuid { get; set; } = "";
@@ -127,19 +125,19 @@ public class YamlNodeEntry
     public string DisplayName { get; set; } = "";
 
     /// <summary>
-    /// 蓝图视图中的绝对坐标位置，用于从 YAML 正确转换后显示到蓝图视图内。
+    /// 蓝图视图中的绝对坐标位置，用于从 JSON 正确转换后显示到蓝图视图内。
     /// </summary>
     [JsonPropertyName("position")]
-    public YamlPosition Position { get; set; } = new();
+    public JsonPosition Position { get; set; } = new();
 
     [JsonPropertyName("properties")]
     public Dictionary<string, object> Properties { get; set; } = new();
 
     [JsonPropertyName("inputs")]
-    public List<YamlPortDefinition> Inputs { get; set; } = new();
+    public List<JsonPortDefinition> Inputs { get; set; } = new();
 
     [JsonPropertyName("outputs")]
-    public List<YamlPortDefinition> Outputs { get; set; } = new();
+    public List<JsonPortDefinition> Outputs { get; set; } = new();
 
     /// <summary>
     /// 下一个执行步骤的节点 UUID 列表。
@@ -150,9 +148,9 @@ public class YamlNodeEntry
 }
 
 /// <summary>
-/// 端口定义
+/// 端口定义。
 /// </summary>
-public class YamlPortDefinition
+public class JsonPortDefinition
 {
     [JsonPropertyName("name")]
     public string Name { get; set; } = "";
@@ -168,9 +166,9 @@ public class YamlPortDefinition
 }
 
 /// <summary>
-/// 2D 坐标
+/// 2D 坐标。
 /// </summary>
-public class YamlPosition
+public class JsonPosition
 {
     [JsonPropertyName("x")]
     public double X { get; set; }
@@ -182,10 +180,10 @@ public class YamlPosition
 // ==================== 连线条目 ====================
 
 /// <summary>
-/// YAML 中的连线条目，通过 UUID 标识。
+/// JSON 中的连线条目，通过 UUID 标识。
 /// 源节点和目标节点通过 UUID 引用节点表中的条目。
 /// </summary>
-public class YamlEdgeEntry
+public class JsonEdgeEntry
 {
     [JsonPropertyName("uuid")]
     public string Uuid { get; set; } = "";
@@ -204,27 +202,4 @@ public class YamlEdgeEntry
 
     [JsonPropertyName("edge_type")]
     public string EdgeType { get; set; } = "exec"; // exec, data, resource
-}
-
-// ==================== YAML 序列化/反序列化辅助 ====================
-
-/// <summary>
-/// YAML 序列化器工厂，提供统一的序列化和反序列化配置。
-/// </summary>
-public static class YamlSerializerFactory
-{
-    public static ISerializer CreateSerializer()
-    {
-        return new SerializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
-            .Build();
-    }
-
-    public static IDeserializer CreateDeserializer()
-    {
-        return new DeserializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .Build();
-    }
 }

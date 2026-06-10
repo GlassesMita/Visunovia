@@ -32,7 +32,7 @@ public class UuidRegistryService
     }
 
     /// <summary>
-    /// 使用指定 UUID 注册实体（用于从 YAML 导入时恢复原有 UUID）
+    /// 使用指定 UUID 注册实体（用于从 JSON 导入时恢复原有 UUID）
     /// </summary>
     public void RegisterEntityWithUuid(string uuid, string entityType, string name = "", string displayName = "")
     {
@@ -87,7 +87,7 @@ public class UuidRegistryService
     }
 
     /// <summary>
-    /// 使用指定 UUID 注册节点（从 YAML 导入）
+    /// 使用指定 UUID 注册节点（从 JSON 导入）
     /// </summary>
     public void RegisterNodeWithUuid(string uuid, string nodeType, string subType = "", string displayName = "",
         double posX = 0, double posY = 0, Dictionary<string, object>? properties = null)
@@ -290,26 +290,26 @@ public class UuidRegistryService
         return _db.Connection.Query<SceneEntry>("SELECT * FROM SceneEntries ORDER BY SceneId");
     }
 
-    // ==================== YAML 快照操作 ====================
+        // ==================== JSON 快照操作 ====================
 
     /// <summary>
-    /// 保存 YAML 快照
+        /// 保存 JSON 快照
     /// </summary>
-    public void SaveYamlSnapshot(string sceneId, string yamlContent, string description = "")
+        public void SaveJsonSnapshot(string sceneId, string jsonContent, string description = "")
     {
         _db.Connection.Execute(@"
-            INSERT INTO YamlSnapshots (SceneId, YamlContent, Description, CreatedAt)
-            VALUES (@SceneId, @YamlContent, @Description, datetime('now'))",
-            new { SceneId = sceneId, YamlContent = yamlContent, Description = description });
+            INSERT INTO JsonSnapshots (SceneId, JsonContent, Description, CreatedAt)
+            VALUES (@SceneId, @JsonContent, @Description, datetime('now'))",
+            new { SceneId = sceneId, JsonContent = jsonContent, Description = description });
     }
 
     /// <summary>
-    /// 获取场景的最新 YAML 快照
+        /// 获取场景的最新 JSON 快照
     /// </summary>
-    public string? GetLatestYamlSnapshot(string sceneId)
+        public string? GetLatestJsonSnapshot(string sceneId)
     {
         return _db.Connection.QueryFirstOrDefault<string>(@"
-            SELECT YamlContent FROM YamlSnapshots
+            SELECT JsonContent FROM JsonSnapshots
             WHERE SceneId = @SceneId
             ORDER BY CreatedAt DESC LIMIT 1",
             new { SceneId = sceneId });

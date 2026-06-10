@@ -1,4 +1,4 @@
-import { defineNode } from '@baklavajs/core'
+import { defineNode, NodeInterface } from '@baklavajs/core'
 import { TextInputInterface } from '@baklavajs/renderer-vue'
 import { tSync } from '@/services/translationService'
 import {
@@ -8,6 +8,12 @@ import {
   setNodeI18nTitle,
 } from './BaseNode'
 
+const CONTROL_SYMBOL = '◆'
+
+function createCharacterControlPort(label: string) {
+  return () => new NodeInterface(label, undefined).setPort(true)
+}
+
 export const NODE_COLOR = '#2196F3'
 
 export default defineNode({
@@ -15,10 +21,12 @@ export default defineNode({
   title: 'Dialogue',
   inputs: {
     execIn: createExecInPort(ARROW_SYMBOL),
-    speaker: () => new TextInputInterface(tSync('props.speaker', 'Speaker'), ''),
+    characterControl1: createCharacterControlPort(`${CONTROL_SYMBOL} 1`),
+    characterControl2: createCharacterControlPort(`${CONTROL_SYMBOL} 2`),
+    characterControl3: createCharacterControlPort(`${CONTROL_SYMBOL} 3`),
+    characterControl4: createCharacterControlPort(`${CONTROL_SYMBOL} 4`),
+    characterControl5: createCharacterControlPort(`${CONTROL_SYMBOL} 5`),
     text: () => new TextInputInterface(tSync('props.text', 'Text'), ''),
-    voice: () => new TextInputInterface(tSync('props.voice', 'Voice'), ''),
-    sprites: () => new TextInputInterface(tSync('props.sprites', 'Sprites'), ''),
   },
   outputs: {
     execOut: createExecOutPort(ARROW_SYMBOL),

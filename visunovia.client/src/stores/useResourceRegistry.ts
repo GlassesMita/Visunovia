@@ -50,9 +50,9 @@ export const RESOURCE_TYPE_EXTENSIONS: Record<ResourceType, string[]> = {
   bgm:   ['.mp3', '.wav', '.ogg', '.flac', '.m4a'],
   voice: ['.mp3', '.wav', '.ogg', '.flac', '.opus'],
   video: ['.mp4', '.webm', '.avi', '.mov', '.mkv'],
-  scene: ['.json', '.scene', '.yaml', '.yml'],
+  scene: ['.json', '.scene'],
   font:  ['.ttf', '.otf', '.woff', '.woff2', '.eot'],
-  data:  ['.json', '.xml', '.csv', '.txt', '.yaml', '.yml'],
+  data:  ['.json', '.xml', '.csv', '.txt'],
 }
 
 /**
@@ -192,3 +192,4 @@ export const useResourceRegistry = defineStore('resourceRegistry', () => {
     clear,
   }
 })
+

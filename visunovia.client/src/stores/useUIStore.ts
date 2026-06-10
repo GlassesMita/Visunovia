@@ -12,6 +12,7 @@ export const useUIStore = defineStore('ui', () => {
   const showNewProjectExplorer = ref(false)
   const showNewProjectModal = ref(false)
   const showProjectPreferences = ref(false)
+  const showCharacterManager = ref(false)
   const activePanel = ref<string | null>(null)
   const theme = ref<'light' | 'dark'>('dark')
   const openingFilePath = ref<string | null>(null)
@@ -90,6 +91,14 @@ export const useUIStore = defineStore('ui', () => {
     showProjectPreferences.value = false
   }
 
+  function openCharacterManager() {
+    showCharacterManager.value = true
+  }
+
+  function closeCharacterManager() {
+    showCharacterManager.value = false
+  }
+
   function openFileByPath(path: string) {
     openingFilePath.value = path
   }
@@ -133,6 +142,9 @@ export const useUIStore = defineStore('ui', () => {
     showProjectPreferences,
     openProjectPreferences,
     closeProjectPreferences,
+    showCharacterManager,
+    openCharacterManager,
+    closeCharacterManager,
     openingFilePath,
     openFileByPath,
     showWelcomeModal,

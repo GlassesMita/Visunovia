@@ -64,6 +64,7 @@ function getNodeTitle(type: string): string {
     EndNode: 'nodes.end',
     EventNode: 'nodes.event',
     DialogueNode: 'nodes.dialogue',
+    CharacterControlNode: 'nodes.characterControl',
     BranchNode: 'nodes.branch',
     LogicNode: 'nodes.logic',
   }
@@ -76,6 +77,7 @@ function getNodeIcon(type: string): string {
     EndNode: '■',
     EventNode: '⚡',
     DialogueNode: '💬',
+    CharacterControlNode: '🎭',
     BranchNode: '❓',
     LogicNode: '🔧',
   }
@@ -85,7 +87,10 @@ function getNodeIcon(type: string): string {
 function getNodeDisplayName(node: any): string {
   // 根据节点类型和数据显示不同的名称
   if (node.type === 'DialogueNode') {
-    const speaker = node.data?.speaker
+    const speakers = [node.data?.speaker, node.data?.speaker2, node.data?.speaker3, node.data?.speaker4, node.data?.speaker5]
+      .map((value: any) => String(value || '').trim())
+      .filter(Boolean)
+    const speaker = speakers.length > 0 ? speakers.join(' / ') : node.data?.speaker
     const text = node.data?.text
     if (speaker && text) {
       return `${speaker}: ${text.slice(0, 20)}${text.length > 20 ? '...' : ''}`
@@ -101,6 +106,17 @@ function getNodeDisplayName(node: any): string {
       const translated = t(typeKey).value
       return translated !== typeKey ? translated : subType
     }
+  }
+
+  if (node.type === 'CharacterControlNode') {
+    const character = String(node.data?.character || '').trim()
+    const action = String(node.data?.action || 'show')
+    const actionLabels: Record<string, string> = {
+      show: '显示',
+      hide: '消失',
+      update: '更新',
+    }
+    return character ? `${actionLabels[action] || action}: ${character}` : getNodeTitle(node.type)
   }
 
   return getNodeTitle(node.type)
@@ -173,6 +189,7 @@ function getNodeDisplayName(node: any): string {
 .node-item.EndNode .node-icon { color: #f48771; }
 .node-item.EventNode .node-icon { color: #dcdcaa; }
 .node-item.DialogueNode .node-icon { color: #569cd6; }
+.node-item.CharacterControlNode .node-icon { color: #ba68c8; }
 .node-item.BranchNode .node-icon { color: #c586c0; }
 .node-item.LogicNode .node-icon { color: #ce9178; }
 

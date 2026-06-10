@@ -1,51 +1,34 @@
 using System.Text.Json;
 using Visunovia.Models.Engine;
 using Visunovia.Services.Configuration;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Visunovia.Services;
 
 /// <summary>
-/// Blueprint ↔ YAML 双向转换服务。
-/// 
-/// 转换流程：
-/// - Blueprint → YAML：从 EditorService 获取场景图数据，为每个节点/资源/连线分配 UUID，
-///   序列化为 YAML 文件，同时写入 SQLite 数据库。
-/// - YAML → Blueprint：解析 YAML 文件，从 UUID 注册表恢复实体关系，
-///   重建场景图数据并加载到 EditorService。
-/// 
-/// UUID 机制：
-/// - 每个节点、资源、连线、场景都有唯一 UUID
-/// - UUID 表集中存储在 SQLite 数据库中
-/// - YAML 文件内嵌 uuid_registry 表，实现自包含
-/// - 导入时优先使用 YAML 中的 UUID，保持跨文件引用一致性
+/// Blueprint ↔ JSON 双向转换服务。
 /// </summary>
-public class BlueprintYamlConverter
+public class BlueprintJsonConverter
 {
     private readonly EditorService _editorService;
-    private readonly ISerializer _yamlSerializer;
-    private readonly IDeserializer _yamlDeserializer;
+    private static readonly JsonSerializerOptions LorJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true
+    };
 
-    public BlueprintYamlConverter(EditorService editorService)
+    public BlueprintJsonConverter(EditorService editorService)
     {
         _editorService = editorService;
-        _yamlSerializer = new SerializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitDefaults)
-            .Build();
-        _yamlDeserializer = new DeserializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .Build();
     }
 
-    // ==================== Blueprint → YAML ====================
+    // ==================== Blueprint → JSON ====================
 
     /// <summary>
-    /// 将指定场景的蓝图转换为 YAML 文档。
+    /// 将指定场景的蓝图转换为 JSON 文档。
     /// 为所有节点、资源、连线分配 UUID，并写入数据库。
     /// </summary>
-    public async Task<YamlSceneDocument> BlueprintToYamlAsync(
+    public async Task<JsonSceneDocument> BlueprintToJsonAsync(
         string sceneId,
         UuidRegistryService? uuidService = null,
         string displayName = "",
@@ -58,10 +41,10 @@ public class BlueprintYamlConverter
             throw new InvalidOperationException($"场景图 {sceneId} 不存在");
         }
 
-        var document = new YamlSceneDocument
+        var document = new JsonSceneDocument
         {
             Version = "1.0.0",
-            Metadata = new YamlSceneMetadata
+            Metadata = new JsonSceneMetadata
             {
                 SceneId = sceneId,
                 DisplayName = string.IsNullOrEmpty(displayName) ? sceneId : displayName,
@@ -72,11 +55,10 @@ public class BlueprintYamlConverter
             }
         };
 
-        // 注册场景 UUID
         var sceneUuid = uuidService?.RegisterScene(sceneId, document.Metadata.DisplayName)
             ?? Guid.NewGuid().ToString();
 
-        document.UuidRegistry.Add(new YamlUuidEntry
+        document.UuidRegistry.Add(new JsonUuidEntry
         {
             Uuid = sceneUuid,
             EntityType = "Scene",
@@ -84,26 +66,23 @@ public class BlueprintYamlConverter
             DisplayName = document.Metadata.DisplayName
         });
 
-        // 转换节点
         if (sceneGraph.Nodes != null)
         {
             foreach (var node in sceneGraph.Nodes)
             {
-                var nodeUuid = node.Id; // 使用现有 ID 作为 UUID
+                var nodeUuid = node.Id;
                 var nodeType = node.Type ?? "Unknown";
                 var subType = ExtractSubType(node);
                 var nodeDisplayName = ExtractDisplayName(node, nodeType);
-
                 var position = NormalizeBlueprintPosition(node.Position?.X ?? 0, node.Position?.Y ?? 0);
 
-                // 注册到 UUID 注册表
                 if (uuidService != null)
                 {
                     uuidService.RegisterNodeWithUuid(nodeUuid, nodeType, subType, nodeDisplayName,
                     position.X, position.Y, node.Properties);
                 }
 
-                document.UuidRegistry.Add(new YamlUuidEntry
+                document.UuidRegistry.Add(new JsonUuidEntry
                 {
                     Uuid = nodeUuid,
                     EntityType = "Node",
@@ -111,20 +90,19 @@ public class BlueprintYamlConverter
                     DisplayName = nodeDisplayName
                 });
 
-                // 构建端口定义
-                var inputs = new List<YamlPortDefinition>();
-                var outputs = new List<YamlPortDefinition>();
+                var inputs = new List<JsonPortDefinition>();
+                var outputs = new List<JsonPortDefinition>();
 
                 if (node.Inputs != null)
                 {
                     foreach (var port in node.Inputs)
                     {
-                        inputs.Add(new YamlPortDefinition
+                        inputs.Add(new JsonPortDefinition
                         {
-                            Name = port.Id,
-                            Label = port.Label,
-                            PortType = port.Type,
-                            DataType = port.DataType
+                            Name = port.Id ?? string.Empty,
+                            Label = port.Label ?? string.Empty,
+                            PortType = port.Type ?? string.Empty,
+                            DataType = port.DataType ?? string.Empty
                         });
                     }
                 }
@@ -133,23 +111,23 @@ public class BlueprintYamlConverter
                 {
                     foreach (var port in node.Outputs)
                     {
-                        outputs.Add(new YamlPortDefinition
+                        outputs.Add(new JsonPortDefinition
                         {
-                            Name = port.Id,
-                            Label = port.Label,
-                            PortType = port.Type,
-                            DataType = port.DataType
+                            Name = port.Id ?? string.Empty,
+                            Label = port.Label ?? string.Empty,
+                            PortType = port.Type ?? string.Empty,
+                            DataType = port.DataType ?? string.Empty
                         });
                     }
                 }
 
-                document.Nodes.Add(new YamlNodeEntry
+                document.Nodes.Add(new JsonNodeEntry
                 {
                     Uuid = nodeUuid,
                     NodeType = nodeType,
                     SubType = subType,
                     DisplayName = nodeDisplayName,
-                    Position = new YamlPosition
+                    Position = new JsonPosition
                     {
                         X = position.X,
                         Y = position.Y
@@ -162,12 +140,11 @@ public class BlueprintYamlConverter
             }
         }
 
-        // 转换连线
         if (sceneGraph.Edges != null)
         {
             foreach (var edge in sceneGraph.Edges)
             {
-                var edgeUuid = edge.Id; // 使用现有 ID 作为 UUID
+                var edgeUuid = edge.Id;
 
                 if (uuidService != null)
                 {
@@ -175,7 +152,7 @@ public class BlueprintYamlConverter
                         edge.Target, edge.TargetPort, edge.Type ?? "exec");
                 }
 
-                document.UuidRegistry.Add(new YamlUuidEntry
+                document.UuidRegistry.Add(new JsonUuidEntry
                 {
                     Uuid = edgeUuid,
                     EntityType = "Edge",
@@ -183,7 +160,7 @@ public class BlueprintYamlConverter
                     DisplayName = $"{edge.Source}:{edge.SourcePort} → {edge.Target}:{edge.TargetPort}"
                 });
 
-                document.Edges.Add(new YamlEdgeEntry
+                document.Edges.Add(new JsonEdgeEntry
                 {
                     Uuid = edgeUuid,
                     SourceNodeUuid = edge.Source,
@@ -195,52 +172,50 @@ public class BlueprintYamlConverter
             }
         }
 
-        // 保存 YAML 快照到数据库
         if (uuidService != null)
         {
-            var yamlContent = _yamlSerializer.Serialize(document);
-            uuidService.SaveYamlSnapshot(sceneId, yamlContent, "Blueprint→YAML export");
+            var jsonContent = JsonSerializer.Serialize(document, LorJsonOptions);
+            uuidService.SaveJsonSnapshot(sceneId, jsonContent, "Blueprint→JSON export");
         }
 
         return document;
     }
 
     /// <summary>
-    /// 将蓝图转换为 YAML 字符串
+    /// 将蓝图转换为 JSON 格式的 Lor 字符串。
     /// </summary>
-    public async Task<string> ExportYamlAsync(
+    public async Task<string> ExportJsonAsync(
         string sceneId,
         UuidRegistryService? uuidService = null,
         string displayName = "",
         string description = "",
         string author = "")
     {
-        var document = await BlueprintToYamlAsync(sceneId, uuidService, displayName, description, author);
-        return _yamlSerializer.Serialize(document);
+        var document = await BlueprintToJsonAsync(sceneId, uuidService, displayName, description, author);
+        return JsonSerializer.Serialize(document, LorJsonOptions);
     }
 
-    // ==================== YAML → Blueprint ====================
+    // ==================== JSON → Blueprint ====================
 
     /// <summary>
-    /// 从 YAML 文档恢复蓝图到 EditorService。
+    /// 从 JSON 文档恢复蓝图到 EditorService。
     /// 解析 UUID 注册表，重建节点和连线关系。
     /// </summary>
-    public async Task<SceneGraphData> YamlToBlueprintAsync(
-        string yamlContent,
+    public async Task<SceneGraphData> JsonToBlueprintAsync(
+        string jsonContent,
         UuidRegistryService? uuidService = null,
         string? targetSceneId = null)
     {
-        var document = _yamlDeserializer.Deserialize<YamlSceneDocument>(yamlContent);
+        var document = DeserializeLorSceneDocument(jsonContent);
         if (document == null)
         {
-            throw new InvalidOperationException("YAML 解析失败：文档为空");
+            throw new InvalidOperationException("JSON 解析失败：文档为空");
         }
 
         var sceneId = !string.IsNullOrWhiteSpace(targetSceneId)
             ? targetSceneId
             : document.Metadata?.SceneId ?? Guid.NewGuid().ToString();
 
-        // 注册场景
         if (uuidService != null && document.Metadata != null)
         {
             var sceneUuid = document.UuidRegistry
@@ -249,7 +224,6 @@ public class BlueprintYamlConverter
             uuidService.RegisterSceneWithUuid(sceneUuid, sceneId, document.Metadata.DisplayName);
         }
 
-        // 构建场景图数据
         var sceneGraph = new SceneGraphData
         {
             Id = sceneId,
@@ -257,7 +231,6 @@ public class BlueprintYamlConverter
             Edges = new List<EdgeData>()
         };
 
-        // 注册所有 UUID 条目
         if (uuidService != null && document.UuidRegistry != null)
         {
             foreach (var entry in document.UuidRegistry)
@@ -266,90 +239,85 @@ public class BlueprintYamlConverter
             }
         }
 
-        // 重建节点
         if (document.Nodes != null)
         {
-            foreach (var yamlNode in document.Nodes)
+            foreach (var jsonNode in document.Nodes)
             {
-                var position = NormalizeBlueprintPosition(yamlNode.Position?.X ?? 0, yamlNode.Position?.Y ?? 0);
+                var position = NormalizeBlueprintPosition(jsonNode.Position?.X ?? 0, jsonNode.Position?.Y ?? 0);
 
                 var nodeData = new NodeData
                 {
-                    Uuid = yamlNode.Uuid,
-                    Type = NormalizeNodeType(yamlNode.NodeType),
-                    SubType = yamlNode.SubType,
+                    Uuid = jsonNode.Uuid,
+                    Type = NormalizeNodeType(jsonNode.NodeType),
+                    SubType = jsonNode.SubType,
                     Position = new PositionData
                     {
                         X = position.X,
                         Y = position.Y
                     },
-                    Properties = yamlNode.Properties ?? new Dictionary<string, object>(),
-                    Inputs = yamlNode.Inputs?.Select(p => new PortData
+                    Properties = jsonNode.Properties ?? new Dictionary<string, object>(),
+                    Inputs = jsonNode.Inputs?.Select(p => new PortData
                     {
                         Id = p.Name,
                         Label = p.Label,
                         Type = p.PortType,
                         DataType = p.DataType
                     }).ToList() ?? new List<PortData>(),
-                    Outputs = yamlNode.Outputs?.Select(p => new PortData
+                    Outputs = jsonNode.Outputs?.Select(p => new PortData
                     {
                         Id = p.Name,
                         Label = p.Label,
                         Type = p.PortType,
                         DataType = p.DataType
                     }).ToList() ?? new List<PortData>(),
-                    NextNodeUuids = yamlNode.NextNodeUuids ?? new List<string>()
+                    NextNodeUuids = jsonNode.NextNodeUuids ?? new List<string>()
                 };
 
                 sceneGraph.Nodes.Add(nodeData);
 
-                // 写入数据库
                 if (uuidService != null)
                 {
                     uuidService.RegisterNodeWithUuid(
-                        yamlNode.Uuid,
-                        NormalizeNodeType(yamlNode.NodeType),
-                        yamlNode.SubType,
-                        yamlNode.DisplayName,
+                        jsonNode.Uuid,
+                        NormalizeNodeType(jsonNode.NodeType),
+                        jsonNode.SubType,
+                        jsonNode.DisplayName,
                         position.X,
                         position.Y,
-                        yamlNode.Properties);
+                        jsonNode.Properties);
                 }
             }
         }
 
-        // 重建连线
         if (document.Edges != null)
         {
-            foreach (var yamlEdge in document.Edges)
+            foreach (var jsonEdge in document.Edges)
             {
                 var edgeData = new EdgeData
                 {
-                    Uuid = yamlEdge.Uuid,
-                    SourceNodeUuid = yamlEdge.SourceNodeUuid,
-                    SourcePort = yamlEdge.SourcePort,
-                    TargetNodeUuid = yamlEdge.TargetNodeUuid,
-                    TargetPort = yamlEdge.TargetPort,
-                    Type = yamlEdge.EdgeType
+                    Uuid = jsonEdge.Uuid,
+                    SourceNodeUuid = jsonEdge.SourceNodeUuid,
+                    SourcePort = jsonEdge.SourcePort,
+                    TargetNodeUuid = jsonEdge.TargetNodeUuid,
+                    TargetPort = jsonEdge.TargetPort,
+                    Type = jsonEdge.EdgeType
                 };
 
                 sceneGraph.Edges.Add(edgeData);
 
-                // 写入数据库
                 if (uuidService != null)
                 {
                     uuidService.RegisterEdgeWithUuid(
-                        yamlEdge.Uuid,
-                        yamlEdge.SourceNodeUuid,
-                        yamlEdge.SourcePort,
-                        yamlEdge.TargetNodeUuid,
-                        yamlEdge.TargetPort,
-                        yamlEdge.EdgeType);
+                        jsonEdge.Uuid,
+                        jsonEdge.SourceNodeUuid,
+                        jsonEdge.SourcePort,
+                        jsonEdge.TargetNodeUuid,
+                        jsonEdge.TargetPort,
+                        jsonEdge.EdgeType);
                 }
             }
         }
 
-        // 保存到 EditorService
         var json = JsonSerializer.Serialize(sceneGraph);
         _editorService.SaveSceneGraph(sceneId, json);
 
@@ -357,19 +325,24 @@ public class BlueprintYamlConverter
     }
 
     /// <summary>
-    /// 从 YAML 字符串导入蓝图
+    /// 从 JSON 字符串导入蓝图。
     /// </summary>
-    public async Task<SceneGraphData> ImportYamlAsync(
-        string yamlContent,
+    public async Task<SceneGraphData> ImportJsonAsync(
+        string jsonContent,
         UuidRegistryService? uuidService = null,
         string? targetSceneId = null)
     {
-        return await YamlToBlueprintAsync(yamlContent, uuidService, targetSceneId);
+        return await JsonToBlueprintAsync(jsonContent, uuidService, targetSceneId);
+    }
+
+    private static JsonSceneDocument? DeserializeLorSceneDocument(string content)
+    {
+        return JsonSerializer.Deserialize<JsonSceneDocument>(content, LorJsonOptions);
     }
 
     // ==================== 辅助方法 ====================
 
-    private string ExtractSubType(NodeData node)
+    private static string ExtractSubType(NodeData node)
     {
         if (node.Properties != null && node.Properties.TryGetValue("subType", out var subType))
         {
@@ -378,11 +351,10 @@ public class BlueprintYamlConverter
         return "";
     }
 
-    private string ExtractDisplayName(NodeData node, string nodeType)
+    private static string ExtractDisplayName(NodeData node, string nodeType)
     {
         if (node.Properties != null)
         {
-            // 尝试从属性中获取显示名称
             if (node.Properties.TryGetValue("speaker", out var speaker))
             {
                 return $"Dialogue: {speaker}";

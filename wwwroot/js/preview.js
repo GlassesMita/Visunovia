@@ -8,6 +8,7 @@ app.previewState = {
     history: [],
     currentBg: '',
     currentChar: '',
+    currentCharSlots: {},
     currentBgm: ''
 };
 
@@ -24,6 +25,7 @@ app.startPreview = function (data) {
     app.previewState.history = [];
     app.previewState.currentBg = '';
     app.previewState.currentChar = '';
+    app.previewState.currentCharSlots = {};
     app.previewState.currentBgm = '';
 
     var overlay = document.getElementById('previewOverlay');
@@ -116,20 +118,22 @@ app.renderPreviewDialogue = function (dialogue, scene) {
             }
         }
 
+        var controls = dialogue.characterControls || dialogue.CharacterControls || [];
+        if (controls && controls.length > 0) {
+            app.applyPreviewCharacterControls(controls);
+        }
+
         var spritePath = '';
         if (dialogue.sprites && dialogue.sprites.length > 0) {
             spritePath = dialogue.sprites[0].path || '';
         }
         // 安全检查：过滤以 BG_ 开头的背景图文件名被误作为角色立绘加载
-        if (spritePath && spritePath !== app.previewState.currentChar && !/^BG_/i.test(spritePath)) {
+        if (!controls || controls.length === 0 && spritePath && spritePath !== app.previewState.currentChar && !/^BG_/i.test(spritePath)) {
             app.previewState.currentChar = spritePath;
             if (charEl) {
-                charEl.src = '/api/resources/file/Assets/Characters/' + spritePath;
+                charEl.src = app.resolvePreviewSpriteUrl(spritePath);
                 charEl.style.display = 'block';
             }
-        } else if (!spritePath) {
-            app.previewState.currentChar = '';
-            if (charEl) charEl.style.display = 'none';
         }
 
         if (dialogueEl) dialogueEl.style.display = 'block';
@@ -172,6 +176,90 @@ app.renderPreviewDialogue = function (dialogue, scene) {
         app.processPreviewEvent(dialogue);
         app.advancePreview();
     }
+};
+
+app.resolvePreviewSpriteUrl = function (spritePath) {
+    if (!spritePath) return '';
+    if (/^[a-zA-Z]:[\\/]/.test(spritePath) || spritePath.indexOf('\\\\') === 0 || spritePath.charAt(0) === '/') {
+        return '/api/FileBrowser/preview?path=' + encodeURIComponent(spritePath);
+    }
+    return '/api/resources/file/Assets/Characters/' + spritePath;
+};
+
+app.resolvePreviewSfxUrl = function (soundPath) {
+    if (!soundPath) return '';
+    if (/^[a-zA-Z]:[\\/]/.test(soundPath) || soundPath.indexOf('\\\\') === 0 || soundPath.charAt(0) === '/') {
+        return soundPath;
+    }
+    return '/api/resources/file/Assets/Sfx/' + encodeURIComponent(soundPath);
+};
+
+app.playPreviewSfx = function (soundPath) {
+    if (!soundPath) return;
+    var audio = new Audio(app.resolvePreviewSfxUrl(soundPath));
+    audio.volume = 0.9;
+    audio.play().catch(function (err) {
+        console.warn('[Preview] 音效播放失败: ' + err.message);
+    });
+};
+
+app.applyPreviewCharacterControls = function (controls) {
+    var slots = app.previewState.currentCharSlots || {};
+    app.previewState.currentCharSlots = slots;
+
+    for (var i = 0; i < controls.length; i++) {
+        var control = controls[i] || {};
+        var slot = String(control.slot || control.Slot || (i + 1));
+        var action = String(control.action || control.Action || 'show').toLowerCase();
+        var sprite = control.sprite || control.Sprite || '';
+        var sfx = control.sfx || control.Sfx || '';
+
+        if (sfx) {
+            app.playPreviewSfx(sfx);
+        }
+
+        if (action === 'hide') {
+            delete slots[slot];
+            continue;
+        }
+
+        slots[slot] = {
+            character: control.character || control.Character || '',
+            sprite: sprite || (slots[slot] && slots[slot].sprite) || '',
+            position: control.position || control.Position || 'center',
+            animation: control.animation || control.Animation || 'fade'
+        };
+    }
+
+    app.renderPreviewCharacterSlots();
+};
+
+app.renderPreviewCharacterSlots = function () {
+    var charEl = document.getElementById('previewChar');
+    if (!charEl) return;
+
+    var slots = app.previewState.currentCharSlots || {};
+    var slotKeys = Object.keys(slots).sort(function (a, b) { return Number(a) - Number(b); });
+    var active = null;
+    for (var i = 0; i < slotKeys.length; i++) {
+        var candidate = slots[slotKeys[i]];
+        if (candidate && candidate.sprite) {
+            active = candidate;
+            break;
+        }
+    }
+
+    if (!active) {
+        app.previewState.currentChar = '';
+        charEl.style.display = 'none';
+        return;
+    }
+
+    if (active.sprite !== app.previewState.currentChar) {
+        app.previewState.currentChar = active.sprite;
+        charEl.src = app.resolvePreviewSpriteUrl(active.sprite);
+    }
+    charEl.style.display = 'block';
 };
 
 app.processPreviewEvent = function (dialogue) {
@@ -280,10 +368,14 @@ app.processPreviewEvent = function (dialogue) {
                 app.previewState.currentChar = params.character;
                 var charEl = document.getElementById('previewChar');
                 if (charEl) {
-                    charEl.src = '/api/resources/file/Assets/Characters/' + params.character;
+                    charEl.src = app.resolvePreviewSpriteUrl(params.character);
                     charEl.style.display = 'block';
                 }
             }
+            break;
+
+        case 'PlaySound':
+            app.playPreviewSfx(params.soundFile || params.SoundFile || '');
             break;
 
         case 'HideCharacter':
@@ -335,6 +427,7 @@ app.resetPreviewState = function () {
     app.previewState.history = [];
     app.previewState.currentBg = '';
     app.previewState.currentChar = '';
+    app.previewState.currentCharSlots = {};
     app.previewState.currentBgm = '';
 
     // 停止 BGM 播放并释放音频资源

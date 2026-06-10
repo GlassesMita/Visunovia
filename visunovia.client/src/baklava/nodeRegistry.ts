@@ -7,6 +7,7 @@ import BranchNode from '@/components/baklava-nodes/BranchNode'
 import LogicNode from '@/components/baklava-nodes/LogicNode'
 import ResourceNode from '@/components/baklava-nodes/ResourceNode'
 import ChoiceNode from '@/components/baklava-nodes/ChoiceNode'
+import CharacterControlNode from '@/components/baklava-nodes/CharacterControlNode'
 
 export interface NodeCategory {
   name: string
@@ -28,7 +29,7 @@ export const nodeCategories: NodeCategory[] = [
   {
     name: 'dialogue',
     labelKey: 'Dialogue',
-    nodes: [DialogueNode, BranchNode, ChoiceNode],
+    nodes: [DialogueNode, CharacterControlNode, BranchNode, ChoiceNode],
   },
   {
     name: 'logic',

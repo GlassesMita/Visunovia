@@ -4,6 +4,38 @@ import { Editor } from '@baklavajs/core'
 import { sceneGraphApi } from '@/api'
 import { useUndoRedoStore } from './useUndoRedoStore'
 
+function findInterfaceKey(interfaces: Record<string, any> | undefined, iface: any, fallback: string): string {
+  if (!interfaces || !iface) return fallback
+
+  const entry = Object.entries(interfaces).find(([, candidate]) => candidate === iface)
+  return entry?.[0] || fallback
+}
+
+function extractNodeType(node: any): string {
+  return node.type || 'UnknownNode'
+}
+
+function normalizeNodeType(nodeType: string | undefined): string {
+  const type = nodeType || 'UnknownNode'
+  const aliases: Record<string, string> = {
+    Start: 'StartNode',
+    End: 'EndNode',
+    Event: 'EventNode',
+    Dialogue: 'DialogueNode',
+    Branch: 'BranchNode',
+    Logic: 'LogicNode',
+    Resource: 'ResourceNode',
+    Choice: 'ChoiceNode',
+    CharacterControl: 'CharacterControlNode',
+  }
+
+  return aliases[type] || type
+}
+
+function getInterfaceValue(node: any, key: string): any {
+  return node?.inputs?.[key]?.value
+}
+
 export interface GraphNode {
   id: string
   type: string
@@ -113,13 +145,23 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
       await sceneGraphApi.put(currentSceneId.value, {
         id: currentSceneId.value,
         nodes: graphData.nodes.map(node => ({
+          uuid: node.id,
           id: node.id,
           nodeType: node.type,
           subType: extractSubTypeFromNode(editor.value as Editor, node.id),
           position: node.position,
           properties: extractPropertiesFromNode(editor.value as Editor, node.id)
         })),
-        connections: graphData.connections
+        connections: graphData.connections.map(connection => ({
+          uuid: connection.id,
+          id: connection.id,
+          sourceNodeUuid: connection.from.nodeId,
+          source: connection.from.nodeId,
+          sourcePort: connection.from.port,
+          targetNodeUuid: connection.to.nodeId,
+          target: connection.to.nodeId,
+          targetPort: connection.to.port,
+        }))
       })
 
       isDirty.value = false
@@ -148,14 +190,51 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
 
     Object.entries(node.inputs as Record<string, any>).forEach(([key, iface]) => {
       // 跳过执行端口和子类型选择器，只提取动态属性值
-      if (key === 'exec_in' || key === 'subType') return
+      if (key === 'exec_in' || key === 'execIn' || key.startsWith('characterControl') || key === 'subType') return
 
       if (iface?.value !== undefined) {
         properties[key] = iface.value
       }
     })
 
+    if (normalizeNodeType(extractNodeType(node)) === 'DialogueNode') {
+      const characterControls = buildCharacterControlsForDialogue(editorInstance, node)
+      if (characterControls.length > 0) {
+        properties.characterControls = characterControls
+      }
+    }
+
     return properties
+  }
+
+  function buildCharacterControlsForDialogue(editorInstance: Editor, dialogueNode: any) {
+    return editorInstance.graph.connections
+      .map((connection) => {
+        if (connection.to.nodeId !== dialogueNode.id) return null
+
+        const controlNode = editorInstance.graph.nodes.find((node) => node.id === connection.from.nodeId) as any
+        if (!controlNode || normalizeNodeType(extractNodeType(controlNode)) !== 'CharacterControlNode') return null
+
+        const targetPort = findInterfaceKey(dialogueNode.inputs, connection.to, connection.to.name)
+
+        return { controlNode, targetPort }
+      })
+      .filter(Boolean)
+      .map((item) => {
+        return {
+          slot: String(getInterfaceValue(item!.controlNode, 'slot') ?? '').trim() || item!.targetPort.replace('characterControl', '') || '1',
+          character: String(getInterfaceValue(item!.controlNode, 'character') ?? '').trim(),
+          action: String(getInterfaceValue(item!.controlNode, 'action') ?? 'show').trim() || 'show',
+          sprite: String(getInterfaceValue(item!.controlNode, 'sprite') ?? '').trim(),
+          sfx: String(getInterfaceValue(item!.controlNode, 'sfx') ?? '').trim(),
+          expression: String(getInterfaceValue(item!.controlNode, 'expression') ?? '').trim(),
+          position: String(getInterfaceValue(item!.controlNode, 'position') ?? 'center').trim() || 'center',
+          animation: String(getInterfaceValue(item!.controlNode, 'animation') ?? 'fade').trim() || 'fade',
+          duration: Number(getInterfaceValue(item!.controlNode, 'duration') ?? 0.3),
+        }
+      })
+      .filter(Boolean)
+      .sort((a: any, b: any) => Number(a.slot) - Number(b.slot))
   }
 
   function syncNodes() {
@@ -165,24 +244,31 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
       id: node.id,
       type: node.type,
       position: { x: node.position.x, y: node.position.y },
-      data: {}
+      data: extractPropertiesFromNode(editor.value as Editor, node.id)
     }))
   }
 
   function syncConnections() {
     if (!editor.value) return
 
-    connections.value = editor.value.graph.connections.map(conn => ({
-      id: `${conn.from.nodeId}:${conn.from.name}->${conn.to.nodeId}:${conn.to.name}`,
-      from: {
-        nodeId: conn.from.nodeId,
-        port: conn.from.name
-      },
-      to: {
-        nodeId: conn.to.nodeId,
-        port: conn.to.name
+    connections.value = editor.value.graph.connections.map(conn => {
+      const sourceNode = editor.value!.graph.nodes.find(node => node.id === conn.from.nodeId) as any
+      const targetNode = editor.value!.graph.nodes.find(node => node.id === conn.to.nodeId) as any
+      const sourcePort = findInterfaceKey(sourceNode?.outputs, conn.from, conn.from.name)
+      const targetPort = findInterfaceKey(targetNode?.inputs, conn.to, conn.to.name)
+
+      return {
+        id: `${conn.from.nodeId}:${sourcePort}->${conn.to.nodeId}:${targetPort}`,
+        from: {
+          nodeId: conn.from.nodeId,
+          port: sourcePort
+        },
+        to: {
+          nodeId: conn.to.nodeId,
+          port: targetPort
+        }
       }
-    }))
+    })
   }
 
   function addNode(type: string, position?: { x: number; y: number }) {
@@ -246,6 +332,17 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
           node.id = nodeData.id
           node.position = nodeData.position
           editor.value!.graph.addNode(node as any)
+
+          Object.entries(nodeData.data || {}).forEach(([key, value]) => {
+            const iface = (node.inputs as any)?.[key]
+            if (!iface || value === undefined) return
+
+            if (typeof iface.setValue === 'function') {
+              iface.setValue(value)
+            } else {
+              iface.value = value
+            }
+          })
         }
       })
 

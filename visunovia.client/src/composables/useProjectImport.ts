@@ -4,12 +4,14 @@ import { useLorToBlueprint } from './useLorToBlueprint'
 import { useNodeOperations } from './useNodeOperations'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
+import { useCharacterStore } from '@/stores/useCharacterStore'
 
 export function useProjectImport() {
   const lorConverter = useLorToBlueprint()
   const nodeOperations = useNodeOperations()
   const editorStore = useEditorStore()
   const nodeGraphStore = useNodeGraphStore()
+  const characterStore = useCharacterStore()
 
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -41,6 +43,8 @@ export function useProjectImport() {
     try {
       const result: ProjectParseResult = await importProject(projectPath)
       projectScenes.value = result.scenes
+
+      await characterStore.refreshFromAssets()
 
       if (result.scenes.length === 0) {
         error.value = '未找到任何剧本文件'
@@ -96,8 +100,8 @@ export function useProjectImport() {
       throw new Error('场景内容为空')
     }
 
-    // 解析 YAML 为蓝图
-    const blueprint = await lorConverter.convertFromYaml(sceneInfo.content)
+    // 解析 JSON 为蓝图
+    const blueprint = await lorConverter.convertFromJson(sceneInfo.content)
     blueprint.id = sceneInfo.id
 
     // 获取编辑器实例
@@ -136,3 +140,4 @@ export function useProjectImport() {
     clearImportState,
   }
 }
+

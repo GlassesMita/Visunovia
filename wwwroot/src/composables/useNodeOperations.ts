@@ -91,6 +91,53 @@ function extractNodeProperties(node: any): Record<string, any> {
   return properties
 }
 
+function findInterfaceKey(interfaces: Record<string, any> | undefined, iface: any, fallback: string): string {
+  if (!interfaces || !iface) return fallback
+
+  const entry = Object.entries(interfaces).find(([, candidate]) => candidate === iface)
+  return entry?.[0] || normalizePortName(fallback, interfaces)
+}
+
+function normalizePortName(portName: string | undefined, interfaces?: Record<string, any>): string {
+  const name = String(portName || '').trim()
+  if (!name) return ''
+  if (interfaces?.[name]) return name
+  if (name === '→') {
+    if (interfaces?.execOut) return 'execOut'
+    if (interfaces?.execIn) return 'execIn'
+  }
+
+  const characterControlMatch = name.match(/(?:◆|characterControl)\s*(\d+)/i)
+  if (characterControlMatch) {
+    const key = `characterControl${characterControlMatch[1]}`
+    if (!interfaces || interfaces[key]) return key
+  }
+
+  return name
+}
+
+function resolveConnectionEndpoint(editor: Editor, endpoint: any, direction: 'input' | 'output') {
+  const collectionKey = direction === 'input' ? 'inputs' : 'outputs'
+  const nodeByEndpointId = editor.graph.nodes.find((node) => node.id === endpoint?.nodeId) as any
+  if (nodeByEndpointId) {
+    const portKey = findInterfaceKey(nodeByEndpointId[collectionKey], endpoint, endpoint?.name || endpoint?.port)
+    return { nodeId: nodeByEndpointId.id, portKey }
+  }
+
+  for (const node of editor.graph.nodes as any[]) {
+    const interfaces = node?.[collectionKey]
+    const match = Object.entries(interfaces || {}).find(([, candidate]) => candidate === endpoint)
+    if (match) {
+      return { nodeId: node.id, portKey: match[0] }
+    }
+  }
+
+  return {
+    nodeId: String(endpoint?.nodeId || ''),
+    portKey: normalizePortName(endpoint?.name || endpoint?.port),
+  }
+}
+
 function setInterfaceValue(iface: any, value: any) {
   if (!iface || value === undefined) return
 
@@ -105,6 +152,9 @@ function setInterfaceValue(iface: any, value: any) {
 function resolvePort(ports: Record<string, any> | undefined, requestedName: string | undefined, direction: 'input' | 'output') {
   if (!ports) return undefined
   if (requestedName && ports[requestedName]) return ports[requestedName]
+
+  const normalizedName = normalizePortName(requestedName, ports)
+  if (normalizedName && ports[normalizedName]) return ports[normalizedName]
 
   const aliases = direction === 'input'
     ? ['execIn', 'exec_in']
@@ -156,16 +206,22 @@ function serializeEditorGraph(editor: Editor): SerializedSceneGraph {
     nextNodeUuids: (node as any).nextNodeUuids || []
   }))
   
-  const connections: SerializedConnection[] = editor.graph.connections.map((conn) => ({
-    uuid: `${conn.from.nodeId}:${conn.from.name}->${conn.to.nodeId}:${conn.to.name}`,
-    id: `${conn.from.nodeId}:${conn.from.name}->${conn.to.nodeId}:${conn.to.name}`,
-    sourceNodeUuid: conn.from.nodeId,
-    source: conn.from.nodeId,
-    sourcePort: conn.from.name,
-    targetNodeUuid: conn.to.nodeId,
-    target: conn.to.nodeId,
-    targetPort: conn.to.name
-  }))
+  const connections: SerializedConnection[] = editor.graph.connections.map((conn) => {
+    const source = resolveConnectionEndpoint(editor, conn.from, 'output')
+    const target = resolveConnectionEndpoint(editor, conn.to, 'input')
+    const id = `${source.nodeId}:${source.portKey}->${target.nodeId}:${target.portKey}`
+
+    return {
+      uuid: id,
+      id,
+      sourceNodeUuid: source.nodeId,
+      source: source.nodeId,
+      sourcePort: source.portKey,
+      targetNodeUuid: target.nodeId,
+      target: target.nodeId,
+      targetPort: target.portKey
+    }
+  })
   
   return {
     id: '',

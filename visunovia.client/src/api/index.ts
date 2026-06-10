@@ -245,22 +245,22 @@ export const fileBrowserApi = {
   }
 }
 
-// ==================== YAML ↔ Blueprint 转换 API ====================
+// ==================== JSON ↔ Blueprint 转换 API ====================
 
-export interface YamlExportResult {
+export interface JsonExportResult {
   sceneId: string
-  yamlContent: string
+  jsonContent: string
   exportedAt: string
 }
 
-export interface YamlImportResult {
+export interface JsonImportResult {
   sceneId: string
   nodeCount: number
   edgeCount: number
   importedAt: string
 }
 
-export interface YamlValidationResult {
+export interface JsonValidationResult {
   valid: boolean
   errors: string[]
   warnings: string[]
@@ -281,23 +281,23 @@ export interface UuidEntry {
   updatedAt: string
 }
 
-export const yamlConversionApi = {
-  /** 导出蓝图为 YAML */
-  exportYaml: async (
+export const jsonConversionApi = {
+  /** 导出蓝图为 JSON */
+  exportJson: async (
     sceneId: string,
     options?: { displayName?: string; description?: string; author?: string }
-  ): Promise<ApiResponse<YamlExportResult>> => {
+  ): Promise<ApiResponse<JsonExportResult>> => {
     const params = new URLSearchParams()
     if (options?.displayName) params.set('displayName', options.displayName)
     if (options?.description) params.set('description', options.description)
     if (options?.author) params.set('author', options.author)
     const qs = params.toString() ? `?${params.toString()}` : ''
-    const response = await apiClient.get(`/yaml/export/${sceneId}${qs}`)
+    const response = await apiClient.get(`/json/export/${sceneId}${qs}`)
     return response.data
   },
 
-  /** 下载 YAML 文件 */
-  downloadYaml: (
+  /** 下载 JSON 文件 */
+  downloadJson: (
     sceneId: string,
     options?: { displayName?: string; description?: string; author?: string }
   ): string => {
@@ -306,46 +306,46 @@ export const yamlConversionApi = {
     if (options?.description) params.set('description', options.description)
     if (options?.author) params.set('author', options.author)
     const qs = params.toString() ? `?${params.toString()}` : ''
-    return `/api/yaml/download/${sceneId}${qs}`
+    return `/api/json/download/${sceneId}${qs}`
   },
 
-  /** 从 YAML 内容导入蓝图 */
-  importYaml: async (
+  /** 从 JSON 内容导入蓝图 */
+  importJson: async (
     sceneId: string,
-    yamlContent: string,
+    jsonContent: string,
     clearExisting: boolean = true
-  ): Promise<ApiResponse<YamlImportResult>> => {
-    const response = await apiClient.post(`/yaml/import/${sceneId}`, {
-      yamlContent,
+  ): Promise<ApiResponse<JsonImportResult>> => {
+    const response = await apiClient.post(`/json/import/${sceneId}`, {
+      jsonContent,
       clearExisting,
     })
     return response.data
   },
 
-  /** 上传 YAML 文件并导入 */
-  uploadYaml: async (
+  /** 上传 JSON 文件并导入 */
+  uploadJson: async (
     sceneId: string,
     file: File
-  ): Promise<ApiResponse<YamlImportResult>> => {
+  ): Promise<ApiResponse<JsonImportResult>> => {
     const formData = new FormData()
     formData.append('file', file)
-    const response = await apiClient.post(`/yaml/upload/${sceneId}`, formData, {
+    const response = await apiClient.post(`/json/upload/${sceneId}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return response.data
   },
 
-  /** 验证 YAML 格式 */
-  validateYaml: async (
-    yamlContent: string
-  ): Promise<ApiResponse<YamlValidationResult>> => {
-    const response = await apiClient.post('/yaml/validate', { yamlContent })
+  /** 验证 JSON 格式 */
+  validateJson: async (
+    jsonContent: string
+  ): Promise<ApiResponse<JsonValidationResult>> => {
+    const response = await apiClient.post('/json/validate', { jsonContent })
     return response.data
   },
 
   /** 获取 UUID 注册表 */
   getUuidRegistry: async (): Promise<ApiResponse<UuidEntry[]>> => {
-    const response = await apiClient.get('/yaml/uuid-registry')
+    const response = await apiClient.get('/json/uuid-registry')
     return response.data
   },
 
@@ -353,21 +353,21 @@ export const yamlConversionApi = {
   getUuidRegistryByType: async (
     entityType: string
   ): Promise<ApiResponse<UuidEntry[]>> => {
-    const response = await apiClient.get(`/yaml/uuid-registry/${entityType}`)
+    const response = await apiClient.get(`/json/uuid-registry/${entityType}`)
     return response.data
   },
 
   /** 获取 UUID 详情 */
   getUuidDetail: async (uuid: string): Promise<ApiResponse<any>> => {
-    const response = await apiClient.get(`/yaml/uuid-registry/detail/${uuid}`)
+    const response = await apiClient.get(`/json/uuid-registry/detail/${uuid}`)
     return response.data
   },
 
-  /** 获取 YAML 快照 */
-  getYamlSnapshot: async (
+  /** 获取 JSON 快照 */
+  getJsonSnapshot: async (
     sceneId: string
-  ): Promise<ApiResponse<{ sceneId: string; yamlContent: string }>> => {
-    const response = await apiClient.get(`/yaml/snapshot/${sceneId}`)
+  ): Promise<ApiResponse<{ sceneId: string; jsonContent: string }>> => {
+    const response = await apiClient.get(`/json/snapshot/${sceneId}`)
     return response.data
   },
 }

@@ -38,7 +38,6 @@
   <ItemGroup>
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.3" />
     <PackageReference Include="Vite.AspNetCore" Version="2.4.1" />
-    <PackageReference Include="YamlDotNet" Version="17.1.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
     <PackageReference Include="Dapper" Version="2.1.66" />
   </ItemGroup>
@@ -63,7 +62,7 @@
     <Copy SourceFiles="@(VueBuildFiles)" DestinationFiles="@(VueBuildFiles->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <!-- 复制 wwwroot 中的非 Vite 资源文件（如 js/setup-wizard.js） -->
     <ItemGroup>
-      <WwwrootExtraFiles Include="$(ProjectDir)wwwroot\**\*" Exclude="$(ProjectDir)wwwroot\assets\**\*;$(ProjectDir)wwwroot\src-react-backup\**\*;$(ProjectDir)wwwroot\_check_file.js" />
+      <WwwrootExtraFiles Include="$(ProjectDir)wwwroot\**\*" Exclude="$(ProjectDir)wwwroot\ass测试下·ets\**\*;$(ProjectDir)wwwroot\src-react-backup\**\*;$(ProjectDir)wwwroot\_check_file.js" />
     </ItemGroup>
     <Copy SourceFiles="@(WwwrootExtraFiles)" DestinationFiles="@(WwwrootExtraFiles->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <Message Text="[Release] wwwroot replaced with @(VueBuildFiles->Count()) build files + @(WwwrootExtraFiles->Count()) extra files." Importance="high" />

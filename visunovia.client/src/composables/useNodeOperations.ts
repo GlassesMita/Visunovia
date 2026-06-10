@@ -1,5 +1,6 @@
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
 import { useEditorStore } from '@/stores/useEditorStore'
+import { useCharacterStore } from '@/stores/useCharacterStore'
 import { sceneGraphApi } from '@/api'
 import type { Editor } from '@baklavajs/core'
 
@@ -62,6 +63,7 @@ function normalizeNodeType(nodeType: string | undefined): string {
     Logic: 'LogicNode',
     Resource: 'ResourceNode',
     Choice: 'ChoiceNode',
+    CharacterControl: 'CharacterControlNode',
   }
 
   return aliases[type] || type
@@ -81,14 +83,127 @@ function extractNodeProperties(node: any): Record<string, any> {
   if (!node.inputs) return properties
   
   Object.entries(node.inputs).forEach(([key, iface]: [string, any]) => {
-    if (key === 'exec_in' || key === 'execIn' || key === 'subType') return
+    if (key === 'exec_in' || key === 'execIn' || key.startsWith('characterControl') || key === 'subType') return
     
     if (iface && iface.value !== undefined) {
       properties[key] = iface.value
     }
   })
+
+  if (normalizeNodeType(extractNodeType(node)) === 'DialogueNode') {
+    const speakers = ['speaker', 'speaker2', 'speaker3', 'speaker4', 'speaker5']
+      .map(key => String(properties[key] ?? '').trim())
+      .filter(Boolean)
+      .slice(0, 5)
+    const dialogueCharacters = [1, 2, 3, 4, 5]
+      .map(index => {
+        const suffix = index === 1 ? '' : String(index)
+        return {
+          speaker: String(properties[`speaker${suffix}`] ?? '').trim(),
+          sprite: String(properties[`sprite${index}`] ?? '').trim(),
+          voice: String(properties[`voice${suffix}`] ?? '').trim(),
+        }
+      })
+      .filter(item => item.speaker || item.sprite || item.voice)
+
+    if (speakers.length > 0) {
+      properties.speakers = speakers
+      properties.speaker = speakers[0]
+    }
+
+    if (dialogueCharacters.length > 0) {
+      properties.dialogueCharacters = dialogueCharacters
+      properties.sprites = dialogueCharacters
+        .filter(item => item.sprite)
+        .map((item, index) => ({ path: item.sprite, character: item.speaker, position: 'center', layer: index }))
+      properties.voices = dialogueCharacters
+        .filter(item => item.voice)
+        .map(item => ({ speaker: item.speaker, path: item.voice }))
+    }
+  }
   
   return properties
+}
+
+function getInterfaceValue(node: any, key: string): any {
+  return node?.inputs?.[key]?.value
+}
+
+function buildCharacterControlsForDialogue(editor: Editor, dialogueNode: any) {
+  return editor.graph.connections
+    .map((conn) => {
+      if (conn.to.nodeId !== dialogueNode.id) return null
+
+      const controlNode = editor.graph.nodes.find((node) => node.id === conn.from.nodeId) as any
+      if (!controlNode || normalizeNodeType(extractNodeType(controlNode)) !== 'CharacterControlNode') return null
+
+      const targetPort = findInterfaceKey(dialogueNode.inputs, conn.to, conn.to.name)
+
+      return { controlNode, targetPort }
+    })
+    .filter(Boolean)
+    .map((item) => {
+      return {
+        slot: String(getInterfaceValue(item!.controlNode, 'slot') ?? '').trim() || item!.targetPort.replace('characterControl', '') || '1',
+        character: String(getInterfaceValue(item!.controlNode, 'character') ?? '').trim(),
+        action: String(getInterfaceValue(item!.controlNode, 'action') ?? 'show').trim() || 'show',
+        sprite: String(getInterfaceValue(item!.controlNode, 'sprite') ?? '').trim(),
+        sfx: String(getInterfaceValue(item!.controlNode, 'sfx') ?? '').trim(),
+        expression: String(getInterfaceValue(item!.controlNode, 'expression') ?? '').trim(),
+        position: String(getInterfaceValue(item!.controlNode, 'position') ?? 'center').trim() || 'center',
+        animation: String(getInterfaceValue(item!.controlNode, 'animation') ?? 'fade').trim() || 'fade',
+        duration: Number(getInterfaceValue(item!.controlNode, 'duration') ?? 0.3),
+      }
+    })
+    .filter(Boolean)
+    .sort((a: any, b: any) => Number(a.slot) - Number(b.slot))
+}
+
+function findInterfaceKey(interfaces: Record<string, any> | undefined, iface: any, fallback: string): string {
+  if (!interfaces || !iface) return fallback
+
+  const entry = Object.entries(interfaces).find(([, candidate]) => candidate === iface)
+  return entry?.[0] || normalizePortName(fallback, interfaces)
+}
+
+function normalizePortName(portName: string | undefined, interfaces?: Record<string, any>): string {
+  const name = String(portName || '').trim()
+  if (!name) return ''
+  if (interfaces?.[name]) return name
+  if (name === '→') {
+    if (interfaces?.execOut) return 'execOut'
+    if (interfaces?.execIn) return 'execIn'
+  }
+
+  const characterControlMatch = name.match(/(?:◆|characterControl)\s*(\d+)/i)
+  if (characterControlMatch) {
+    const key = `characterControl${characterControlMatch[1]}`
+    if (!interfaces || interfaces[key]) return key
+  }
+
+  return name
+}
+
+function resolveConnectionEndpoint(editor: Editor, endpoint: any, direction: 'input' | 'output') {
+  const collectionKey = direction === 'input' ? 'inputs' : 'outputs'
+  const nodeByEndpointId = editor.graph.nodes.find((node) => node.id === endpoint?.nodeId) as any
+  if (nodeByEndpointId) {
+    const portKey = findInterfaceKey(nodeByEndpointId[collectionKey], endpoint, endpoint?.name || endpoint?.port)
+    return { nodeId: nodeByEndpointId.id, portKey }
+  }
+
+  for (const node of editor.graph.nodes as any[]) {
+    const interfaces = node?.[collectionKey]
+    const match = Object.entries(interfaces || {}).find(([, candidate]) => candidate === endpoint)
+    if (match) {
+      return { nodeId: node.id, portKey: match[0] }
+    }
+  }
+
+  return {
+    nodeId: String(endpoint?.nodeId || ''),
+    portKey: normalizePortName(endpoint?.name || endpoint?.port),
+  }
 }
 
 function setInterfaceValue(iface: any, value: any) {
@@ -105,6 +220,9 @@ function setInterfaceValue(iface: any, value: any) {
 function resolvePort(ports: Record<string, any> | undefined, requestedName: string | undefined, direction: 'input' | 'output') {
   if (!ports) return undefined
   if (requestedName && ports[requestedName]) return ports[requestedName]
+
+  const normalizedName = normalizePortName(requestedName, ports)
+  if (normalizedName && ports[normalizedName]) return ports[normalizedName]
 
   const aliases = direction === 'input'
     ? ['execIn', 'exec_in']
@@ -146,26 +264,43 @@ function blueprintToEditorPosition(position: { x: number; y: number } | undefine
 }
 
 function serializeEditorGraph(editor: Editor): SerializedSceneGraph {
-  const nodes: SerializedNode[] = editor.graph.nodes.map((node) => ({
-    uuid: node.id,
-    id: node.id,
-    nodeType: normalizeNodeType(extractNodeType(node)),
-    subType: extractSubType(node),
-    position: editorToBlueprintPosition(node.position),
-    properties: extractNodeProperties(node),
-    nextNodeUuids: (node as any).nextNodeUuids || []
-  }))
+  const nodes: SerializedNode[] = editor.graph.nodes.map((node) => {
+    const nodeType = normalizeNodeType(extractNodeType(node))
+    const properties = extractNodeProperties(node)
+    if (nodeType === 'DialogueNode') {
+      const characterControls = buildCharacterControlsForDialogue(editor, node)
+      if (characterControls.length > 0) {
+        properties.characterControls = characterControls
+      }
+    }
+
+    return {
+      uuid: node.id,
+      id: node.id,
+      nodeType,
+      subType: extractSubType(node),
+      position: editorToBlueprintPosition(node.position),
+      properties,
+      nextNodeUuids: (node as any).nextNodeUuids || []
+    }
+  })
   
-  const connections: SerializedConnection[] = editor.graph.connections.map((conn) => ({
-    uuid: `${conn.from.nodeId}:${conn.from.name}->${conn.to.nodeId}:${conn.to.name}`,
-    id: `${conn.from.nodeId}:${conn.from.name}->${conn.to.nodeId}:${conn.to.name}`,
-    sourceNodeUuid: conn.from.nodeId,
-    source: conn.from.nodeId,
-    sourcePort: conn.from.name,
-    targetNodeUuid: conn.to.nodeId,
-    target: conn.to.nodeId,
-    targetPort: conn.to.name
-  }))
+  const connections: SerializedConnection[] = editor.graph.connections.map((conn) => {
+    const source = resolveConnectionEndpoint(editor, conn.from, 'output')
+    const target = resolveConnectionEndpoint(editor, conn.to, 'input')
+    const id = `${source.nodeId}:${source.portKey}->${target.nodeId}:${target.portKey}`
+
+    return {
+      uuid: id,
+      id,
+      sourceNodeUuid: source.nodeId,
+      source: source.nodeId,
+      sourcePort: source.portKey,
+      targetNodeUuid: target.nodeId,
+      target: target.nodeId,
+      targetPort: target.portKey
+    }
+  })
   
   return {
     id: '',
@@ -294,6 +429,7 @@ async function deserializeToEditor(editor: Editor, data: SerializedSceneGraph) {
 export function useNodeOperations() {
   const nodeGraphStore = useNodeGraphStore()
   const editorStore = useEditorStore()
+  const characterStore = useCharacterStore()
 
   function normalizeSceneId(sceneId: string): string {
     return sceneId.replace(/\\/g, '/').split('/').pop()?.replace(/\.lor$/i, '') || sceneId
@@ -337,6 +473,8 @@ export function useNodeOperations() {
     }
     
     try {
+      await characterStore.refreshFromAssets()
+
       const response = await sceneGraphApi.get(normalizedSceneId)
       
       let graphData: SerializedSceneGraph

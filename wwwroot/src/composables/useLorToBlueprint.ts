@@ -13,6 +13,8 @@ export interface LorScene {
     loop: boolean
   }
   dialogues: LorDialogue[]
+  nodes?: SerializedNode[]
+  connections?: SerializedConnection[]
 }
 
 export interface LorDialogue {
@@ -95,6 +97,8 @@ const NODE_TYPE_MAP: Record<string, string> = {
   Branch: 'BranchNode',
 }
 
+const END_EVENT_NAMES = new Set(['end_game', 'return_to_menu', 'jump_to_scene'])
+
 /**
  * 生成 UUID v4
  */
@@ -129,146 +133,15 @@ export function useLorToBlueprint() {
   const conversionProgress = ref(0)
 
   /**
-   * 简单的 YAML 解析器
-   * 支持基本的 YAML 结构：键值对、数组、嵌套对象
+   * Lor JSON 解析器。
    */
-  function parseYaml(yamlContent: string): LorScene {
-    console.log('[useLorToBlueprint] parseYaml called, content length:', yamlContent.length)
-    
-    const lines = yamlContent.split('\n')
-    const result: any = { dialogues: [] }
-    let currentKey: string | null = null
-    let currentArray: any[] | null = null
-    let currentObject: any = null
-    let indentStack: { indent: number; key: string; isArray: boolean }[] = []
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]
-      const trimmedLine = line.trim()
-
-      if (!trimmedLine || trimmedLine.startsWith('#')) continue
-
-      const indent = line.length - line.trimStart().length
-
-      // 处理数组项
-      if (trimmedLine.startsWith('- ')) {
-        const itemContent = trimmedLine.substring(2).trim()
-        
-        if (currentArray) {
-          if (itemContent.includes(':')) {
-            const itemObj: any = {}
-            const colonIndex = itemContent.indexOf(':')
-            const key = itemContent.substring(0, colonIndex).trim()
-            const value = itemContent.substring(colonIndex + 1).trim()
-            itemObj[key] = parseValue(value)
-            currentArray.push(itemObj)
-            currentObject = itemObj
-          } else {
-            currentArray.push(parseValue(itemContent))
-          }
-        }
-        continue
-      }
-
-      // 处理键值对
-      if (trimmedLine.includes(':')) {
-        const colonIndex = trimmedLine.indexOf(':')
-        const key = trimmedLine.substring(0, colonIndex).trim()
-        const value = trimmedLine.substring(colonIndex + 1).trim()
-
-        while (indentStack.length > 0 && indentStack[indentStack.length - 1].indent >= indent) {
-          indentStack.pop()
-        }
-
-        if (value === '' || value === '|' || value === '>') {
-          if (i + 1 < lines.length) {
-            const nextLine = lines[i + 1].trim()
-            if (nextLine.startsWith('- ')) {
-              currentArray = []
-              if (indentStack.length > 0) {
-                const parent = indentStack[indentStack.length - 1]
-                if (parent.isArray && currentObject) {
-                  currentObject[key] = currentArray
-                } else {
-                  result[key] = currentArray
-                }
-              } else {
-                result[key] = currentArray
-              }
-              indentStack.push({ indent, key, isArray: true })
-              currentObject = null
-              continue
-            }
-          }
-          const newObj: any = {}
-          if (indentStack.length > 0) {
-            const parent = indentStack[indentStack.length - 1]
-            if (parent.isArray && currentArray) {
-              const lastItem = currentArray[currentArray.length - 1]
-              if (typeof lastItem === 'object' && !Array.isArray(lastItem)) {
-                lastItem[key] = newObj
-                currentObject = newObj
-              }
-            } else if (currentObject) {
-              currentObject[key] = newObj
-              currentObject = newObj
-            } else {
-              result[key] = newObj
-              currentObject = newObj
-            }
-          } else {
-            result[key] = newObj
-            currentObject = newObj
-          }
-          indentStack.push({ indent, key, isArray: false })
-        } else {
-          const parsedValue = parseValue(value)
-          if (indentStack.length > 0) {
-            const parent = indentStack[indentStack.length - 1]
-            if (parent.isArray && currentArray) {
-              const lastItem = currentArray[currentArray.length - 1]
-              if (typeof lastItem === 'object' && !Array.isArray(lastItem)) {
-                lastItem[key] = parsedValue
-                currentObject = lastItem
-              }
-            } else if (currentObject) {
-              currentObject[key] = parsedValue
-            } else {
-              result[key] = parsedValue
-            }
-          } else {
-            result[key] = parsedValue
-          }
-        }
-      }
+  function parseJson(jsonContent: string): LorScene {
+    console.log('[useLorToBlueprint] parseLorContent called, content length:', jsonContent.length)
+    try {
+      return JSON.parse(jsonContent.trim()) as LorScene
+    } catch (error) {
+      throw new Error(`Lor JSON 解析错误: ${error instanceof Error ? error.message : '未知错误'}`)
     }
-
-    console.log('[useLorToBlueprint] parseYaml result:', JSON.stringify(result).substring(0, 500))
-    return result as LorScene
-  }
-
-  /**
-   * 解析 YAML 值
-   */
-  function parseValue(value: string): any {
-    if (value === 'true') return true
-    if (value === 'false') return false
-    if (value === 'null' || value === '~') return null
-    if (value === '[]') return []
-    if (value === '{}') return {}
-    if (value.startsWith('[') && value.endsWith(']')) {
-      const inner = value.slice(1, -1).trim()
-      if (!inner) return []
-      return inner.split(',').map(item => parseValue(item.trim()))
-    }
-    if (/^-?\d+$/.test(value)) return parseInt(value, 10)
-    if (/^-?\d+\.\d+$/.test(value)) return parseFloat(value)
-    // 移除引号
-    if ((value.startsWith('"') && value.endsWith('"')) || 
-        (value.startsWith("'") && value.endsWith("'"))) {
-      return value.slice(1, -1)
-    }
-    return value
   }
 
   function asArray<T = any>(value: unknown): T[] {
@@ -291,16 +164,21 @@ export function useLorToBlueprint() {
    * 创建执行连接（通过 UUID）
    * 使用 UUID 进行节点对应和连线
    */
-  function createConnection(fromUuid: string, toUuid: string): SerializedConnection {
+  function createConnection(
+    fromUuid: string,
+    toUuid: string,
+    sourcePort = 'execOut',
+    targetPort = 'execIn'
+  ): SerializedConnection {
     return {
-      uuid: `conn_${fromUuid}_${toUuid}`,
-      id: `conn_${fromUuid}_${toUuid}`,
+      uuid: `conn_${fromUuid}_${sourcePort}_${toUuid}_${targetPort}`,
+      id: `conn_${fromUuid}_${sourcePort}_${toUuid}_${targetPort}`,
       sourceNodeUuid: fromUuid,
       source: fromUuid,
-      sourcePort: 'execOut',
+      sourcePort,
       targetNodeUuid: toUuid,
       target: toUuid,
-      targetPort: 'execIn',
+      targetPort,
     }
   }
 
@@ -310,7 +188,7 @@ export function useLorToBlueprint() {
    * 支持一个节点连接到多个节点（通过 nextNodeUuids）
    */
   function convertDialogueToNode(dialogue: LorDialogue, index: number, uuid: string): SerializedNode | null {
-    // 优先使用 YAML 中保存的绝对坐标位置，否则使用自动布局位置
+    // 优先使用 JSON 中保存的绝对坐标位置，否则使用自动布局位置
     const rawPosition = typeof dialogue.positionX === 'number' && typeof dialogue.positionY === 'number'
       ? { x: dialogue.positionX, y: dialogue.positionY }
       : dialogue.position && typeof dialogue.position.x === 'number' && typeof dialogue.position.y === 'number'
@@ -343,6 +221,21 @@ export function useLorToBlueprint() {
     }
     
     if (dialogue.type === 'Event' && dialogue.event) {
+      const customEventName = dialogue.event.parameters?.eventName || ''
+      if (dialogue.event.eventType === 'Custom' && END_EVENT_NAMES.has(customEventName)) {
+        return {
+          uuid,
+          id: uuid,
+          nodeType: 'EndNode',
+          position,
+          properties: {
+            eventType: customEventName,
+            sceneId: dialogue.event.parameters?.targetScene || '',
+          },
+          nextNodeUuids: [],
+        }
+      }
+
       const subType = EVENT_TYPE_MAP[dialogue.event.eventType] || 'customEvent'
       const properties: Record<string, any> = { subType }
       
@@ -391,6 +284,27 @@ export function useLorToBlueprint() {
     }
     
     if (dialogue.type === 'Branch' && dialogue.branch) {
+      const choices = asArray(dialogue.branch.choices)
+
+      if (choices.length > 0) {
+        const properties: Record<string, any> = {
+          optionCount: String(choices.length),
+        }
+
+        choices.forEach((choice, choiceIndex) => {
+          properties[`choiceText_${choiceIndex + 1}`] = choice.text || ''
+        })
+
+        return {
+          uuid,
+          id: uuid,
+          nodeType: 'ChoiceNode',
+          position,
+          properties,
+          nextNodeUuids: choices.map(choice => choice.targetScene).filter(Boolean),
+        }
+      }
+
       return {
         uuid,
         id: uuid,
@@ -415,13 +329,64 @@ export function useLorToBlueprint() {
    * 每个对话节点分配一个 UUID，通过 UUID 进行连线
    */
   function convertLorToBlueprint(scene: LorScene): SerializedSceneGraph {
+    if (Array.isArray(scene.nodes) && scene.nodes.length > 0) {
+      const nodes = scene.nodes.map((node) => ({
+        ...node,
+        uuid: node.uuid || node.id,
+        id: node.id || node.uuid,
+        properties: node.properties || {},
+        position: normalizeBlueprintPosition(node.position || { x: 0, y: 0 }),
+        nextNodeUuids: node.nextNodeUuids || [],
+      }))
+      const nodeIds = new Set(nodes.map(node => node.id))
+      const repairedDialogueId = nodes.find(node => node.nodeType === 'DialogueNode')?.id
+        || scene.dialogues.find(dialogue => dialogue.type === 'Dialogue')?.uuid
+      const repairedStartId = nodes.find(node => node.nodeType === 'StartNode')?.id
+      const repairedEndId = nodes.find(node => node.nodeType === 'EndNode')?.id
+      const normalizePort = (port: string, direction: 'source' | 'target') => {
+        if (port === '→') return direction === 'source' ? 'execOut' : 'execIn'
+        const match = String(port || '').match(/(?:◆|characterControl)\s*(\d+)/i)
+        return match ? `characterControl${match[1]}` : port
+      }
+      const repairNodeId = (nodeId: string, port: string, direction: 'source' | 'target') => {
+        if (nodeIds.has(nodeId)) return nodeId
+        if (direction === 'source' && normalizePort(port, direction) === 'execOut') return repairedStartId || nodeId
+        if (direction === 'target' && normalizePort(port, direction).startsWith('characterControl')) return repairedDialogueId || nodeId
+        if (direction === 'target' && normalizePort(port, direction) === 'execIn') return repairedEndId || repairedDialogueId || nodeId
+        return nodeId
+      }
+
+      return {
+        id: scene.id,
+        nodes,
+        connections: Array.isArray(scene.connections)
+          ? scene.connections.map((connection) => ({
+              ...connection,
+              uuid: connection.uuid || connection.id,
+              id: connection.id || connection.uuid,
+              sourcePort: normalizePort(connection.sourcePort, 'source'),
+              targetPort: normalizePort(connection.targetPort, 'target'),
+              sourceNodeUuid: repairNodeId(connection.sourceNodeUuid || connection.source, connection.sourcePort, 'source'),
+              source: repairNodeId(connection.source || connection.sourceNodeUuid, connection.sourcePort, 'source'),
+              targetNodeUuid: repairNodeId(connection.targetNodeUuid || connection.target, connection.targetPort, 'target'),
+              target: repairNodeId(connection.target || connection.targetNodeUuid, connection.targetPort, 'target'),
+            })).filter(connection => nodeIds.has(connection.sourceNodeUuid) && nodeIds.has(connection.targetNodeUuid))
+          : [],
+      }
+    }
+
     const nodes: SerializedNode[] = []
     const connections: SerializedConnection[] = []
+    const branchTargetUuids = new Set(
+      scene.dialogues.flatMap(dialogue =>
+        dialogue.branch ? asArray(dialogue.branch.choices).map(choice => choice.targetScene).filter(Boolean) : []
+      )
+    )
     
     // 用于记录上一个节点的 UUID，用于连线
     let previousUuid: string | null = null
     
-    // 第一遍：为每个对话生成 UUID（如果 YAML 中没有则新建）
+    // 第一遍：为每个对话生成 UUID（如果 JSON 中没有则新建）
     scene.dialogues.forEach((dialogue) => {
       if (!dialogue.uuid) {
         dialogue.uuid = generateUUID()
@@ -485,23 +450,38 @@ export function useLorToBlueprint() {
       const node = convertDialogueToNode(dialogue, index, dialogue.uuid)
       if (node) {
         nodes.push(node)
-        connections.push(createConnection(previousUuid!, node.id))
-        previousUuid = node.id
+        if (previousUuid && !branchTargetUuids.has(node.id)) {
+          connections.push(createConnection(previousUuid, node.id))
+        }
+
+        if (node.nodeType === 'ChoiceNode' && dialogue.branch) {
+          asArray(dialogue.branch.choices).forEach((choice, choiceIndex) => {
+            if (choice.targetScene) {
+              connections.push(createConnection(node.id, choice.targetScene, `execOut_${choiceIndex + 1}`))
+            }
+          })
+          previousUuid = null
+        } else {
+          previousUuid = branchTargetUuids.has(node.id) ? null : node.id
+        }
       }
     })
     
-    // 创建结束节点（使用固定 UUID）
-    const endUuid = 'end_node'
-    nodes.push({
-      uuid: endUuid,
-      id: endUuid,
-      nodeType: 'EndNode',
-      position: { x: 300, y: 100 + (scene.dialogues.length + 2) * 150 },
-      properties: {},
-      nextNodeUuids: [],
-    })
-    if (previousUuid) {
-      connections.push(createConnection(previousUuid, endUuid))
+    // 如果脚本中没有保存显式结束节点，则补一个默认结束节点
+    const lastNode = nodes[nodes.length - 1]
+    if (!lastNode || lastNode.nodeType !== 'EndNode') {
+      const endUuid = 'end_node'
+      nodes.push({
+        uuid: endUuid,
+        id: endUuid,
+        nodeType: 'EndNode',
+        position: { x: 300, y: 100 + (scene.dialogues.length + 2) * 150 },
+        properties: {},
+        nextNodeUuids: [],
+      })
+      if (previousUuid) {
+        connections.push(createConnection(previousUuid, endUuid))
+      }
     }
     
     console.log('[useLorToBlueprint] Generated nodes:', nodes.length, 'connections:', connections.length)
@@ -515,9 +495,9 @@ export function useLorToBlueprint() {
   }
 
   /**
-   * 从 YAML 字符串转换
+   * 从 Lor JSON 字符串转换
    */
-  async function convertFromYaml(yamlContent: string): Promise<SerializedSceneGraph> {
+  async function convertFromJson(jsonContent: string): Promise<SerializedSceneGraph> {
     isConverting.value = true
     conversionError.value = null
     conversionProgress.value = 0
@@ -525,8 +505,8 @@ export function useLorToBlueprint() {
     try {
       conversionProgress.value = 20
       
-      const scene = parseYaml(yamlContent)
-      console.log('[useLorToBlueprint] YAML parsed, scene.id:', scene?.id, 'dialogues count:', scene?.dialogues?.length)
+      const scene = parseJson(jsonContent)
+      console.log('[useLorToBlueprint] Lor parsed, scene.id:', scene?.id, 'dialogues count:', scene?.dialogues?.length)
       console.log('[useLorToBlueprint] Scene details:', JSON.stringify(scene, null, 2).substring(0, 1000))
       conversionProgress.value = 50
       
@@ -563,8 +543,8 @@ export function useLorToBlueprint() {
       if (!response.ok) {
         throw new Error(`无法读取文件: ${filePath}`)
       }
-      const yamlContent = await response.text()
-      return await convertFromYaml(yamlContent)
+      const jsonContent = await response.text()
+      return await convertFromJson(jsonContent)
     } catch (error) {
       conversionError.value = error instanceof Error ? error.message : '文件读取失败'
       throw error
@@ -578,7 +558,7 @@ export function useLorToBlueprint() {
     const errors: string[] = []
     
     try {
-      const scene = parseYaml(content)
+      const scene = parseJson(content)
       
       if (!scene.id) {
         errors.push('缺少场景 ID')
@@ -600,7 +580,7 @@ export function useLorToBlueprint() {
         })
       }
     } catch (error) {
-      errors.push(`YAML 解析错误: ${error instanceof Error ? error.message : '未知错误'}`)
+      errors.push(`Lor JSON 解析错误: ${error instanceof Error ? error.message : '未知错误'}`)
     }
     
     return {
@@ -613,9 +593,9 @@ export function useLorToBlueprint() {
     isConverting,
     conversionError,
     conversionProgress,
-    parseYaml,
+    parseJson,
     convertLorToBlueprint,
-    convertFromYaml,
+    convertFromJson,
     convertFromFile,
     validateLorFile,
   }

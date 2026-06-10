@@ -14,6 +14,7 @@ export const NODE_TYPE_COLORS: Record<string, string> = {
   LogicNode: '#00838F',
   ResourceNode: '#4E342E',
   ChoiceNode: '#C2185B',
+  CharacterControlNode: '#7B1FA2',
 }
 
 /**

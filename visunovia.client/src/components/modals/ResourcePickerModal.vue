@@ -109,9 +109,15 @@ const filteredFiles = computed(() => {
       name: f.name,
       path: f.path || f.name,
       ext: f.name?.slice(f.name.lastIndexOf('.')).toLowerCase() || '',
-      thumbnail: f.path ? `/assets/${encodeURIComponent(f.path)}` : '',
+      thumbnail: isAbsoluteFilePath(f.path)
+        ? `/api/FileBrowser/preview?path=${encodeURIComponent(f.path)}`
+        : f.path ? `/assets/${encodeURIComponent(f.path)}` : '',
     }))
 })
+
+function isAbsoluteFilePath(path?: string): boolean {
+  return !!path && (/^[a-zA-Z]:[\\/]/.test(path) || path.startsWith('\\\\') || path.startsWith('/'))
+}
 
 function isSelected(path: string): boolean {
   return selectedPath.value === path

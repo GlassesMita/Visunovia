@@ -94,119 +94,83 @@
 
 ### 3.1 当前数据结构（列表式）
 
-```yaml
-# 当前 YAML 结构 (.lor 文件)
-scene:
-  id: "Scene_1"
-  background: "bg_school.png"
-  bgm:
-    path: "bgm_calm.mp3"
-    volume: 80
-    loop: true
-  dialogues:
-    - type: Dialogue
-      speaker: "Alice"
-      text: "Hello!"
-      sprites:
-        - path: "alice_happy.png"
-          position: "center"
-      voice: "alice_01.mp3"
-    - type: Branch
-      branch:
-        choices:
-          - text: "Say hi"
-            targetScene: "Scene_2"
-            condition: "var_friendship > 5"
+```json
+{
+  "id": "Scene_1",
+  "background": "bg_school.png",
+  "bgm": {
+    "path": "bgm_calm.mp3",
+    "volume": 80,
+    "loop": true
+  },
+  "dialogues": [
+    {
+      "type": "Dialogue",
+      "speaker": "Alice",
+      "text": "Hello!",
+      "sprites": [
+        {
+          "path": "alice_happy.png",
+          "position": "center"
+        }
+      ],
+      "voice": "alice_01.mp3"
+    },
+    {
+      "type": "Branch",
+      "branch": {
+        "choices": [
+          {
+            "text": "Say hi",
+            "targetScene": "Scene_2",
+            "condition": "var_friendship > 5"
+          }
+        ]
+      }
+    }
+  ]
+}
 ```
 
 ### 3.2 目标数据结构（蓝图节点式）
 
-```yaml
-# 目标 YAML 结构 (.lor 文件) - 节点图格式
-scene_graph:
-  id: "Scene_1"
-  viewport:
-    x: 0
-    y: 0
-    zoom: 1.0
-  
-  nodes:
-    - id: "node_start"
-      type: "Start"
-      position: { x: 100, y: 200 }
-      outputs:
-        - id: "out_exec"
-          label: "Execute"
-          target: "node_dialog_1"
-    
-    - id: "node_dialog_1"
-      type: "Dialogue"
-      position: { x: 300, y: 200 }
-      properties:
-        speaker: "Alice"
-        text: "Hello!"
-        voice: "alice_01.mp3"
-        textEffect:
-          type: "Typewriter"
-          speed: 50
-      inputs:
-        - id: "in_exec"
-          label: "Execute"
-      outputs:
-        - id: "out_exec"
-          label: "Then"
-          target: "node_branch_1"
-      sprites:
-        - path: "alice_happy.png"
-          position: { x: 0.5, y: 0.8 }
-          layer: 1
-          transition: "FadeIn"
-    
-    - id: "node_branch_1"
-      type: "Branch"
-      position: { x: 500, y: 200 }
-      properties:
-        prompt: "What will you do?"
-      inputs:
-        - id: "in_exec"
-          label: "Execute"
-      outputs:
-        - id: "out_choice_1"
-          label: "Say hi"
-          target: "node_change_bg"
-          condition: "friendship > 5"
-        - id: "out_choice_2"
-          label: "Ignore"
-          target: "node_end"
-    
-    - id: "node_change_bg"
-      type: "ChangeBackground"
-      position: { x: 700, y: 150 }
-      properties:
-        path: "bg_night.png"
-        transition: "CrossFade"
-        duration: 500
-      inputs:
-        - id: "in_exec"
-          label: "Execute"
-      outputs:
-        - id: "out_exec"
-          label: "Then"
-          target: "node_end"
-    
-    - id: "node_end"
-      type: "End"
-      position: { x: 900, y: 200 }
-      inputs:
-        - id: "in_exec"
-          label: "Execute"
-
-  scene_config:
-    background: "bg_school.png"
-    bgm:
-      path: "bgm_calm.mp3"
-      volume: 80
-      loop: true
+```json
+{
+  "scene_graph": {
+    "id": "Scene_1",
+    "viewport": { "x": 0, "y": 0, "zoom": 1.0 },
+    "nodes": [
+      {
+        "id": "node_start",
+        "type": "Start",
+        "position": { "x": 100, "y": 200 },
+        "outputs": [{ "id": "out_exec", "label": "Execute", "target": "node_dialog_1" }]
+      },
+      {
+        "id": "node_dialog_1",
+        "type": "Dialogue",
+        "position": { "x": 300, "y": 200 },
+        "properties": {
+          "speaker": "Alice",
+          "text": "Hello!",
+          "voice": "alice_01.mp3"
+        },
+        "inputs": [{ "id": "in_exec", "label": "Execute" }],
+        "outputs": [{ "id": "out_exec", "label": "Then", "target": "node_end" }]
+      },
+      {
+        "id": "node_end",
+        "type": "End",
+        "position": { "x": 900, "y": 200 },
+        "inputs": [{ "id": "in_exec", "label": "Execute" }]
+      }
+    ],
+    "scene_config": {
+      "background": "bg_school.png",
+      "bgm": { "path": "bgm_calm.mp3", "volume": 80, "loop": true }
+    }
+  }
+}
 ```
 
 ### 3.3 节点类型定义
@@ -451,7 +415,7 @@ interface VNNodePort {
 - [ ] 实现连接 CRUD
 
 #### 6.2 数据序列化
-- [ ] 实现新 YAML 格式序列化
+- [ ] 实现新 JSON 格式序列化
 - [ ] 实现数据验证
 
 #### 6.3 运行时支持

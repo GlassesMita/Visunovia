@@ -8,7 +8,7 @@
     </div>
 
     <!-- 选中节点时显示属性检查器 -->
-    <div v-else class="node-inspector">
+    <div v-else class="node-inspector" @keydown.tab.prevent="handleInspectorTab">
       <!-- 节点标题栏 -->
       <div class="node-header">
         <span class="node-type-icon">{{ getNodeIcon(selectedNode.type) }}</span>
@@ -80,6 +80,11 @@
             @input="updateProperty(prop.name, ($event.target as HTMLInputElement).value)"
             class="prop-input"
           />
+          <div
+            v-if="prop.type === 'string' && getPropertyValue(prop.name)"
+            class="markdown-preview"
+            v-html="renderSafeMarkdown(getPropertyValue(prop.name))"
+          />
           
           <!-- Number 类型 → 数字输入框 -->
           <input 
@@ -119,6 +124,25 @@
               {{ opt.label }}
             </option>
           </select>
+
+          <!-- Character 类型 → 角色管理器快捷选择 -->
+          <div v-else-if="prop.type === 'character'" class="character-select-wrapper">
+            <select
+              :value="getPropertyValue(prop.name)"
+              class="prop-input prop-select"
+              @change="updateProperty(prop.name, ($event.target as HTMLSelectElement).value)"
+            >
+              <option value="">未选择角色</option>
+              <option
+                v-for="character in characterStore.sortedCharacters"
+                :key="character.id"
+                 :value="character.id"
+              >
+                {{ character.name }} ({{ character.displayId || character.id }})
+              </option>
+            </select>
+            <button class="character-manager-btn" type="button" title="打开角色管理器" @click="uiStore.openCharacterManager()">👥</button>
+          </div>
           
           <!-- Resource 类型 → Unity ObjectField 风格只读输入框 + 浏览按钮 -->
           <div v-else-if="prop.type === 'resource'" class="resource-input-wrapper">
@@ -164,6 +188,7 @@
       :visible="showResourcePicker"
       :resource-type="currentResourceType"
       :current-path="getPropertyValue(currentResourcePropName) || ''"
+      :files="currentResourceFiles"
       @confirm="onResourcePicked"
       @cancel="showResourcePicker = false"
     />
@@ -171,10 +196,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
+import { useCharacterStore } from '@/stores/useCharacterStore'
+import { useUIStore } from '@/stores/useUIStore'
 import { 
   EventType, 
   LogicType,
@@ -185,20 +212,30 @@ import {
   PropertyConfig 
 } from '@/types'
 import ResourcePickerModal from '@/components/modals/ResourcePickerModal.vue'
-import { type ResourceType } from '@/stores/useResourceRegistry'
+import { RESOURCE_TYPE_EXTENSIONS, type ResourceType } from '@/stores/useResourceRegistry'
+import { getEntries, type DirEntry } from '@/api/fileBrowser'
 
 const { t } = useLocalization()
 const editorStore = useEditorStore()
 const nodeGraphStore = useNodeGraphStore()
+const characterStore = useCharacterStore()
+const uiStore = useUIStore()
 
 const showResourcePicker = ref(false)
 const currentResourcePropName = ref('')
 const currentResourceType = ref<ResourceType>('image')
+const currentResourceFiles = ref<Array<{ name: string; path?: string }>>([])
 
 const selectedNode = computed(() => editorStore.selectedNode)
 
 const eventSubType = ref<EventType>(EventType.PlayBGM)
 const logicSubType = ref<LogicType>(LogicType.SetVariable)
+
+onMounted(() => {
+  characterStore.load().catch(error => {
+    console.warn('[InspectorPanel] Failed to load characters:', error)
+  })
+})
 
 // 判断是否为特殊节点（仅 StartNode 无额外属性，EndNode 有 eventType/sceneId 需要编辑）
 const isSpecialNode = computed(() => {
@@ -251,9 +288,61 @@ const dynamicProperties = computed((): PropertyConfig[] => {
       },
     ],
     DialogueNode: [
-      { name: 'speaker', type: 'string', defaultValue: '' },
       { name: 'text', type: 'string', defaultValue: '' },
-      { name: 'voice', type: 'resource', defaultValue: '' },
+    ],
+    CharacterControlNode: [
+      { name: 'character', type: 'character', defaultValue: '', label: 'CharacterID' },
+      {
+        name: 'slot',
+        type: 'select',
+        defaultValue: '1',
+        label: '控制角色槽位',
+        options: [
+          { value: '1', label: '角色 1' },
+          { value: '2', label: '角色 2' },
+          { value: '3', label: '角色 3' },
+          { value: '4', label: '角色 4' },
+          { value: '5', label: '角色 5' },
+        ],
+      },
+      {
+        name: 'action',
+        type: 'select',
+        defaultValue: 'show',
+        label: '显示类型',
+        options: [
+          { value: 'show', label: '角色显示' },
+          { value: 'hide', label: '角色消失' },
+          { value: 'update', label: '更新角色' },
+        ],
+      },
+      { name: 'sprite', type: 'resource', defaultValue: '', label: '立绘' },
+      { name: 'sfx', type: 'resource', defaultValue: '', label: '音效' },
+      { name: 'expression', type: 'string', defaultValue: 'default', label: '表情' },
+      {
+        name: 'position',
+        type: 'select',
+        defaultValue: 'center',
+        label: '位置',
+        options: [
+          { value: 'left', label: '左侧' },
+          { value: 'center', label: '中间' },
+          { value: 'right', label: '右侧' },
+        ],
+      },
+      {
+        name: 'animation',
+        type: 'select',
+        defaultValue: 'fade',
+        label: '动画效果',
+        options: [
+          { value: 'none', label: '无' },
+          { value: 'fade', label: '淡入淡出' },
+          { value: 'slide', label: '滑入滑出' },
+          { value: 'pop', label: '弹出' },
+        ],
+      },
+      { name: 'duration', type: 'number', defaultValue: 0.3, label: '动画时长' },
     ],
     BranchNode: [
       { name: 'condition', type: 'string', defaultValue: '' },
@@ -270,6 +359,7 @@ function getNodeTitle(type: string): string {
     EndNode: 'nodes.end',
     EventNode: 'nodes.event',
     DialogueNode: 'nodes.dialogue',
+    CharacterControlNode: 'nodes.characterControl',
     BranchNode: 'nodes.branch',
     LogicNode: 'nodes.logic',
   }
@@ -282,6 +372,7 @@ function getNodeIcon(type: string): string {
     EndNode: '⏹️',
     EventNode: '⚡',
     DialogueNode: '💬',
+    CharacterControlNode: '🎭',
     BranchNode: '❓',
     LogicNode: '🔧',
   }
@@ -289,6 +380,9 @@ function getNodeIcon(type: string): string {
 }
 
 function getPropertyLabel(name: string): string {
+  const prop = dynamicProperties.value.find(item => item.name === name)
+  if (prop?.label) return prop.label
+
   const label = t(`properties.${name}`).value
   return label !== `properties.${name}` ? label : name
 }
@@ -321,9 +415,70 @@ function updateProperty(name: string, value: any) {
   if (selectedNode.value.data) {
     selectedNode.value.data[name] = value
   }
+
+  const editorNode = nodeGraphStore.editor?.graph.nodes.find(node => node.id === selectedNode.value?.id) as any
+  const iface = editorNode?.inputs?.[name]
+  if (iface) {
+    if (typeof iface.setValue === 'function') {
+      iface.setValue(value)
+    } else {
+      iface.value = value
+    }
+  }
   
   // 同步到 store（标记为已修改）
   nodeGraphStore.isDirty = true
+}
+
+function handleInspectorTab(event: KeyboardEvent) {
+  const container = event.currentTarget as HTMLElement
+  const focusable = Array.from(container.querySelectorAll<HTMLElement>(
+    'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )).filter(el => el.offsetParent !== null)
+
+  if (focusable.length === 0) return
+
+  const currentIndex = focusable.indexOf(document.activeElement as HTMLElement)
+  const nextIndex = event.shiftKey
+    ? (currentIndex <= 0 ? focusable.length - 1 : currentIndex - 1)
+    : (currentIndex < 0 || currentIndex >= focusable.length - 1 ? 0 : currentIndex + 1)
+
+  focusable[nextIndex]?.focus()
+}
+
+function renderSafeMarkdown(value: any): string {
+  const escaped = escapeHtml(String(value ?? ''))
+
+  return escaped
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, '$1<em>$2</em>')
+    .replace(/(^|[^_])_([^_]+)_(?!_)/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, url) => renderSafeLink(label, url))
+    .replace(/\n/g, '<br>')
+}
+
+function renderSafeLink(label: string, rawUrl: string): string {
+  const url = rawUrl.replace(/&amp;/g, '&').trim()
+  if (!/^(https?:|mailto:)/i.test(url)) {
+    return label
+  }
+
+  return `<a href="${escapeAttribute(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function escapeAttribute(value: string): string {
+  return escapeHtml(value).replace(/`/g, '&#96;')
 }
 
 function onEventSubTypeChange() {
@@ -340,8 +495,41 @@ function onLogicSubTypeChange() {
   }
 }
 
-function handleResourceBrowse(propName: string) {
+function getSelectedCharacterProfile() {
+  const selectedCharacterName = String(getPropertyValue('character') || '').trim()
+  if (!selectedCharacterName) return null
+
+  return characterStore.sortedCharacters.find(character => character.id === selectedCharacterName) || null
+}
+
+function toResourcePickerFiles(entries: DirEntry[]) {
+  return entries
+    .filter(entry => !entry.isDirectory)
+    .map(entry => ({ name: entry.name, path: entry.path }))
+}
+
+async function loadCharacterSpriteFiles() {
+  const character = getSelectedCharacterProfile()
+  const spriteFolder = character?.spriteFolder?.trim()
+  if (!spriteFolder) {
+    currentResourceFiles.value = []
+    return
+  }
+
+  try {
+    const result = await getEntries(spriteFolder)
+    const imageExts = RESOURCE_TYPE_EXTENSIONS.image
+    currentResourceFiles.value = toResourcePickerFiles(result.entries)
+      .filter(file => imageExts.includes(file.name.slice(file.name.lastIndexOf('.')).toLowerCase()))
+  } catch (error) {
+    console.warn('[InspectorPanel] Failed to load character sprite folder:', error)
+    currentResourceFiles.value = []
+  }
+}
+
+async function handleResourceBrowse(propName: string) {
   currentResourcePropName.value = propName
+  currentResourceFiles.value = []
 
   if (selectedNode.value?.type === 'ResourceNode') {
     const nodeResourceType = ((selectedNode.value as any)?.state?.resourceType
@@ -349,17 +537,36 @@ function handleResourceBrowse(propName: string) {
       || 'image') as ResourceType
     currentResourceType.value = nodeResourceType
   } else {
-    const typeMap: Partial<Record<string, ResourceType>> = { voice: 'voice', bgm: 'bgm', imagePath: 'image', background: 'image' }
+    const typeMap: Partial<Record<string, ResourceType>> = {
+      voice: 'voice',
+      voice2: 'voice',
+      voice3: 'voice',
+      voice4: 'voice',
+      voice5: 'voice',
+      sfx: 'audio',
+      bgm: 'bgm',
+      imagePath: 'image',
+      background: 'image',
+      sprite1: 'image',
+      sprite2: 'image',
+      sprite3: 'image',
+      sprite4: 'image',
+      sprite5: 'image',
+      sprite: 'image',
+    }
     currentResourceType.value = typeMap[propName] || 'image'
+  }
+
+  if (selectedNode.value?.type === 'CharacterControlNode' && propName === 'sprite') {
+    await loadCharacterSpriteFiles()
   }
 
   showResourcePicker.value = true
 }
 
 function onResourcePicked(path: string) {
-  if (currentResourcePropName.value && selectedNode.value?.data) {
-    selectedNode.value.data[currentResourcePropName.value] = path
-    nodeGraphStore.isDirty = true
+  if (currentResourcePropName.value) {
+    updateProperty(currentResourcePropName.value, path)
   }
   showResourcePicker.value = false
 }
@@ -495,8 +702,54 @@ function onResourcePicked(path: string) {
   border-color: #007acc;
 }
 
+.character-select-wrapper {
+  display: flex;
+  gap: 6px;
+}
+
+.character-select-wrapper .prop-select {
+  flex: 1;
+}
+
+.character-manager-btn {
+  width: 32px;
+  border: 1px solid #555555;
+  border-radius: 3px;
+  color: #d4d4d4;
+  background: #3c3c3c;
+  cursor: pointer;
+}
+
+.character-manager-btn:hover {
+  border-color: #007acc;
+  background: #4e4e4e;
+}
+
 .prop-number {
   -moz-appearance: textfield;
+}
+
+.markdown-preview {
+  padding: 8px;
+  border: 1px solid #3e3e42;
+  border-radius: 3px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.markdown-preview :deep(code) {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #2d2d30;
+  color: #f0f0f0;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.markdown-preview :deep(a) {
+  color: #4ea1ff;
 }
 
 .prop-number::-webkit-inner-spin-button,

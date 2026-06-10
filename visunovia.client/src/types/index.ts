@@ -114,6 +114,7 @@ export enum NodeType {
   End = 'EndNode',
   Event = 'EventNode',
   Dialogue = 'DialogueNode',
+  CharacterControl = 'CharacterControlNode',
   Branch = 'BranchNode',
   Logic = 'LogicNode',
 }
@@ -168,7 +169,7 @@ export interface PortConfig {
 // 节点属性配置
 export interface PropertyConfig {
   name: string
-  type: 'string' | 'number' | 'boolean' | 'select' | 'resource'
+  type: 'string' | 'number' | 'boolean' | 'select' | 'resource' | 'character'
   defaultValue: any
   label?: string
   options?: { value: string; label: string }[]
