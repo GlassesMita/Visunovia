@@ -290,9 +290,10 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
     nodes.value = editor.value.graph.nodes.map(node => ({
       id: node.id,
       type: node.type,
+      subType: extractSubTypeFromNode(editor.value as Editor, node.id),
       position: { x: node.position.x, y: node.position.y },
       data: normalizeAssetProperties(extractPropertiesFromNode(editor.value as Editor, node.id))
-    }))
+    } as any))
   }
 
   function syncConnections() {

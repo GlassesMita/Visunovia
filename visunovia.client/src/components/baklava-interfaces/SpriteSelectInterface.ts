@@ -2,6 +2,7 @@ import { NodeInterface } from '@baklavajs/core'
 import { defineComponent, h, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { getEntries } from '@/api/fileBrowser'
 import { useCharacterStore } from '@/stores/useCharacterStore'
+import { resolveAssetUrl } from '@/utils/assetPaths'
 
 interface SpriteOption {
   name: string
@@ -17,7 +18,7 @@ function isImageFile(name: string) {
 }
 
 function toPreviewUrl(path: string) {
-  return `/api/FileBrowser/preview?path=${encodeURIComponent(path)}`
+  return resolveAssetUrl(path, 'Characters')
 }
 
 function getInterfaceValue(intf: any, key: string) {

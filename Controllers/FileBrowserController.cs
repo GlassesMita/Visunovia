@@ -359,13 +359,13 @@ public class FileBrowserController : ControllerBase
             targetPath = System.IO.Path.GetFullPath(targetPath);
 
             if (!System.IO.File.Exists(targetPath))
-                return NotFound(new { success = false, error = "文件不存在" });
+                return NotFound(new { success = false, error = "文件不存在", requestedPath = path, resolvedPath = targetPath });
 
             // 检查是否为允许的图像扩展名
             var extension = System.IO.Path.GetExtension(targetPath).ToLowerInvariant();
             var allowedExtensions = new HashSet<string> { ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg", ".ico", ".tga", ".dds" };
             if (!allowedExtensions.Contains(extension))
-                return BadRequest(new { success = false, error = "不支持的文件格式" });
+                return BadRequest(new { success = false, error = "不支持的文件格式", requestedPath = path, resolvedPath = targetPath, extension });
 
             // 根据扩展名返回正确的 MIME 类型
             var mimeType = extension switch

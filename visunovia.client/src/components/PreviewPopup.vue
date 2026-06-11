@@ -115,6 +115,18 @@ type PreviewConnection = {
   to: { nodeId: string; port: string }
 }
 
+type PreviewResourceKind = 'background' | 'character' | 'bgm' | 'sfx' | 'voice'
+
+type PreviewResourceTrace = {
+  kind: PreviewResourceKind
+  label: string
+  nodeId: string
+  nodeType: string
+  field: string
+  rawPath: string
+  resolvedUrl: string
+}
+
 const props = defineProps<{
   visible: boolean
   reloadToken: number
@@ -142,6 +154,7 @@ const previewEnded = ref(false)
 const choices = ref<PreviewChoice[]>([])
 const characterSlots = ref<Record<string, CharacterSlotState>>({})
 const bgmAudio = ref<HTMLAudioElement | null>(null)
+const resourceTraceByUrl = ref<Record<string, PreviewResourceTrace>>({})
 
 const visibleCharacters = computed(() => Object.values(characterSlots.value).sort((a, b) => Number(a.slot) - Number(b.slot)))
 
@@ -238,6 +251,7 @@ function resetPlaybackState() {
   previewEnded.value = false
   choices.value = []
   characterSlots.value = {}
+  resourceTraceByUrl.value = {}
   stopAudio()
 }
 
@@ -348,54 +362,82 @@ function renderChoiceNode(node: PreviewNode) {
 }
 
 function processEventNode(node: PreviewNode) {
-  const subType = normalizeEventSubType(node.data.subType || node.data.eventType || node.data.eventName)
+  const subType = inferEventSubType(node.data)
   const resourcePath = getEventResourcePath(node.data, subType)
 
   if (subType === 'changeBackground') {
-    setBackground(resourcePath)
+    setBackground(resourcePath.value, createResourceTrace(node, 'background', '背景', resourcePath.field, resourcePath.value, resolveAssetUrl(resourcePath.value, 'Backgrounds')))
   } else if (subType === 'playBgm') {
-    playBgm(resourcePath, Number(node.data.volume ?? 1))
+    playBgm(resourcePath.value, Number(node.data.volume ?? 1), createResourceTrace(node, 'bgm', 'BGM', resourcePath.field, resourcePath.value, resolveAssetUrl(resourcePath.value, 'Musics')))
   } else if (subType === 'stopBgm') {
     stopAudio()
   } else if (subType === 'playSfx') {
-    playSfx(resourcePath, Number(node.data.volume ?? 1))
+    playSfx(resourcePath.value, Number(node.data.volume ?? 1), createResourceTrace(node, 'sfx', '音效', resourcePath.field, resourcePath.value, resolveAssetUrl(resourcePath.value, 'Sfx')))
   } else if (subType === 'playVoice') {
-    playVoice(resourcePath)
+    playVoice(resourcePath.value, createResourceTrace(node, 'voice', '语音', resourcePath.field, resourcePath.value, resolveAssetUrl(resourcePath.value, 'Voices')))
   } else if (subType === 'showCharacter') {
     setCharacterSlot('1', {
       character: String(node.data.characterId || ''),
-      sprite: resourcePath || String(node.data.characterId || ''),
+      sprite: resourcePath.value || String(node.data.characterId || ''),
       position: String(node.data.position || 'center'),
       animation: 'fade',
-    })
+    }, node)
   } else if (subType === 'hideCharacter') {
     const characterId = String(node.data.characterId || '')
     characterSlots.value = Object.fromEntries(Object.entries(characterSlots.value).filter(([, slot]) => slot.character !== characterId))
+  } else {
+    console.warn('[PreviewPopup] 无法识别 EventNode 类型，已跳过', { node, inferredSubType: subType })
   }
+}
+
+function inferEventSubType(data: Record<string, any>) {
+  const explicitType = normalizeEventSubType(data.subType || data.eventType || data.eventName)
+  if (explicitType) return explicitType
+
+  if (hasAnyResourceField(data, ['imagePath', 'background', 'bgFile', 'bg'])) return 'changeBackground'
+  if (hasAnyResourceField(data, ['bgmPath', 'bgmFile', 'bgm', 'musicFile'])) return 'playBgm'
+  if (hasAnyResourceField(data, ['sfxPath', 'soundFile', 'sfx'])) return 'playSfx'
+  if (hasAnyResourceField(data, ['voicePath', 'voiceFile', 'voice'])) return 'playVoice'
+  if (hasAnyResourceField(data, ['sprite', 'spritePath', 'characterSprite']) || data.characterId) return 'showCharacter'
+
+  return ''
+}
+
+function hasAnyResourceField(data: Record<string, any>, fields: string[]) {
+  return fields.some((field) => String(data[field] || '').trim())
 }
 
 function getEventResourcePath(data: Record<string, any>, subType: string) {
   if (subType === 'changeBackground') {
-    return String(data.imagePath || data.background || data.bgFile || data.bg || data.resource || data.path || data.file || data.filePath || '')
+    return pickResourceField(data, ['imagePath', 'background', 'bgFile', 'bg', 'resource', 'path', 'file', 'filePath'])
   }
 
   if (subType === 'playBgm') {
-    return String(data.bgmPath || data.bgmFile || data.bgm || data.musicFile || data.resource || data.path || data.file || data.filePath || '')
+    return pickResourceField(data, ['bgmPath', 'bgmFile', 'bgm', 'musicFile', 'resource', 'path', 'file', 'filePath'])
   }
 
   if (subType === 'playSfx') {
-    return String(data.sfxPath || data.soundFile || data.sfx || data.resource || data.path || data.file || data.filePath || '')
+    return pickResourceField(data, ['sfxPath', 'soundFile', 'sfx', 'resource', 'path', 'file', 'filePath'])
   }
 
   if (subType === 'playVoice') {
-    return String(data.voicePath || data.voiceFile || data.voice || data.resource || data.path || data.file || data.filePath || '')
+    return pickResourceField(data, ['voicePath', 'voiceFile', 'voice', 'resource', 'path', 'file', 'filePath'])
   }
 
   if (subType === 'showCharacter') {
-    return String(data.sprite || data.spritePath || data.characterSprite || data.resource || data.path || data.file || data.filePath || '')
+    return pickResourceField(data, ['sprite', 'spritePath', 'characterSprite', 'resource', 'path', 'file', 'filePath'])
   }
 
-  return ''
+  return { field: '', value: '' }
+}
+
+function pickResourceField(data: Record<string, any>, fields: string[]) {
+  for (const field of fields) {
+    const value = String(data[field] || '').trim()
+    if (value) return { field, value }
+  }
+
+  return { field: fields[0] || '', value: '' }
 }
 
 function normalizeEventSubType(value: unknown) {
@@ -449,11 +491,13 @@ function applyCharacterControls(dialogueNode: PreviewNode) {
     }
 
     const sprite = String(control.sprite || nextSlots[slot]?.sprite || '')
+    const spriteUrl = resolveAssetUrl(sprite, 'Characters')
+    registerResourceTrace(createResourceTrace(dialogueNode, 'character', `角色立绘 slot ${slot}`, 'characterControls.sprite', sprite, spriteUrl))
     nextSlots[slot] = {
       slot,
       character: String(control.character || nextSlots[slot]?.character || ''),
       sprite,
-      spriteUrl: resolveAssetUrl(sprite, 'Characters'),
+      spriteUrl,
       position: String(control.position || nextSlots[slot]?.position || 'center'),
       animation: String(control.animation || 'fade'),
     }
@@ -480,13 +524,18 @@ function getCharacterControlsForDialogue(dialogueNode: PreviewNode) {
   return [...inlineControls, ...linkedControls]
 }
 
-function setCharacterSlot(slot: string, data: Omit<CharacterSlotState, 'slot' | 'spriteUrl'>) {
+function setCharacterSlot(slot: string, data: Omit<CharacterSlotState, 'slot' | 'spriteUrl'>, sourceNode?: PreviewNode) {
+  const spriteUrl = resolveAssetUrl(data.sprite, 'Characters')
+  if (sourceNode) {
+    registerResourceTrace(createResourceTrace(sourceNode, 'character', `角色立绘 slot ${slot}`, 'sprite', data.sprite, spriteUrl))
+  }
+
   characterSlots.value = {
     ...characterSlots.value,
     [slot]: {
       slot,
       ...data,
-      spriteUrl: resolveAssetUrl(data.sprite, 'Characters'),
+      spriteUrl,
     },
   }
 }
@@ -653,12 +702,13 @@ function pauseWithError(message: string, detail?: unknown) {
   console.error(`[PreviewPopup] ${message}`, detail)
 }
 
-function setBackground(path: string) {
-  const url = resolveAssetUrl(path, 'Backgrounds')
+function setBackground(path: string, trace?: PreviewResourceTrace) {
+  const url = trace?.resolvedUrl || resolveAssetUrl(path, 'Backgrounds')
   currentBackground.value = {
     url,
     type: isVideoAsset(path) ? 'video' : 'image',
   }
+  registerResourceTrace(trace)
   if (path) console.debug('[PreviewPopup] 设置背景资源', { path, url })
 }
 
@@ -666,9 +716,10 @@ function isVideoAsset(path: string) {
   return path.split(/[?#]/)[0].toLowerCase().endsWith('.mp4')
 }
 
-function playBgm(path: string, volume: number) {
+function playBgm(path: string, volume: number, trace?: PreviewResourceTrace) {
   if (!bgmAudio.value || !path) return
-  const url = resolveAssetUrl(path, 'Musics')
+  const url = trace?.resolvedUrl || resolveAssetUrl(path, 'Musics')
+  registerResourceTrace(trace)
   bgmAudio.value.src = url
   bgmAudio.value.volume = Math.max(0, Math.min(1, volume))
   bgmAudio.value.play().catch((error) => {
@@ -676,26 +727,80 @@ function playBgm(path: string, volume: number) {
   })
 }
 
-function logMediaError(type: string, url: string) {
-  console.warn(`[PreviewPopup] ${type}加载失败`, { url })
+async function logMediaError(type: string, url: string) {
+  const trace = resourceTraceByUrl.value[url]
+  const backend = await readPreviewErrorResponse(url)
+  const message = `${type}加载失败：${trace?.rawPath || url}`
+  statusMessage.value = trace
+    ? `${message}\n节点 ${trace.nodeType} (${trace.nodeId}) · 字段 ${trace.field}\nURL: ${url}${backend ? `\n后端: ${backend}` : ''}`
+    : `${message}${backend ? `\n后端: ${backend}` : ''}`
+
+  console.warn(`[PreviewPopup] ${type}加载失败`, { url, trace, backend })
 }
 
-function playSfx(path: string, volume: number) {
+function playSfx(path: string, volume: number, trace?: PreviewResourceTrace) {
   if (!path) return
-  const audio = new Audio(resolveAssetUrl(path, 'Sfx'))
+  const audio = new Audio(trace?.resolvedUrl || resolveAssetUrl(path, 'Sfx'))
+  registerResourceTrace(trace)
   audio.volume = Math.max(0, Math.min(1, volume))
   audio.play().catch((error) => {
-    console.warn('[PreviewPopup] 音效播放失败:', error)
+    reportAudioPlaybackError('音效', path, audio.src, error)
   })
 }
 
-function playVoice(path: string) {
+function playVoice(path: string, trace?: PreviewResourceTrace) {
   if (!path) return
-  const audio = new Audio(resolveAssetUrl(path, 'Voices'))
+  const audio = new Audio(trace?.resolvedUrl || resolveAssetUrl(path, 'Voices'))
+  registerResourceTrace(trace)
   audio.volume = 1
   audio.play().catch((error) => {
-    console.warn('[PreviewPopup] 语音播放失败:', error)
+    reportAudioPlaybackError('语音', path, audio.src, error)
   })
+}
+
+function createResourceTrace(node: PreviewNode, kind: PreviewResourceKind, label: string, field: string, rawPath: string, resolvedUrl: string): PreviewResourceTrace {
+  return {
+    kind,
+    label,
+    nodeId: node.id,
+    nodeType: node.type,
+    field,
+    rawPath,
+    resolvedUrl,
+  }
+}
+
+function registerResourceTrace(trace?: PreviewResourceTrace) {
+  if (!trace?.resolvedUrl) return
+  resourceTraceByUrl.value = {
+    ...resourceTraceByUrl.value,
+    [trace.resolvedUrl]: trace,
+  }
+}
+
+async function readPreviewErrorResponse(url: string) {
+  if (!url || url.startsWith('data:') || url.startsWith('blob:')) return ''
+
+  try {
+    const response = await fetch(url, { method: 'GET', cache: 'no-store' })
+    if (response.ok) return ''
+
+    const contentType = response.headers.get('content-type') || ''
+    if (contentType.includes('application/json')) {
+      const body = await response.json().catch(() => null)
+      return body?.error || body?.message || `${response.status} ${response.statusText}`
+    }
+
+    return `${response.status} ${response.statusText}`
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error)
+  }
+}
+
+function reportAudioPlaybackError(type: string, path: string, url: string, error: unknown) {
+  const trace = resourceTraceByUrl.value[url]
+  statusMessage.value = `${type}播放失败：${path}\n${trace ? `节点 ${trace.nodeType} (${trace.nodeId}) · 字段 ${trace.field}\n` : ''}URL: ${url}`
+  console.warn(`[PreviewPopup] ${type}播放失败`, { path, url, trace, error })
 }
 
 function stopAudio() {

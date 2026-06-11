@@ -118,6 +118,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useCharacterStore, type CharacterProfile } from '@/stores/useCharacterStore'
 import { useUIStore } from '@/stores/useUIStore'
 import { getEntries, type DirEntry } from '@/api/fileBrowser'
+import { resolveAssetUrl } from '@/utils/assetPaths'
 
 const characterStore = useCharacterStore()
 const uiStore = useUIStore()
@@ -177,7 +178,7 @@ function getAvatarStyle(character: CharacterProfile) {
 }
 
 function getPreviewUrl(path: string) {
-  return `/api/FileBrowser/preview?path=${encodeURIComponent(path)}`
+  return resolveAssetUrl(path, 'Characters')
 }
 
 function isImageFile(name: string) {

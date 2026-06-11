@@ -104,11 +104,18 @@ public class ResourceController : ControllerBase
             if (!fullPath.StartsWith(Path.GetFullPath(projectRoot), StringComparison.OrdinalIgnoreCase))
                 return Forbid("不允许访问项目目录之外的文件");
 
+            var requestedFullPath = fullPath;
             if (!System.IO.File.Exists(fullPath))
                 fullPath = TryResolveAssetFolderFallback(projectRoot, path) ?? fullPath;
 
             if (!System.IO.File.Exists(fullPath))
-                return NotFound(new { error = "文件不存在" });
+                return NotFound(new
+                {
+                    error = "文件不存在",
+                    requestedPath = path,
+                    resolvedPath = requestedFullPath,
+                    projectRoot
+                });
 
             if (!_contentTypeProvider.TryGetContentType(fullPath, out var contentType))
                 contentType = "application/octet-stream";
