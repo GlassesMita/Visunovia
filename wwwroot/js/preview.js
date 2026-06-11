@@ -12,6 +12,70 @@ app.previewState = {
     currentBgm: ''
 };
 
+app.previewVideoBackgroundExtensions = ['.mp4', '.webm', '.m4v', '.mov', '.ogv'];
+
+app.isPreviewVideoBackground = function (path) {
+    var cleanPath = String(path || '').split(/[?#]/)[0].toLowerCase();
+    for (var i = 0; i < app.previewVideoBackgroundExtensions.length; i++) {
+        if (cleanPath.slice(-app.previewVideoBackgroundExtensions[i].length) === app.previewVideoBackgroundExtensions[i]) {
+            return true;
+        }
+    }
+    return false;
+};
+
+app.resolvePreviewBackgroundUrl = function (backgroundPath) {
+    if (!backgroundPath) return '';
+    if (/^[a-zA-Z]:[\\/]/.test(backgroundPath) || backgroundPath.indexOf('\\\\') === 0 || backgroundPath.charAt(0) === '/') {
+        return '/api/FileBrowser/preview?path=' + encodeURIComponent(backgroundPath);
+    }
+    return '/api/resources/file/Assets/Backgrounds/' + encodeURIComponent(backgroundPath);
+};
+
+app.setPreviewBackground = function (backgroundPath) {
+    var imageEl = document.getElementById('previewBg');
+    var videoEl = document.getElementById('previewBgVideo');
+    var url = app.resolvePreviewBackgroundUrl(backgroundPath);
+    var isVideo = app.isPreviewVideoBackground(backgroundPath);
+
+    if (imageEl) {
+        imageEl.style.display = isVideo ? 'none' : 'block';
+        if (isVideo) imageEl.removeAttribute('src');
+    }
+
+    if (videoEl) {
+        videoEl.style.display = isVideo ? 'block' : 'none';
+        if (!isVideo) {
+            videoEl.pause();
+            videoEl.removeAttribute('src');
+            videoEl.load();
+        }
+    }
+
+    if (isVideo && videoEl) {
+        if (videoEl.src !== url) videoEl.src = url;
+        videoEl.type = app.getPreviewVideoMimeType(backgroundPath);
+        videoEl.muted = true;
+        videoEl.loop = true;
+        videoEl.playsInline = true;
+        videoEl.play().catch(function (err) {
+            console.warn('[Preview] 背景视频播放失败: ' + err.message);
+        });
+    } else if (imageEl) {
+        imageEl.src = url;
+    }
+};
+
+app.getPreviewVideoMimeType = function (path) {
+    var cleanPath = String(path || '').split(/[?#]/)[0].toLowerCase();
+    if (cleanPath.slice(-5) === '.webm') return 'video/webm';
+    if (cleanPath.slice(-4) === '.mp4') return 'video/mp4';
+    if (cleanPath.slice(-4) === '.m4v') return 'video/x-m4v';
+    if (cleanPath.slice(-4) === '.mov') return 'video/quicktime';
+    if (cleanPath.slice(-4) === '.ogv') return 'video/ogg';
+    return 'video/webm';
+};
+
 app.startPreview = function (data) {
     if (!data || !data.scenes || data.scenes.length === 0) {
         app.setStatus('没有可预览的内容');
@@ -111,10 +175,7 @@ app.renderPreviewDialogue = function (dialogue, scene) {
             var isNotSpriteLike = !/^BG_/i.test(bg);
             if (isPureFilename && isNotSpriteLike) {
                 app.previewState.currentBg = bg;
-                if (bgEl) {
-                    bgEl.src = '/api/resources/file/Assets/Backgrounds/' + bg;
-                    bgEl.style.display = 'block';
-                }
+                app.setPreviewBackground(bg);
             }
         }
 
@@ -288,11 +349,7 @@ app.processPreviewEvent = function (dialogue) {
         case 'ChangeBackground':
             if (params.background) {
                 app.previewState.currentBg = params.background;
-                var bgEl = document.getElementById('previewBg');
-                if (bgEl) {
-                    bgEl.src = '/api/resources/file/Assets/Backgrounds/' + params.background;
-                    bgEl.style.display = 'block';
-                }
+                app.setPreviewBackground(params.background);
             }
             break;
 

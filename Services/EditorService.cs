@@ -724,10 +724,10 @@ public class EditorService
         var categoryExtensions = new Dictionary<string, string[]>
         {
             { "sprites", new[] { ".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp" } },
-            { "backgrounds", new[] { ".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp" } },
-            { "bgm", new[] { ".mp3", ".wav", ".ogg", ".flac", ".m4a" } },
-            { "voice", new[] { ".mp3", ".wav", ".ogg", ".flac", ".m4a" } },
-            { "sfx", new[] { ".mp3", ".wav", ".ogg", ".flac" } }
+            { "backgrounds", new[] { ".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".mp4", ".webm", ".m4v", ".mov", ".ogv" } },
+            { "bgm", new[] { ".mp3", ".wav", ".ogg", ".oga", ".flac", ".m4a", ".aac", ".opus", ".weba" } },
+            { "voice", new[] { ".mp3", ".wav", ".ogg", ".oga", ".flac", ".m4a", ".aac", ".opus", ".weba" } },
+            { "sfx", new[] { ".mp3", ".wav", ".ogg", ".oga", ".flac", ".m4a", ".aac", ".opus", ".weba" } }
         };
 
         var directoryMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)

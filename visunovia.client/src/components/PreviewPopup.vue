@@ -8,6 +8,18 @@
             <p>{{ viewport.width }} × {{ viewport.height }}</p>
           </div>
           <div class="preview-popup-actions">
+            <label class="preview-resolution-picker">
+              <span>渲染分辨率</span>
+              <select :value="selectedResolutionKey" @change="handleResolutionChange">
+                <option
+                  v-for="resolution in PREVIEW_RESOLUTIONS"
+                  :key="resolution.key"
+                  :value="resolution.key"
+                >
+                  {{ resolution.label }}
+                </option>
+              </select>
+            </label>
             <button type="button" @click="restartPreview">重新播放</button>
             <button class="preview-popup-close" type="button" @click="closePreview">✕</button>
           </div>
@@ -145,12 +157,23 @@ const emit = defineEmits<{
 
 const SETTINGS_STORAGE_KEY = 'visunovia-settings'
 const DEFAULT_VIEWPORT = { width: 1280, height: 720 }
+const VIDEO_ASSET_EXTENSIONS = new Set(['.mp4', '.webm', '.m4v', '.mov', '.ogv'])
+const PREVIEW_RESOLUTIONS = [
+  { key: '2560x1440', label: '2560 × 1440', width: 2560, height: 1440 },
+  { key: '1920x1080', label: '1920 × 1080', width: 1920, height: 1080 },
+  { key: '1280x720', label: '1280 × 720', width: 1280, height: 720 },
+]
 const markdownRenderer = new MarkdownIt({
   breaks: true,
-  html: false,
+  html: true,
   linkify: true,
   typographer: true,
 })
+markdownRenderer.enable(['table', 'strikethrough'])
+markdownRenderer.inline.ruler.before('link', 'visunovia_ruby_annotation', createRubyAnnotationRule())
+markdownRenderer.inline.ruler.before('link', 'visunovia_inside_annotation', createInsideAnnotationRule())
+markdownRenderer.inline.ruler.before('emphasis', 'visunovia_mark', createSimpleInlineRule('==', 'mark'))
+markdownRenderer.inline.ruler.before('emphasis', 'visunovia_underline', createSimpleInlineRule('++', 'u'))
 
 const nodeGraphStore = useNodeGraphStore()
 const characterStore = useCharacterStore()
@@ -175,7 +198,12 @@ let typewriterTimer: number | null = null
 
 const visibleCharacters = computed(() => Object.values(characterSlots.value).sort((a, b) => Number(a.slot) - Number(b.slot)))
 
-const renderedDialogueHtml = computed(() => DOMPurify.sanitize(markdownRenderer.render(dialogueText.value)))
+const renderedDialogueHtml = computed(() => DOMPurify.sanitize(renderDialogueMarkdown(dialogueText.value), {
+  ADD_TAGS: ['ruby', 'rp', 'rt', 'i', 'u', 'mark', 'span'],
+  ADD_ATTR: ['class', 'title'],
+}))
+
+const selectedResolutionKey = computed(() => `${viewport.value.width}x${viewport.value.height}`)
 
 const stageShellStyle = computed(() => ({
   aspectRatio: `${viewport.value.width} / ${viewport.value.height}`,
@@ -188,6 +216,120 @@ const stageStyle = computed(() => ({
   '--preview-width': viewport.value.width,
   '--preview-height': viewport.value.height,
 }))
+
+function createSimpleInlineRule(marker: string, tag: string) {
+  return (state: any, silent: boolean) => {
+    const start = state.pos
+    if (!state.src.startsWith(marker, start)) return false
+
+    const contentStart = start + marker.length
+    const end = state.src.indexOf(marker, contentStart)
+    if (end < 0 || end === contentStart) return false
+
+    if (!silent) {
+      const openToken = state.push(`${tag}_open`, tag, 1)
+      openToken.markup = marker
+      const textToken = state.push('text', '', 0)
+      textToken.content = state.src.slice(contentStart, end)
+      const closeToken = state.push(`${tag}_close`, tag, -1)
+      closeToken.markup = marker
+    }
+
+    state.pos = end + marker.length
+    return true
+  }
+}
+
+function createRubyAnnotationRule() {
+  return (state: any, silent: boolean) => {
+    const start = state.pos
+    const marker = '[Ann|'
+    if (!state.src.startsWith(marker, start)) return false
+
+    const contentStart = start + marker.length
+    const separator = state.src.indexOf('|', contentStart)
+    if (separator < 0) return false
+
+    const end = state.src.indexOf(']', separator + 1)
+    if (end < 0) return false
+
+    const mainText = state.src.slice(contentStart, separator)
+    const annotationText = state.src.slice(separator + 1, end)
+    if (!mainText || !annotationText) return false
+
+    if (!silent) {
+      state.push('ruby_open', 'ruby', 1)
+      const mainToken = state.push('text', '', 0)
+      mainToken.content = mainText
+      state.push('rp_open', 'rp', 1)
+      const leftParenToken = state.push('text', '', 0)
+      leftParenToken.content = '('
+      state.push('rp_close', 'rp', -1)
+      state.push('rt_open', 'rt', 1)
+      const annotationToken = state.push('text', '', 0)
+      annotationToken.content = annotationText
+      state.push('rt_close', 'rt', -1)
+      state.push('rp_open', 'rp', 1)
+      const rightParenToken = state.push('text', '', 0)
+      rightParenToken.content = ')'
+      state.push('rp_close', 'rp', -1)
+      state.push('ruby_close', 'ruby', -1)
+    }
+
+    state.pos = end + 1
+    return true
+  }
+}
+
+function createInsideAnnotationRule() {
+  return (state: any, silent: boolean) => {
+    const start = state.pos
+    const marker = '[Inside|'
+    if (!state.src.startsWith(marker, start)) return false
+
+    const contentStart = start + marker.length
+    const end = state.src.indexOf(']', contentStart)
+    if (end < 0) return false
+
+    const content = state.src.slice(contentStart, end)
+    const separator = content.indexOf('|')
+    const hiddenText = separator >= 0 ? content.slice(0, separator) : content
+    const titleText = (separator >= 0 ? content.slice(separator + 1) : '').trim() || '你知道的太多了'
+    if (!hiddenText) return false
+
+    if (!silent) {
+      const openToken = state.push('span_open', 'span', 1)
+      openToken.attrs = [
+        ['class', 'dialog-inside'],
+        ['title', titleText],
+      ]
+      const textToken = state.push('text', '', 0)
+      textToken.content = hiddenText
+      state.push('span_close', 'span', -1)
+    }
+
+    state.pos = end + 1
+    return true
+  }
+}
+
+function normalizeDialogueEscapes(value: string) {
+  return value.replace(/\\([nrt\\])/g, (_, escaped: string) => {
+    const replacements: Record<string, string> = {
+      n: '<br />',
+      r: '',
+      t: '&emsp;',
+      '\\': '\\',
+    }
+    return replacements[escaped] ?? escaped
+  })
+}
+
+function renderDialogueMarkdown(value: string) {
+  return markdownRenderer
+    .render(normalizeDialogueEscapes(value))
+    .replace(/<br\s*\/?>\s*\n/gi, '<br />')
+}
 
 watch(
   () => props.visible,
@@ -229,6 +371,27 @@ function readSettings(): PreviewSettings {
   } catch {
     return {}
   }
+}
+
+function persistViewportSettings(width: number, height: number) {
+  const settings = readSettings()
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+    ...settings,
+    previewWidth: width,
+    previewHeight: height,
+  }))
+}
+
+function handleResolutionChange(event: Event) {
+  const target = event.target as HTMLSelectElement | null
+  const resolution = PREVIEW_RESOLUTIONS.find((item) => item.key === target?.value)
+  if (!resolution) return
+  applyPreviewResolution(resolution.width, resolution.height)
+}
+
+function applyPreviewResolution(width: number, height: number) {
+  viewport.value = { width, height }
+  persistViewportSettings(width, height)
 }
 
 function clampNumber(value: unknown, fallback: number, min: number, max: number) {
@@ -787,7 +950,8 @@ function setBackground(path: string, trace?: PreviewResourceTrace) {
 }
 
 function isVideoAsset(path: string) {
-  return path.split(/[?#]/)[0].toLowerCase().endsWith('.mp4')
+  const extension = path.split(/[?#]/)[0].toLowerCase().match(/\.[^.\/\\]+$/)?.[0] || ''
+  return VIDEO_ASSET_EXTENSIONS.has(extension)
 }
 
 function playBgm(path: string, volume: number, trace?: PreviewResourceTrace) {
@@ -968,6 +1132,25 @@ function closePreview() {
   gap: 8px;
 }
 
+.preview-resolution-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #cbd5e1;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.preview-resolution-picker select {
+  min-width: 132px;
+  border: 1px solid #3e3e42;
+  border-radius: 6px;
+  padding: 6px 28px 6px 10px;
+  background: #333337;
+  color: #ffffff;
+  cursor: pointer;
+}
+
 .preview-popup-actions button {
   border: 1px solid #3e3e42;
   border-radius: 6px;
@@ -1062,9 +1245,9 @@ function closePreview() {
 
 .preview-character {
   position: absolute !important;
-  bottom: 6% !important;
-  max-height: 86% !important;
-  max-width: 42% !important;
+  bottom: -18% !important;
+  max-height: 112% !important;
+  max-width: 52% !important;
   object-fit: contain !important;
   opacity: 1 !important;
   mix-blend-mode: normal !important;
@@ -1072,18 +1255,18 @@ function closePreview() {
 }
 
 .preview-character-left {
-  left: 12%;
-  transform: translateX(-50%);
+  left: 10% !important;
+  transform: none !important;
 }
 
 .preview-character-center {
-  left: 50%;
-  transform: translateX(-50%);
+  left: 50% !important;
+  transform: translateX(-50%) !important;
 }
 
 .preview-character-right {
-  right: 12%;
-  transform: translateX(50%);
+  right: 10% !important;
+  transform: none !important;
 }
 
 .preview-character-fade,
@@ -1168,9 +1351,34 @@ function closePreview() {
   line-height: inherit !important;
 }
 
+.preview-text :deep(*) {
+  color: inherit !important;
+  line-height: inherit !important;
+}
+
 .preview-text :deep(p + p) {
   margin-top: 0.35em !important;
 }
+
+.preview-text :deep(h1),
+.preview-text :deep(h2),
+.preview-text :deep(h3),
+.preview-text :deep(h4),
+.preview-text :deep(h5),
+.preview-text :deep(h6) {
+  margin: 0 0 0.16em !important;
+  color: #ffffff !important;
+  font-family: inherit !important;
+  font-weight: 700 !important;
+  line-height: 1.08 !important;
+}
+
+.preview-text :deep(h1) { font-size: 1.28em !important; }
+.preview-text :deep(h2) { font-size: 1.18em !important; }
+.preview-text :deep(h3),
+.preview-text :deep(h4),
+.preview-text :deep(h5),
+.preview-text :deep(h6) { font-size: 1.08em !important; }
 
 .preview-text :deep(strong) {
   color: inherit !important;
@@ -1184,8 +1392,120 @@ function closePreview() {
   color: inherit !important;
   font-family: inherit !important;
   font-size: inherit !important;
-  font-style: italic !important;
+  font-style: oblique 12deg !important;
+  font-synthesis: style !important;
+  font-synthesis-style: auto !important;
   line-height: inherit !important;
+  display: inline-block !important;
+  transform: skewX(-9deg) !important;
+  transform-origin: left bottom !important;
+}
+
+.preview-text :deep(i) {
+  color: inherit !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-style: oblique 12deg !important;
+  font-synthesis: style !important;
+  font-synthesis-style: auto !important;
+  line-height: inherit !important;
+  display: inline-block !important;
+  transform: skewX(-9deg) !important;
+  transform-origin: left bottom !important;
+}
+
+.preview-text :deep(em::after),
+.preview-text :deep(i::after) {
+  content: "" !important;
+  display: inline-block !important;
+  width: 0.14em !important;
+}
+
+.preview-text :deep(ruby) {
+  color: inherit !important;
+  font: inherit !important;
+  ruby-position: over !important;
+  ruby-align: center !important;
+  text-emphasis: none !important;
+}
+
+.preview-text :deep(rt) {
+  color: inherit !important;
+  font-family: inherit !important;
+  font-size: 0.44em !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  text-shadow: inherit !important;
+}
+
+.preview-text :deep(rp) {
+  display: none !important;
+}
+
+.preview-text :deep(.dialog-inside),
+.preview-text :deep(.dialog-inside a),
+.preview-text :deep(a .dialog-inside),
+.preview-text :deep(.dialog-inside a.new) {
+  background-color: #252525 !important;
+  color: rgba(255, 255, 255, 0) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0) !important;
+  text-shadow: none !important;
+  transition: background-color 0.5s ease, color 0.5s ease, -webkit-text-fill-color 0.5s ease, text-shadow 0.5s ease !important;
+}
+
+.preview-text :deep(.dialog-inside:hover),
+.preview-text :deep(.dialog-inside:active),
+.preview-text :deep(.dialog-inside:hover .dialog-inside),
+.preview-text :deep(.dialog-inside:active .dialog-inside) {
+  background-color: transparent !important;
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: inherit !important;
+}
+
+.preview-text :deep(.dialog-inside:hover a),
+.preview-text :deep(a:hover .dialog-inside),
+.preview-text :deep(.dialog-inside:active a),
+.preview-text :deep(a:active .dialog-inside) {
+  background-color: transparent !important;
+  color: lightblue !important;
+  -webkit-text-fill-color: lightblue !important;
+}
+
+.preview-text :deep(.dialog-inside:hover .new),
+.preview-text :deep(.dialog-inside .new:hover),
+.preview-text :deep(.new:hover .dialog-inside),
+.preview-text :deep(.dialog-inside:active .new),
+.preview-text :deep(.dialog-inside .new:active),
+.preview-text :deep(.new:active .dialog-inside) {
+  background-color: transparent !important;
+  color: #ba0000 !important;
+  -webkit-text-fill-color: #ba0000 !important;
+}
+
+.preview-text :deep(del),
+.preview-text :deep(s) {
+  color: inherit !important;
+  font: inherit !important;
+  text-decoration: line-through !important;
+  text-decoration-thickness: 0.08em !important;
+}
+
+.preview-text :deep(u),
+.preview-text :deep(ins) {
+  color: inherit !important;
+  font: inherit !important;
+  text-decoration: underline !important;
+  text-underline-offset: 0.12em !important;
+}
+
+.preview-text :deep(mark) {
+  padding: 0 0.12em !important;
+  border-radius: 0.12em !important;
+  background: rgba(122, 204, 249, 0.34) !important;
+  color: #ffffff !important;
+  font: inherit !important;
 }
 
 .preview-text :deep(a) {
@@ -1203,10 +1523,56 @@ function closePreview() {
   font-size: 0.88em !important;
 }
 
+.preview-text :deep(pre) {
+  margin: 0 !important;
+  padding: 0.26em 0.42em !important;
+  border-radius: 0.2em !important;
+  background: rgba(0, 32, 76, 0.52) !important;
+  color: inherit !important;
+  font-family: Consolas, "Courier New", monospace !important;
+  font-size: 0.86em !important;
+  line-height: 1.2 !important;
+  white-space: pre-wrap !important;
+}
+
+.preview-text :deep(pre code) {
+  padding: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  font: inherit !important;
+}
+
 .preview-text :deep(ul),
 .preview-text :deep(ol) {
   margin: 0 !important;
   padding-left: 1.2em !important;
+  color: inherit !important;
+  font: inherit !important;
+}
+
+.preview-text :deep(li) {
+  margin: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+}
+
+.preview-text :deep(hr) {
+  height: 0.06em !important;
+  margin: 0.18em 0 !important;
+  border: 0 !important;
+  background: rgba(255, 255, 255, 0.76) !important;
+}
+
+.preview-text :deep(table) {
+  border-collapse: collapse !important;
+  color: inherit !important;
+  font: inherit !important;
+}
+
+.preview-text :deep(th),
+.preview-text :deep(td) {
+  padding: 0.08em 0.32em !important;
+  border: 0.04em solid rgba(255, 255, 255, 0.58) !important;
   color: inherit !important;
   font: inherit !important;
 }

@@ -49,7 +49,7 @@ export const RESOURCE_TYPE_EXTENSIONS: Record<ResourceType, string[]> = {
   audio: ['.mp3', '.wav', '.ogg', '.flac', '.aac'],
   bgm:   ['.mp3', '.wav', '.ogg', '.flac', '.m4a'],
   voice: ['.mp3', '.wav', '.ogg', '.flac', '.opus'],
-  video: ['.mp4', '.webm', '.avi', '.mov', '.mkv'],
+  video: ['.mp4', '.webm', '.m4v', '.mov', '.ogv', '.avi', '.mkv'],
   scene: ['.json', '.scene'],
   font:  ['.ttf', '.otf', '.woff', '.woff2', '.eot'],
   data:  ['.json', '.xml', '.csv', '.txt'],

@@ -333,12 +333,12 @@ public class FileBrowserController : ControllerBase
     }
 
     /// <summary>
-    /// 获取图像文件的预览（返回图片流）
-    /// 支持 PNG、JPG、JPEG、GIF、WEBP、BMP、SVG、ICO 等常见图像格式
+    /// 获取媒体文件的预览（返回图片/视频/音频流）
+    /// 支持 PNG、JPG、JPEG、GIF、WEBP、BMP、SVG、ICO 等常见图像格式，MP4、WebM 等视频格式，以及 MP3、OGG、WAV、FLAC 等音频格式
     /// </summary>
-    /// <param name="path">图像文件的绝对路径</param>
-    /// <returns>图片文件流</returns>
-    /// <response code="200">成功返回图片</response>
+    /// <param name="path">媒体文件的绝对路径</param>
+    /// <returns>媒体文件流</returns>
+    /// <response code="200">成功返回媒体文件</response>
     /// <response code="400">请求参数无效</response>
     /// <response code="403">权限不足</response>
     /// <response code="404">文件不存在</response>
@@ -361,9 +361,9 @@ public class FileBrowserController : ControllerBase
             if (!System.IO.File.Exists(targetPath))
                 return NotFound(new { success = false, error = "文件不存在", requestedPath = path, resolvedPath = targetPath });
 
-            // 检查是否为允许的图像扩展名
+            // 检查是否为允许的媒体扩展名
             var extension = System.IO.Path.GetExtension(targetPath).ToLowerInvariant();
-            var allowedExtensions = new HashSet<string> { ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg", ".ico", ".tga", ".dds" };
+            var allowedExtensions = new HashSet<string> { ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg", ".ico", ".tga", ".dds", ".mp4", ".webm", ".m4v", ".mov", ".ogv", ".mp3", ".wav", ".ogg", ".oga", ".flac", ".m4a", ".aac", ".opus", ".weba" };
             if (!allowedExtensions.Contains(extension))
                 return BadRequest(new { success = false, error = "不支持的文件格式", requestedPath = path, resolvedPath = targetPath, extension });
 
@@ -377,11 +377,25 @@ public class FileBrowserController : ControllerBase
                 ".bmp" => "image/bmp",
                 ".svg" => "image/svg+xml",
                 ".ico" => "image/x-icon",
+                ".mp3" => "audio/mpeg",
+                ".wav" => "audio/wav",
+                ".ogg" => "audio/ogg",
+                ".oga" => "audio/ogg",
+                ".flac" => "audio/flac",
+                ".m4a" => "audio/mp4",
+                ".aac" => "audio/aac",
+                ".opus" => "audio/opus",
+                ".weba" => "audio/webm",
+                ".mp4" => "video/mp4",
+                ".webm" => "video/webm",
+                ".m4v" => "video/x-m4v",
+                ".mov" => "video/quicktime",
+                ".ogv" => "video/ogg",
                 _ => "application/octet-stream"
             };
 
             var fileStream = new FileStream(targetPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return File(fileStream, mimeType);
+            return File(fileStream, mimeType, enableRangeProcessing: true);
         }
         catch (UnauthorizedAccessException)
         {

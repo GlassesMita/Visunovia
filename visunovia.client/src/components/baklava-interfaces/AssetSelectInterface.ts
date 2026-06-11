@@ -13,11 +13,15 @@ interface AssetOption {
   path: string
 }
 
+const BACKGROUND_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.svg']
+const BACKGROUND_VIDEO_EXTENSIONS = ['.mp4', '.webm', '.m4v', '.mov', '.ogv']
+const BACKGROUND_EXTENSIONS = [...BACKGROUND_IMAGE_EXTENSIONS, ...BACKGROUND_VIDEO_EXTENSIONS]
+
 const ASSET_CONFIG: Record<AssetSelectKind, { folder: AssetFolder; label: string; extensions: string[] }> = {
   background: {
     folder: 'Backgrounds',
     label: '背景',
-    extensions: ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.svg', '.mp4'],
+    extensions: BACKGROUND_EXTENSIONS,
   },
   bgm: {
     folder: 'Musics',
@@ -94,7 +98,11 @@ function toPreviewUrl(path: string) {
 }
 
 function isPreviewableBackground(path: string) {
-  return ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.svg', '.mp4'].includes(getExtension(path))
+  return BACKGROUND_EXTENSIONS.includes(getExtension(path))
+}
+
+function isVideoBackground(path: string) {
+  return BACKGROUND_VIDEO_EXTENSIONS.includes(getExtension(path))
 }
 
 const AssetSelectComponent = defineComponent({
@@ -155,9 +163,9 @@ const AssetSelectComponent = defineComponent({
           ...options.value.map(option => h('option', { value: option.path, key: option.path }, option.name)),
         ]),
         kind === 'background' && value && isPreviewableBackground(value)
-          ? getExtension(value) === '.mp4'
-            ? h('video', { class: 'vn-asset-select-preview', src: toPreviewUrl(value), muted: true, loop: true, playsinline: true })
-            : h('img', { class: 'vn-asset-select-preview', src: toPreviewUrl(value), alt: selectedName })
+          ? isVideoBackground(value)
+            ? h('video', { class: 'vn-asset-select-preview', src: toPreviewUrl(value), muted: true, loop: true, autoplay: true, preload: 'metadata', playsinline: true })
+            : h('img', { class: 'vn-asset-select-preview', src: toPreviewUrl(value), alt: selectedName, loading: 'lazy', decoding: 'async' })
           : null,
         error.value ? h('div', { class: 'vn-asset-select-error' }, error.value) : null,
       ])

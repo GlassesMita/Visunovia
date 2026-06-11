@@ -118,14 +118,36 @@ public class ResourceController : ControllerBase
                 });
 
             if (!_contentTypeProvider.TryGetContentType(fullPath, out var contentType))
-                contentType = "application/octet-stream";
+                contentType = GetFallbackContentType(fullPath);
 
-            return PhysicalFile(fullPath, contentType);
+            return PhysicalFile(fullPath, contentType, enableRangeProcessing: true);
         }
         catch (Exception ex)
         {
             return BadRequest(new { error = $"获取资源文件失败: {ex.Message}" });
         }
+    }
+
+    private static string GetFallbackContentType(string fullPath)
+    {
+        return Path.GetExtension(fullPath).ToLowerInvariant() switch
+        {
+            ".mp3" => "audio/mpeg",
+            ".wav" => "audio/wav",
+            ".ogg" => "audio/ogg",
+            ".oga" => "audio/ogg",
+            ".flac" => "audio/flac",
+            ".m4a" => "audio/mp4",
+            ".aac" => "audio/aac",
+            ".opus" => "audio/opus",
+            ".weba" => "audio/webm",
+            ".webm" => "video/webm",
+            ".mp4" => "video/mp4",
+            ".m4v" => "video/x-m4v",
+            ".mov" => "video/quicktime",
+            ".ogv" => "video/ogg",
+            _ => "application/octet-stream"
+        };
     }
 
     private static string? TryResolveAssetFolderFallback(string projectRoot, string path)
