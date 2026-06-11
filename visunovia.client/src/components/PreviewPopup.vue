@@ -60,8 +60,13 @@
               </div>
 
               <div v-if="dialogueVisible" class="preview-dialogue" @click.stop="advancePreview">
-                <div v-if="speaker" class="preview-speaker">{{ speaker }}</div>
-                <div class="preview-text">{{ dialogueText }}</div>
+                <div v-if="speaker" class="preview-speaker-row">
+                  <span class="preview-speaker">{{ speaker }}</span>
+                  <span v-if="speakerAffiliation" class="preview-affiliation">{{ speakerAffiliation }}</span>
+                </div>
+                <div class="preview-dialogue-line" aria-hidden="true"></div>
+                <div class="preview-text markdown-body" v-html="renderedDialogueHtml"></div>
+                <div v-if="textComplete && !previewEnded" class="preview-continue-indicator" aria-hidden="true"></div>
               </div>
 
               <div v-if="statusMessage" class="preview-status">{{ statusMessage }}</div>
@@ -77,6 +82,8 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import MarkdownIt from 'markdown-it'
+import DOMPurify from 'dompurify'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
 import type { GraphConnection, GraphNode } from '@/stores/useNodeGraphStore'
 import { useCharacterStore } from '@/stores/useCharacterStore'
@@ -138,6 +145,12 @@ const emit = defineEmits<{
 
 const SETTINGS_STORAGE_KEY = 'visunovia-settings'
 const DEFAULT_VIEWPORT = { width: 1280, height: 720 }
+const markdownRenderer = new MarkdownIt({
+  breaks: true,
+  html: false,
+  linkify: true,
+  typographer: true,
+})
 
 const nodeGraphStore = useNodeGraphStore()
 const characterStore = useCharacterStore()
@@ -147,16 +160,22 @@ const graphConnections = ref<PreviewConnection[]>([])
 const currentNodeId = ref<string | null>(null)
 const currentBackground = ref<{ url: string; type: 'image' | 'video' }>({ url: '', type: 'image' })
 const speaker = ref('')
+const speakerAffiliation = ref('')
 const dialogueText = ref('')
+const fullDialogueText = ref('')
 const dialogueVisible = ref(false)
+const textComplete = ref(false)
 const statusMessage = ref('')
 const previewEnded = ref(false)
 const choices = ref<PreviewChoice[]>([])
 const characterSlots = ref<Record<string, CharacterSlotState>>({})
 const bgmAudio = ref<HTMLAudioElement | null>(null)
 const resourceTraceByUrl = ref<Record<string, PreviewResourceTrace>>({})
+let typewriterTimer: number | null = null
 
 const visibleCharacters = computed(() => Object.values(characterSlots.value).sort((a, b) => Number(a.slot) - Number(b.slot)))
+
+const renderedDialogueHtml = computed(() => DOMPurify.sanitize(markdownRenderer.render(dialogueText.value)))
 
 const stageShellStyle = computed(() => ({
   aspectRatio: `${viewport.value.width} / ${viewport.value.height}`,
@@ -193,6 +212,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  stopTypewriter()
   stopAudio()
 })
 
@@ -245,8 +265,11 @@ function resetPlaybackState() {
   currentNodeId.value = null
   currentBackground.value = { url: '', type: 'image' }
   speaker.value = ''
+  speakerAffiliation.value = ''
   dialogueText.value = ''
+  fullDialogueText.value = ''
   dialogueVisible.value = false
+  textComplete.value = false
   statusMessage.value = ''
   previewEnded.value = false
   choices.value = []
@@ -327,9 +350,52 @@ function renderDialogueNode(node: PreviewNode) {
   applyCharacterControls(node)
   choices.value = []
   statusMessage.value = ''
-  speaker.value = getCharacterDisplayName(getDialogueSpeaker(node))
-  dialogueText.value = String(node.data.text || '')
+  const speakerId = getDialogueSpeaker(node)
+  const speakerInfo = getCharacterDisplayInfo(speakerId)
+  speaker.value = speakerInfo.name
+  speakerAffiliation.value = speakerInfo.affiliation
+  startTypewriter(String(node.data.text || ''))
   dialogueVisible.value = true
+}
+
+function startTypewriter(text: string) {
+  stopTypewriter()
+  fullDialogueText.value = text
+  dialogueText.value = ''
+  textComplete.value = text.length === 0
+
+  if (!text) return
+
+  let index = 0
+  const step = () => {
+    index += 1
+    dialogueText.value = text.slice(0, index)
+    if (index >= text.length) {
+      textComplete.value = true
+      typewriterTimer = null
+      return
+    }
+    typewriterTimer = window.setTimeout(step, getTypewriterDelay(text[index]))
+  }
+
+  typewriterTimer = window.setTimeout(step, getTypewriterDelay(text[0]))
+}
+
+function stopTypewriter() {
+  if (typewriterTimer !== null) {
+    window.clearTimeout(typewriterTimer)
+    typewriterTimer = null
+  }
+}
+
+function completeTypewriter() {
+  stopTypewriter()
+  dialogueText.value = fullDialogueText.value
+  textComplete.value = true
+}
+
+function getTypewriterDelay(character: string) {
+  return /[，。！？、,.!?]/.test(character) ? 86 : 28
 }
 
 function getDialogueSpeaker(node: PreviewNode) {
@@ -540,12 +606,15 @@ function setCharacterSlot(slot: string, data: Omit<CharacterSlotState, 'slot' | 
   }
 }
 
-function getCharacterDisplayName(characterId: string) {
+function getCharacterDisplayInfo(characterId: string) {
   const id = String(characterId || '').trim()
-  if (!id) return ''
+  if (!id) return { name: '', affiliation: '' }
 
   const character = characterStore.characters.find(item => item.id === id || item.name === id || item.displayId === id)
-  return character?.displayId || character?.name || id
+  return {
+    name: character?.displayId || character?.name || id,
+    affiliation: character?.affiliation || '',
+  }
 }
 
 function advanceFromStage() {
@@ -556,12 +625,17 @@ function advanceFromStage() {
 
 function advancePreview() {
   if (previewEnded.value) return
+  if (!textComplete.value) {
+    completeTypewriter()
+    return
+  }
   const nextNodeId = getNextNodeId(currentNodeId.value)
   if (!nextNodeId) {
     pauseWithError('当前对白节点没有下一个执行连接，预览已暂停', { currentNodeId: currentNodeId.value, connections: graphConnections.value })
     return
   }
   dialogueVisible.value = false
+  stopTypewriter()
   runFromNode(nextNodeId, 'dialogue-click')
 }
 
@@ -815,7 +889,10 @@ function showEnd() {
   previewEnded.value = true
   currentNodeId.value = null
   speaker.value = ''
+  speakerAffiliation.value = ''
+  fullDialogueText.value = '— 预览结束 —'
   dialogueText.value = '— 预览结束 —'
+  textComplete.value = true
   dialogueVisible.value = true
   statusMessage.value = ''
 }
@@ -829,13 +906,23 @@ function closePreview() {
 .preview-popup-overlay {
   position: fixed;
   inset: 0;
-  z-index: 3000;
+  z-index: 2147483647 !important;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
   background: rgba(0, 0, 0, 0.72);
   box-sizing: border-box;
+  isolation: isolate !important;
+  color-scheme: dark !important;
+  font-family: Gadugi, "Segoe UI", sans-serif !important;
+}
+
+.preview-popup-overlay,
+.preview-popup-overlay * {
+  box-sizing: border-box !important;
+  font-synthesis: none !important;
+  text-rendering: geometricPrecision !important;
 }
 
 .preview-popup-dialog {
@@ -848,6 +935,9 @@ function closePreview() {
   border: 1px solid #3e3e42;
   border-radius: 10px;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  color: #ffffff !important;
+  forced-color-adjust: none !important;
+  isolation: isolate !important;
 }
 
 .preview-popup-header {
@@ -908,27 +998,50 @@ function closePreview() {
 .preview-stage-shell {
   width: 100%;
   margin: 0 auto;
-  background: #000000;
-  overflow: hidden;
+  background: #000000 !important;
+  overflow: hidden !important;
+  forced-color-adjust: none !important;
+  isolation: isolate !important;
 }
 
 .preview-stage {
   position: relative;
   transform-origin: top left;
   scale: min(calc((100vw - 80px) / var(--preview-width, 1280)), calc((100vh - 150px) / var(--preview-height, 720)), 1);
-  overflow: hidden;
-  background: #050505;
-  color: #ffffff;
-  cursor: pointer;
+  overflow: hidden !important;
+  background: #050505 !important;
+  color: #ffffff !important;
+  cursor: pointer !important;
+  font-family: Gadugi, "Segoe UI", sans-serif !important;
+  forced-color-adjust: none !important;
+  isolation: isolate !important;
+  contain: layout paint style !important;
+}
+
+.preview-stage,
+.preview-stage * {
+  scrollbar-color: auto !important;
+  caret-color: auto !important;
+  accent-color: auto !important;
+}
+
+.preview-stage button,
+.preview-stage input,
+.preview-stage textarea,
+.preview-stage select {
+  font: inherit !important;
 }
 
 .preview-background,
 .preview-background-placeholder {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  filter: none !important;
 }
 
 .preview-background-placeholder {
@@ -948,12 +1061,14 @@ function closePreview() {
 }
 
 .preview-character {
-  position: absolute;
-  bottom: 6%;
-  max-height: 86%;
-  max-width: 42%;
-  object-fit: contain;
-  filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.45));
+  position: absolute !important;
+  bottom: 6% !important;
+  max-height: 86% !important;
+  max-width: 42% !important;
+  object-fit: contain !important;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.45)) !important;
 }
 
 .preview-character-left {
@@ -977,35 +1092,144 @@ function closePreview() {
 }
 
 .preview-dialogue {
-  position: absolute;
-  left: 6%;
-  right: 6%;
-  bottom: 5%;
-  min-height: 16%;
-  padding: 22px 30px;
-  box-sizing: border-box;
-  background: rgba(10, 12, 18, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 18px;
-  backdrop-filter: blur(6px);
+  position: absolute !important;
+  inset: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  background: linear-gradient(180deg, rgba(7, 10, 18, 0) 0%, rgba(7, 10, 18, 0.16) 48%, rgba(8, 12, 20, 0.72) 77%, rgba(8, 12, 20, 0.9) 100%) !important;
+  pointer-events: auto !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  filter: none !important;
+}
+
+.preview-speaker-row {
+  position: absolute !important;
+  left: 9.74% !important;
+  top: 72.13% !important;
+  display: flex !important;
+  align-items: baseline !important;
+  gap: clamp(28px, 1.8vw, 44px) !important;
+  white-space: nowrap !important;
 }
 
 .preview-speaker {
-  display: inline-flex;
-  min-width: 130px;
-  margin-bottom: 10px;
-  padding: 6px 16px;
-  border-radius: 999px;
-  background: rgba(14, 99, 156, 0.95);
-  font-size: 22px;
-  font-weight: 700;
+  color: #ffffff !important;
+  font-family: "Franklin Gothic Demi", "Franklin Gothic Medium", Gadugi, "Segoe UI", sans-serif !important;
+  font-size: calc(var(--preview-width, 1920) * 67.54px / 1920) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+  line-height: 1 !important;
+  -webkit-text-stroke: calc(var(--preview-width, 1920) * 2px / 1920) #00204c !important;
+  paint-order: stroke fill !important;
+  text-shadow: 0 3px 8px rgba(0, 32, 76, 0.42) !important;
+}
+
+.preview-affiliation {
+  color: #7accf9 !important;
+  font-family: "Franklin Gothic Demi", "Franklin Gothic Medium", Gadugi, "Segoe UI", sans-serif !important;
+  font-size: calc(var(--preview-width, 1920) * 47.36px / 1920) !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  -webkit-text-stroke: calc(var(--preview-width, 1920) * 2px / 1920) #00204c !important;
+  paint-order: stroke fill !important;
+  text-shadow: 0 3px 8px rgba(0, 32, 76, 0.38) !important;
+}
+
+.preview-dialogue-line {
+  position: absolute !important;
+  left: 9.38% !important;
+  right: 8.8% !important;
+  top: 79.44% !important;
+  height: 2px !important;
+  background: #ffffff !important;
+  opacity: 1 !important;
 }
 
 .preview-text {
-  white-space: pre-wrap;
-  font-size: 26px;
-  line-height: 1.42;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
+  position: absolute !important;
+  left: 9.79% !important;
+  right: 9.2% !important;
+  top: 82.2% !important;
+  white-space: pre-wrap !important;
+  color: rgba(255, 255, 255, 0.94) !important;
+  font-family: Gadugi, "Segoe UI", sans-serif !important;
+  font-size: calc(var(--preview-width, 1920) * 46.9px / 1920) !important;
+  font-weight: 400 !important;
+  line-height: 1.32 !important;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+.preview-text :deep(p) {
+  margin: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+  line-height: inherit !important;
+}
+
+.preview-text :deep(p + p) {
+  margin-top: 0.35em !important;
+}
+
+.preview-text :deep(strong) {
+  color: inherit !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: 700 !important;
+  line-height: inherit !important;
+}
+
+.preview-text :deep(em) {
+  color: inherit !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-style: italic !important;
+  line-height: inherit !important;
+}
+
+.preview-text :deep(a) {
+  color: #7accf9 !important;
+  font: inherit !important;
+  text-decoration: underline !important;
+}
+
+.preview-text :deep(code) {
+  padding: 0 0.18em !important;
+  border-radius: 0.18em !important;
+  background: rgba(0, 32, 76, 0.45) !important;
+  color: inherit !important;
+  font-family: Consolas, "Courier New", monospace !important;
+  font-size: 0.88em !important;
+}
+
+.preview-text :deep(ul),
+.preview-text :deep(ol) {
+  margin: 0 !important;
+  padding-left: 1.2em !important;
+  color: inherit !important;
+  font: inherit !important;
+}
+
+.preview-text :deep(blockquote) {
+  margin: 0 !important;
+  padding-left: 0.5em !important;
+  border-left: 0.12em solid rgba(122, 204, 249, 0.8) !important;
+  color: inherit !important;
+  font: inherit !important;
+}
+
+.preview-continue-indicator {
+  position: absolute !important;
+  left: 92.55% !important;
+  top: 92.41% !important;
+  width: calc(var(--preview-width, 1920) * 27px / 1920) !important;
+  height: calc(var(--preview-width, 1920) * 18px / 1920) !important;
+  border-radius: 3px !important;
+  background: #4ac4dd !important;
+  clip-path: polygon(0 0, 100% 0, 50% 100%) !important;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.38)) !important;
+  animation: preview-small-rectangle-float 1.05s ease-in-out infinite !important;
 }
 
 .preview-choices {
@@ -1063,6 +1287,15 @@ function closePreview() {
   to {
     opacity: 1;
     translate: 0 0;
+  }
+}
+
+@keyframes preview-small-rectangle-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
   }
 }
 </style>

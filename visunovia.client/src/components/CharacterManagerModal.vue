@@ -70,6 +70,16 @@
                   @input="updateCharacter(character.id, { displayId: ($event.target as HTMLInputElement).value })"
                 />
               </label>
+              <label class="field-label">
+                <span>归属（Affiliation）</span>
+                <input
+                  class="character-affiliation-input"
+                  type="text"
+                  :value="character.affiliation"
+                  placeholder="例如 Abydos / Seminar / Millenium"
+                  @input="updateCharacter(character.id, { affiliation: ($event.target as HTMLInputElement).value })"
+                />
+              </label>
               <div class="character-folder-input readonly-field" :title="character.spriteFolder">文件夹：{{ character.name }}</div>
               <div class="character-folder-input readonly-field" :title="character.spriteFolder">路径：{{ getCharacterRelativePath(character) }}</div>
               <textarea
@@ -443,6 +453,7 @@ function closeAvatarPicker() {
 }
 
 .character-name-input,
+.character-affiliation-input,
 .character-folder-input,
 .character-note-input {
   width: 100%;
@@ -466,6 +477,16 @@ function closeAvatarPicker() {
   padding: 8px 10px;
   font-size: 13px;
   font-weight: 600;
+}
+
+.character-affiliation-input {
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.character-name-input:focus,
+.character-affiliation-input:focus {
+  border-color: #0e639c;
 }
 
 .character-folder-input {

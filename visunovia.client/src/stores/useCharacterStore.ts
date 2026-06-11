@@ -8,6 +8,7 @@ export interface CharacterProfile {
   id: string
   name: string
   displayId: string
+  affiliation: string
   color: string
   avatar: string
   spriteFolder: string
@@ -24,6 +25,7 @@ function normalizeCharacter(raw: Partial<CharacterProfile>, index = 0): Characte
     id,
     name,
     displayId: raw.displayId || id,
+    affiliation: raw.affiliation || '',
     color: raw.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length],
     avatar: raw.avatar || '',
     spriteFolder: raw.spriteFolder || '',
@@ -94,6 +96,7 @@ export const useCharacterStore = defineStore('characters', () => {
       characters: characters.value.map(character => ({
         id: character.id,
         displayId: character.displayId,
+        affiliation: character.affiliation,
         color: character.color,
         avatar: toRelativeCharacterPath(projectRoot.value, character.avatar),
         note: character.note,
@@ -145,6 +148,7 @@ export const useCharacterStore = defineStore('characters', () => {
           id: folder.name,
           name: folder.name,
           displayId: configured?.displayId || folder.name,
+          affiliation: configured?.affiliation || '',
           color: configured?.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length],
           avatar: configured?.avatar
             ? toAbsoluteCharacterPath(projectPath, configured.avatar)
@@ -179,6 +183,7 @@ export const useCharacterStore = defineStore('characters', () => {
 
     character.name = String(updates.name ?? character.name).trim() || character.id
     character.displayId = String(updates.displayId ?? character.displayId).trim() || character.id
+    character.affiliation = String(updates.affiliation ?? character.affiliation).trim()
     character.color = updates.color || character.color
     character.avatar = updates.avatar ?? character.avatar
     character.spriteFolder = updates.spriteFolder ?? character.spriteFolder

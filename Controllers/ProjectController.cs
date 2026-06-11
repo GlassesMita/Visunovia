@@ -461,6 +461,7 @@ public class ProjectController : ControllerBase
                     {
                         Id = Path.GetFileName(character.Id.Trim()),
                         DisplayId = character.DisplayId?.Trim() ?? string.Empty,
+                        Affiliation = character.Affiliation?.Trim() ?? string.Empty,
                         Color = character.Color?.Trim() ?? string.Empty,
                         Avatar = character.Avatar?.Trim() ?? string.Empty,
                         Note = character.Note?.Trim() ?? string.Empty
@@ -1627,6 +1628,7 @@ public class CharacterConfigEntry
 {
     public string Id { get; set; } = string.Empty;
     public string DisplayId { get; set; } = string.Empty;
+    public string Affiliation { get; set; } = string.Empty;
     public string Color { get; set; } = string.Empty;
     public string Avatar { get; set; } = string.Empty;
     public string Note { get; set; } = string.Empty;

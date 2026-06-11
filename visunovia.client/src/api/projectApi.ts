@@ -251,6 +251,7 @@ export interface UpdateProjectSettingsRequest {
 export interface CharacterConfigEntry {
   id: string
   displayId?: string
+  affiliation?: string
   color?: string
   avatar?: string
   note?: string
@@ -263,6 +264,7 @@ export interface CharacterConfigResponse {
 type RawCharacterConfigEntry = CharacterConfigEntry & {
   Id?: string
   DisplayId?: string
+  Affiliation?: string
   Color?: string
   Avatar?: string
   Note?: string
@@ -278,6 +280,7 @@ function normalizeCharacterConfig(config?: RawCharacterConfigResponse): Characte
     characters: rawCharacters.map(character => ({
       id: character.id || character.Id || '',
       displayId: character.displayId || character.DisplayId || '',
+      affiliation: character.affiliation || character.Affiliation || '',
       color: character.color || character.Color || '',
       avatar: character.avatar || character.Avatar || '',
       note: character.note || character.Note || '',
