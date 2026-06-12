@@ -54,6 +54,7 @@
                   :key="character.slot"
                   class="preview-character"
                   :class="[`preview-character-${character.position}`, `preview-character-${character.animation}`]"
+                  :style="getCharacterStyle(character)"
                   :src="character.spriteUrl"
                   :alt="character.character || `character-${character.slot}`"
                   @error="logMediaError('角色立绘', character.spriteUrl)"
@@ -114,6 +115,9 @@ type CharacterSlotState = {
   spriteUrl: string
   position: string
   animation: string
+  fromPosition?: string
+  easing?: string
+  duration?: number
 }
 
 type PreviewChoice = {
@@ -199,6 +203,25 @@ let typewriterTimer: number | null = null
 
 const visibleCharacters = computed(() => Object.values(characterSlots.value).sort((a, b) => Number(a.slot) - Number(b.slot)))
 const renderableCharacters = computed(() => visibleCharacters.value.filter(character => character.slot !== '6' && Boolean(character.sprite && character.spriteUrl)))
+
+const POSITION_LEFT: Record<string, string> = {
+  left: '10%',
+  center: '50%',
+  right: '60%',
+}
+
+const POSITION_TRANSFORM: Record<string, string> = {
+  left: 'translateX(0)',
+  center: 'translateX(-50%)',
+  right: 'translateX(0)',
+}
+
+const EASING_CURVES: Record<string, string> = {
+  easeOutCubic: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  easeInOutCubic: 'cubic-bezier(0.65, 0, 0.35, 1)',
+  easeOutBack: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+  linear: 'linear',
+}
 
 const renderedDialogueHtml = computed(() => DOMPurify.sanitize(renderDialogueMarkdown(fullDialogueText.value, visibleTextLength.value), {
   ADD_TAGS: ['ruby', 'rp', 'rt', 'i', 'u', 'mark', 'span'],
@@ -508,7 +531,9 @@ watch(
       await characterStore.load().catch((error) => console.warn('[PreviewPopup] 角色配置加载失败', error))
       await nextTick()
       restartPreview()
+      window.addEventListener('keydown', handlePreviewKeydown)
     } else {
+      window.removeEventListener('keydown', handlePreviewKeydown)
       stopAudio()
     }
   }
@@ -524,6 +549,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handlePreviewKeydown)
   stopTypewriter()
   stopAudio()
 })
@@ -808,6 +834,8 @@ function processEventNode(node: PreviewNode) {
       sprite: resourcePath.value || String(node.data.characterId || ''),
       position: String(node.data.position || 'center'),
       animation: 'fade',
+      easing: 'easeOutCubic',
+      duration: 0.3,
     }, node)
   } else if (subType === 'hideCharacter') {
     const characterId = String(node.data.characterId || '')
@@ -925,13 +953,24 @@ function applyCharacterControls(dialogueNode: PreviewNode) {
     if (sprite) {
       registerResourceTrace(createResourceTrace(dialogueNode, 'character', `角色立绘 slot ${slot}`, 'characterControls.sprite', sprite, spriteUrl))
     }
+    const fromPosition = String(control.fromPosition || '').trim()
+    const requestedTargetPosition = String(control.toPosition || '').trim()
+    const targetPosition = requestedTargetPosition && requestedTargetPosition !== 'none'
+      ? requestedTargetPosition
+      : String(control.position || nextSlots[slot]?.position || 'center')
+    const animation = String(control.animation || (action === 'move' ? 'move' : 'fade'))
+    const shouldMove = (action === 'move' || animation === 'move') && requestedTargetPosition !== 'none'
+
     nextSlots[slot] = {
       slot,
       character,
       sprite,
       spriteUrl,
-      position: String(control.position || nextSlots[slot]?.position || 'center'),
-      animation: String(control.animation || 'fade'),
+      position: targetPosition,
+      animation,
+      fromPosition: shouldMove ? (fromPosition || nextSlots[slot]?.position || targetPosition) : '',
+      easing: String(control.easing || 'easeOutCubic'),
+      duration: Number(control.duration ?? 0.3),
     }
   }
 
@@ -1002,6 +1041,27 @@ function setCharacterSlot(slot: string, data: Omit<CharacterSlotState, 'slot' | 
   }
 }
 
+function getCharacterStyle(character: CharacterSlotState) {
+  const duration = Math.max(0, Number(character.duration ?? 0.3))
+  const easing = EASING_CURVES[character.easing || 'easeOutCubic'] || EASING_CURVES.easeOutCubic
+  const target = character.position || 'center'
+  const from = character.fromPosition || ''
+  const moving = character.animation === 'move' && from && from !== target
+
+  return {
+    '--character-left': POSITION_LEFT[target] || POSITION_LEFT.center,
+    '--character-transform': POSITION_TRANSFORM[target] || POSITION_TRANSFORM.center,
+    '--character-from-left': POSITION_LEFT[from] || POSITION_LEFT[target] || POSITION_LEFT.center,
+    '--character-from-transform': POSITION_TRANSFORM[from] || POSITION_TRANSFORM[target] || POSITION_TRANSFORM.center,
+    '--character-duration': `${duration}s`,
+    '--character-easing': easing,
+    left: POSITION_LEFT[target] || POSITION_LEFT.center,
+    right: 'auto',
+    transform: POSITION_TRANSFORM[target] || POSITION_TRANSFORM.center,
+    animation: moving ? `preview-character-move ${duration}s ${easing}` : undefined,
+  }
+}
+
 function getCharacterDisplayInfo(characterId: string) {
   const id = String(characterId || '').trim()
   if (!id) return { name: '', affiliation: '' }
@@ -1017,6 +1077,18 @@ function advanceFromStage() {
   if (previewEnded.value) return
   if (choices.value.length > 0) return
   if (dialogueVisible.value) advancePreview()
+}
+
+function handlePreviewKeydown(event: KeyboardEvent) {
+  if (!props.visible) return
+  if (event.key !== ' ' && event.key !== 'Spacebar' && event.key !== 'Enter') return
+
+  const target = event.target as HTMLElement | null
+  const tagName = target?.tagName?.toLowerCase()
+  if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' || target?.isContentEditable) return
+
+  event.preventDefault()
+  advanceFromStage()
 }
 
 function advancePreview() {
@@ -1448,6 +1520,12 @@ function closePreview() {
   font: inherit !important;
 }
 
+.preview-stage,
+.preview-stage * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
 .preview-background,
 .preview-background-placeholder {
   position: absolute !important;
@@ -1479,12 +1557,15 @@ function closePreview() {
 .preview-character {
   position: absolute !important;
   bottom: -18% !important;
+  left: var(--character-left, 50%) !important;
   max-height: 112% !important;
   max-width: 52% !important;
   object-fit: contain !important;
   opacity: 1 !important;
   mix-blend-mode: normal !important;
   filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.45)) !important;
+  transform: var(--character-transform, translateX(-50%)) !important;
+  transition: left var(--character-duration, 0.3s) var(--character-easing, cubic-bezier(0.22, 1, 0.36, 1)), transform var(--character-duration, 0.3s) var(--character-easing, cubic-bezier(0.22, 1, 0.36, 1)) !important;
 }
 
 .preview-character-left {
@@ -1498,8 +1579,24 @@ function closePreview() {
 }
 
 .preview-character-right {
-  right: 10% !important;
+  left: 60% !important;
+  right: auto !important;
   transform: none !important;
+}
+
+.preview-character-move {
+  animation: preview-character-move var(--character-duration, 0.3s) var(--character-easing, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+@keyframes preview-character-move {
+  from {
+    left: var(--character-from-left, 50%);
+    transform: var(--character-from-transform, translateX(-50%));
+  }
+  to {
+    left: var(--character-left, 50%);
+    transform: var(--character-transform, translateX(-50%));
+  }
 }
 
 .preview-character-fade,

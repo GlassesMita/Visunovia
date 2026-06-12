@@ -20,6 +20,7 @@ const visibilityActions = [
   { value: 'show', text: tSync('characterControl.show', 'Show Character') },
   { value: 'hide', text: tSync('characterControl.hide', 'Hide Character') },
   { value: 'update', text: tSync('characterControl.update', 'Update Character') },
+  { value: 'move', text: tSync('characterControl.move', 'Move Character') },
 ]
 
 const positions = [
@@ -28,11 +29,24 @@ const positions = [
   { value: 'right', text: tSync('eventOptions.right', 'Right') },
 ]
 
+const moveTargets = [
+  { value: 'none', text: tSync('characterControl.noMove', 'No Move') },
+  ...positions,
+]
+
 const animationEffects = [
   { value: 'none', text: tSync('characterControl.animation.none', 'None') },
   { value: 'fade', text: tSync('eventOptions.fade', 'Fade') },
   { value: 'slide', text: tSync('eventOptions.slide', 'Slide') },
   { value: 'pop', text: tSync('characterControl.animation.pop', 'Pop') },
+  { value: 'move', text: tSync('characterControl.animation.move', 'Move') },
+]
+
+const easingOptions = [
+  { value: 'easeOutCubic', text: 'Ease Out Cubic' },
+  { value: 'easeInOutCubic', text: 'Ease In Out Cubic' },
+  { value: 'easeOutBack', text: 'Ease Out Back' },
+  { value: 'linear', text: 'Linear' },
 ]
 
 export default defineNode({
@@ -46,8 +60,14 @@ export default defineNode({
     sprite: () => new SpriteSelectInterface(tSync('characterControl.sprite', 'Sprite'), ''),
     sfx: () => new TextInputInterface(tSync('characterControl.sfx', 'Sound Effect'), ''),
     expression: () => new TextInputInterface(tSync('eventProps.expression', 'Expression'), 'default'),
+    fromPosition: () => new SelectInterface(tSync('characterControl.fromPosition', 'From Position'), '', [
+      { value: '', text: tSync('characterControl.currentPosition', 'Current Position') },
+      ...positions,
+    ]),
+    toPosition: () => new SelectInterface(tSync('characterControl.toPosition', 'To Position'), 'none', moveTargets),
     position: () => new SelectInterface(tSync('eventProps.position', 'Position'), 'center', positions),
     animation: () => new SelectInterface(tSync('characterControl.animation', 'Animation'), 'fade', animationEffects),
+    easing: () => new SelectInterface(tSync('characterControl.easing', 'Easing'), 'easeOutCubic', easingOptions),
     duration: () => new NumberInterface(tSync('eventProps.duration', 'Duration'), 0.3),
   },
   outputs: {
@@ -56,6 +76,7 @@ export default defineNode({
   onCreate() {
     Object.values((this as any).inputs || {}).forEach((input: any) => {
       input.node = this
+      if (!input.port && typeof input.setHidden === 'function') input.setHidden(true)
     })
     setNodeI18nTitle(this, 'nodes.characterControl', 'Character Control')
   },

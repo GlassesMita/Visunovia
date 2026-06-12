@@ -9,6 +9,7 @@
           :node="node"
           :selected="selected"
           :dragging="dragging"
+          @dblclick.stop="() => openNodeDetails(node)"
           @select="onSelect"
           @start-drag="onStartDrag"
         >
@@ -16,6 +17,7 @@
             <div
               class="__title visunovia-node-title"
               @pointerdown.stop="(ev: PointerEvent) => handleNodeTitlePointerDown(ev, onSelect, onStartDrag)"
+              @dblclick.stop="() => openNodeDetails(node)"
               @contextmenu.prevent.stop="(ev: MouseEvent) => openNodeMenu(ev, node)"
             >
               <div class="__title-label">{{ node.title }}</div>
@@ -61,6 +63,7 @@ import { useLocalizationStore } from '@/stores/useLocalizationStore'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
 import { useUndoRedoStore } from '@/stores/useUndoRedoStore'
+import { useUIStore } from '@/stores/useUIStore'
 import { useConnectionColors } from '@/composables/useConnectionColors'
 import { useFixConnectionRedraw } from '@/composables/useFixConnectionRedraw'
 import { useFixNodeSelection } from '@/composables/useFixNodeSelection'
@@ -72,6 +75,7 @@ const localizationStore = useLocalizationStore()
 const editorStore = useEditorStore()
 const nodeGraphStore = useNodeGraphStore()
 const undoRedoStore = useUndoRedoStore()
+const uiStore = useUIStore()
 const nodeMenu = reactive({
   visible: false,
   x: 0,
@@ -99,6 +103,12 @@ function openNodeMenu(ev: MouseEvent, node: any) {
 function closeNodeMenu() {
   nodeMenu.visible = false
   nodeMenu.node = null
+}
+
+function openNodeDetails(node: any) {
+  if (!node?.id) return
+  editorStore.selectNode(node.id)
+  uiStore.openNodeDetailsModal()
 }
 
 function deleteContextNode() {

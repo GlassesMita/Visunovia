@@ -214,6 +214,7 @@ import {
 import ResourcePickerModal from '@/components/modals/ResourcePickerModal.vue'
 import { RESOURCE_TYPE_EXTENSIONS, type ResourceType } from '@/stores/useResourceRegistry'
 import { getEntries, type DirEntry } from '@/api/fileBrowser'
+import { getCurrentProject } from '@/api/projectApi'
 
 const { t } = useLocalization()
 const editorStore = useEditorStore()
@@ -288,6 +289,28 @@ const dynamicProperties = computed((): PropertyConfig[] => {
       },
     ],
     DialogueNode: [
+      {
+        name: 'speakerSlot',
+        type: 'select',
+        defaultValue: '',
+        label: '说话角色槽位',
+        options: [
+          { value: '', label: '无说话角色' },
+          { value: '1', label: '角色 1' },
+          { value: '2', label: '角色 2' },
+          { value: '3', label: '角色 3' },
+          { value: '4', label: '角色 4' },
+          { value: '5', label: '角色 5' },
+          { value: '6', label: '角色 6' },
+          { value: 'all', label: '全员' },
+        ],
+      },
+      { name: 'voice1', type: 'resource', defaultValue: '', label: '角色 1 语音' },
+      { name: 'voice2', type: 'resource', defaultValue: '', label: '角色 2 语音' },
+      { name: 'voice3', type: 'resource', defaultValue: '', label: '角色 3 语音' },
+      { name: 'voice4', type: 'resource', defaultValue: '', label: '角色 4 语音' },
+      { name: 'voice5', type: 'resource', defaultValue: '', label: '角色 5 语音' },
+      { name: 'voice6', type: 'resource', defaultValue: '', label: '角色 6 语音' },
       { name: 'text', type: 'string', defaultValue: '' },
     ],
     CharacterControlNode: [
@@ -316,11 +339,36 @@ const dynamicProperties = computed((): PropertyConfig[] => {
           { value: 'show', label: '角色显示' },
           { value: 'hide', label: '角色消失' },
           { value: 'update', label: '更新角色' },
+          { value: 'move', label: '移动角色' },
         ],
       },
       { name: 'sprite', type: 'resource', defaultValue: '', label: '立绘' },
       { name: 'sfx', type: 'resource', defaultValue: '', label: '音效' },
       { name: 'expression', type: 'string', defaultValue: 'default', label: '表情' },
+      {
+        name: 'fromPosition',
+        type: 'select',
+        defaultValue: '',
+        label: '移动起点',
+        options: [
+          { value: '', label: '当前位置' },
+          { value: 'left', label: '左侧' },
+          { value: 'center', label: '中间' },
+          { value: 'right', label: '右侧' },
+        ],
+      },
+      {
+        name: 'toPosition',
+        type: 'select',
+        defaultValue: 'none',
+        label: '移动目标',
+        options: [
+          { value: 'none', label: '不移动' },
+          { value: 'left', label: '左侧' },
+          { value: 'center', label: '中间' },
+          { value: 'right', label: '右侧' },
+        ],
+      },
       {
         name: 'position',
         type: 'select',
@@ -342,6 +390,19 @@ const dynamicProperties = computed((): PropertyConfig[] => {
           { value: 'fade', label: '淡入淡出' },
           { value: 'slide', label: '滑入滑出' },
           { value: 'pop', label: '弹出' },
+          { value: 'move', label: '移动' },
+        ],
+      },
+      {
+        name: 'easing',
+        type: 'select',
+        defaultValue: 'easeOutCubic',
+        label: '缓动曲线',
+        options: [
+          { value: 'easeOutCubic', label: 'Ease Out Cubic' },
+          { value: 'easeInOutCubic', label: 'Ease In Out Cubic' },
+          { value: 'easeOutBack', label: 'Ease Out Back' },
+          { value: 'linear', label: 'Linear' },
         ],
       },
       { name: 'duration', type: 'number', defaultValue: 0.3, label: '动画时长' },
@@ -504,6 +565,26 @@ function getSelectedCharacterProfile() {
   return characterStore.sortedCharacters.find(character => character.id === selectedCharacterName) || null
 }
 
+function getDialogueVoiceCharacterId(propName: string) {
+  const slot = propName.match(/^voice(\d)$/)?.[1] || ''
+  if (!slot || !selectedNode.value) return ''
+
+  const editor = nodeGraphStore.editor
+  const dialogueNode = editor?.graph.nodes.find(node => node.id === selectedNode.value?.id) as any
+  const connection = editor?.graph.connections.find((candidate: any) => {
+    if (candidate.to.nodeId !== selectedNode.value?.id) return false
+    const targetPort = Object.entries(dialogueNode?.inputs || {}).find(([, iface]: any) => iface === candidate.to || iface?.id === candidate.to?.id || iface?.name === candidate.to?.name)?.[0]
+    return targetPort === `characterControl${slot}`
+  })
+  const controlNode = connection ? editor?.graph.nodes.find(node => node.id === connection.from.nodeId) as any : null
+  if (!controlNode) return ''
+
+  const controlSlot = String(controlNode.inputs?.slot?.value || slot)
+  return controlSlot === '6'
+    ? String(controlNode.inputs?.unmanagedCharacter?.value || controlNode.inputs?.character?.value || '').trim()
+    : String(controlNode.inputs?.character?.value || '').trim()
+}
+
 function toResourcePickerFiles(entries: DirEntry[]) {
   return entries
     .filter(entry => !entry.isDirectory)
@@ -530,6 +611,31 @@ async function loadCharacterSpriteFiles() {
   }
 }
 
+async function loadDialogueVoiceFiles(propName: string) {
+  const characterId = getDialogueVoiceCharacterId(propName)
+  if (!characterId) {
+    currentResourceFiles.value = []
+    return
+  }
+
+  const currentProject = await getCurrentProject()
+  const root = currentProject.data?.projectPath
+  if (!root) {
+    currentResourceFiles.value = []
+    return
+  }
+
+  try {
+    const result = await getEntries(`${root}\\Assets\\Voices\\${characterId}`)
+    const voiceExts = RESOURCE_TYPE_EXTENSIONS.voice
+    currentResourceFiles.value = toResourcePickerFiles(result.entries)
+      .filter(file => voiceExts.includes(file.name.slice(file.name.lastIndexOf('.')).toLowerCase()))
+  } catch (error) {
+    console.warn('[InspectorPanel] Failed to load character voice folder:', error)
+    currentResourceFiles.value = []
+  }
+}
+
 async function handleResourceBrowse(propName: string) {
   currentResourcePropName.value = propName
   currentResourceFiles.value = []
@@ -542,10 +648,12 @@ async function handleResourceBrowse(propName: string) {
   } else {
     const typeMap: Partial<Record<string, ResourceType>> = {
       voice: 'voice',
+      voice1: 'voice',
       voice2: 'voice',
       voice3: 'voice',
       voice4: 'voice',
       voice5: 'voice',
+      voice6: 'voice',
       sfx: 'audio',
       bgm: 'bgm',
       imagePath: 'image',
@@ -562,6 +670,10 @@ async function handleResourceBrowse(propName: string) {
 
   if (selectedNode.value?.type === 'CharacterControlNode' && propName === 'sprite') {
     await loadCharacterSpriteFiles()
+  }
+
+  if (selectedNode.value?.type === 'DialogueNode' && /^voice\d$/.test(propName)) {
+    await loadDialogueVoiceFiles(propName)
   }
 
   showResourcePicker.value = true

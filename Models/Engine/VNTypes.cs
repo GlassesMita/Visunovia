@@ -99,8 +99,11 @@ public class VNCharacterControl
     public string Sprite { get; set; } = string.Empty;
     public string Sfx { get; set; } = string.Empty;
     public string Expression { get; set; } = string.Empty;
+    public string FromPosition { get; set; } = string.Empty;
+    public string ToPosition { get; set; } = "none";
     public string Position { get; set; } = "center";
     public string Animation { get; set; } = "fade";
+    public string Easing { get; set; } = "easeOutCubic";
     public double Duration { get; set; } = 0.3;
 }
 

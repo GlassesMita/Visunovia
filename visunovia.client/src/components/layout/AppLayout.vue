@@ -64,6 +64,11 @@
       @close="uiStore.closePreviewPopup()"
     />
 
+    <NodeDetailsModal
+      :visible="uiStore.showNodeDetailsModal"
+      @close="uiStore.closeNodeDetailsModal()"
+    />
+
     <!-- Project 面板 — 右侧弹出模态框 -->
     <Transition name="slide-fade">
       <div
@@ -108,6 +113,7 @@ import NewProjectModal from '@/components/NewProjectModal.vue'
 import ProjectPreferencesModal from '@/components/ProjectPreferencesModal.vue'
 import CharacterManagerModal from '@/components/CharacterManagerModal.vue'
 import PreviewPopup from '@/components/PreviewPopup.vue'
+import NodeDetailsModal from '@/components/NodeDetailsModal.vue'
 import WelcomeModal from '@/components/WelcomeModal.vue'
 import { getCurrentProject } from '@/api/projectApi'
 

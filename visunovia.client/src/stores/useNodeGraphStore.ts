@@ -276,8 +276,11 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
           sprite: slot === '6' ? '' : String(normalizeAssetProperties({ sprite: getInterfaceValue(item!.controlNode, 'sprite') }).sprite ?? '').trim(),
           sfx: String(normalizeAssetProperties({ sfx: getInterfaceValue(item!.controlNode, 'sfx') }).sfx ?? '').trim(),
           expression: String(getInterfaceValue(item!.controlNode, 'expression') ?? '').trim(),
+          fromPosition: String(getInterfaceValue(item!.controlNode, 'fromPosition') ?? '').trim(),
+          toPosition: String(getInterfaceValue(item!.controlNode, 'toPosition') ?? 'none').trim() || 'none',
           position: String(getInterfaceValue(item!.controlNode, 'position') ?? 'center').trim() || 'center',
           animation: String(getInterfaceValue(item!.controlNode, 'animation') ?? 'fade').trim() || 'fade',
+          easing: String(getInterfaceValue(item!.controlNode, 'easing') ?? 'easeOutCubic').trim() || 'easeOutCubic',
           duration: Number(getInterfaceValue(item!.controlNode, 'duration') ?? 0.3),
         }
       })

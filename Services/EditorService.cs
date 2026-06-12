@@ -13,6 +13,15 @@ namespace Visunovia.Services;
 /// </summary>
 public class EditorService
 {
+    private static readonly HashSet<string> VoiceExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".mp3",
+        ".wav",
+        ".ogg",
+        ".flac",
+        ".opus"
+    };
+
     private static readonly JsonSerializerOptions LorJsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -1786,6 +1795,8 @@ public class EditorService
 
     private VNDialogue ConvertDialogueNode(NodeData node, SceneGraphData graph)
     {
+        var characterControls = GetCharacterControls(node, graph);
+
         return new VNDialogue
         {
             Uuid = EnsureUuid(node.Id),
@@ -1794,9 +1805,9 @@ public class EditorService
             SpeakerSlot = FirstNonEmpty(GetStringProperty(node, "speakerSlot"), "1"),
             Text = GetStringProperty(node, "text"),
             Voice = FirstNonEmpty(GetStringProperty(node, "voice1"), GetStringProperty(node, "voice")),
-            Voices = GetDialogueVoices(node),
+            Voices = GetDialogueVoices(node, characterControls, CurrentProjectPath),
             Sprites = GetSpritesProperty(node, "sprites"),
-            CharacterControls = GetCharacterControls(node, graph),
+            CharacterControls = characterControls,
             TextEffect = GetObjectProperty<VNTextEffect>(node, "textEffect") ?? new VNTextEffect(),
             Animation = GetObjectProperty<VNAnimation>(node, "animation") ?? new VNAnimation(),
             Transition = new VNTransition { Effect = VNTransitionEffect.None, Duration = 300 },
@@ -2032,7 +2043,7 @@ public class EditorService
         return GetObjectProperty<List<VNSprite>>(node, key) ?? new List<VNSprite>();
     }
 
-    private static List<VNVoiceLine> GetDialogueVoices(NodeData node)
+    private static List<VNVoiceLine> GetDialogueVoices(NodeData node, List<VNCharacterControl>? characterControls = null, string? currentProjectPath = null)
     {
         var voices = GetObjectProperty<List<VNVoiceLine>>(node, "voices") ?? new List<VNVoiceLine>();
         for (var slot = 1; slot <= 6; slot++)
@@ -2051,7 +2062,55 @@ public class EditorService
             voices.Insert(0, new VNVoiceLine { Slot = FirstNonEmpty(GetStringProperty(node, "speakerSlot"), "1"), Path = legacyVoice });
         }
 
+        AddVoiceFolderFallbacks(voices, characterControls, currentProjectPath);
+
         return voices;
+    }
+
+    private static void AddVoiceFolderFallbacks(List<VNVoiceLine> voices, List<VNCharacterControl>? characterControls, string? currentProjectPath)
+    {
+        if (characterControls is not { Count: > 0 } || string.IsNullOrWhiteSpace(currentProjectPath))
+        {
+            return;
+        }
+
+        var projectRoot = Path.GetDirectoryName(currentProjectPath);
+        if (string.IsNullOrWhiteSpace(projectRoot))
+        {
+            return;
+        }
+
+        foreach (var control in characterControls)
+        {
+            if (string.IsNullOrWhiteSpace(control.Slot)
+                || string.IsNullOrWhiteSpace(control.Character)
+                || voices.Any(voice => string.Equals(voice.Slot, control.Slot, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            var voiceFolder = Path.Combine(projectRoot, "Assets", "Voices", control.Character);
+            if (!Directory.Exists(voiceFolder))
+            {
+                continue;
+            }
+
+            var voicePath = Directory.EnumerateFiles(voiceFolder, "*.*", SearchOption.TopDirectoryOnly)
+                .Where(file => VoiceExtensions.Contains(Path.GetExtension(file)))
+                .OrderBy(file => Path.GetFileName(file), StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+
+            if (string.IsNullOrWhiteSpace(voicePath))
+            {
+                continue;
+            }
+
+            voices.Add(new VNVoiceLine
+            {
+                Slot = control.Slot,
+                Path = Path.Combine(control.Character, Path.GetFileName(voicePath)).Replace('\\', '/')
+            });
+        }
     }
 
     private static List<VNCharacterControl> GetCharacterControls(NodeData dialogueNode, SceneGraphData graph)
@@ -2077,8 +2136,11 @@ public class EditorService
                 Sprite = FirstNonEmpty(GetStringProperty(item.controlNode, "slot"), ExtractCharacterControlSlot(item.edge.TargetPort), "1") == "6" ? string.Empty : GetStringProperty(item.controlNode, "sprite"),
                 Sfx = GetStringProperty(item.controlNode, "sfx"),
                 Expression = GetStringProperty(item.controlNode, "expression"),
+                FromPosition = GetStringProperty(item.controlNode, "fromPosition"),
+                ToPosition = FirstNonEmpty(GetStringProperty(item.controlNode, "toPosition"), "none"),
                 Position = FirstNonEmpty(GetStringProperty(item.controlNode, "position"), "center"),
                 Animation = FirstNonEmpty(GetStringProperty(item.controlNode, "animation"), "fade"),
+                Easing = FirstNonEmpty(GetStringProperty(item.controlNode, "easing"), "easeOutCubic"),
                 Duration = double.TryParse(GetStringProperty(item.controlNode, "duration"), out var duration) ? duration : 0.3
             })
             .OrderBy(control => int.TryParse(control.Slot, out var slot) ? slot : int.MaxValue)

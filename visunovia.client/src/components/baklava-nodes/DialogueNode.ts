@@ -25,7 +25,7 @@ function createCharacterControlPort(label: string) {
 }
 
 function createVoiceInput(slot: number) {
-  return () => new AssetSelectInterface(`${tSync('resourceTypes.voice', 'Voice')} ${slot}`, '', 'voice')
+  return () => new AssetSelectInterface(`${tSync('resourceTypes.voice', 'Voice')} ${slot}`, '', 'voice', { voiceSlot: String(slot) })
 }
 
 export const NODE_COLOR = '#2196F3'
@@ -54,6 +54,10 @@ export default defineNode({
     execOut: createExecOutPort(ARROW_SYMBOL),
   },
   onCreate() {
+    Object.values((this as any).inputs || {}).forEach((input: any) => {
+      input.node = this
+      if (!input.port && typeof input.setHidden === 'function') input.setHidden(true)
+    })
     setNodeI18nTitle(this, 'nodes.dialogue', 'Dialogue')
   },
 })

@@ -13,6 +13,11 @@ interface AssetOption {
   path: string
 }
 
+export interface AssetSelectOptions {
+  voiceCharacterIdInputKey?: string
+  voiceSlot?: string
+}
+
 const BACKGROUND_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.svg']
 const BACKGROUND_VIDEO_EXTENSIONS = ['.mp4', '.webm', '.m4v', '.mov', '.ogv']
 const BACKGROUND_EXTENSIONS = [...BACKGROUND_IMAGE_EXTENSIONS, ...BACKGROUND_VIDEO_EXTENSIONS]
@@ -76,20 +81,62 @@ async function collectAssets(directory: string, folder: AssetFolder, extensions:
   return [...files, ...nested.flat()]
 }
 
-async function loadAssetOptions(kind: AssetSelectKind) {
+function getInterfaceValue(node: any, key: string) {
+  const iface = node?.inputs?.[key]
+  return iface?.value ?? ''
+}
+
+function getInterfaceKey(node: any, endpoint: any, fallback = '') {
+  const entries = Object.entries(node?.inputs || {}) as Array<[string, any]>
+  const match = entries.find(([, iface]) => iface === endpoint || iface?.id === endpoint?.id || iface?.name === endpoint?.name)
+  return match?.[0] || String(fallback || endpoint?.name || '')
+}
+
+function getVoiceCharacterId(intf: any) {
+  const ownNode = intf?.node
+  const explicitKey = String(intf?.voiceCharacterIdInputKey || '').trim()
+  if (explicitKey) {
+    const explicitValue = String(getInterfaceValue(ownNode, explicitKey) || '').trim()
+    if (explicitValue) return explicitValue
+  }
+
+  const slot = String(intf?.voiceSlot || '').trim()
+  if (!ownNode?.id || !slot) return ''
+
+  const editor = (window as any).__editor
+  const graph = editor?.graph
+  const connection = graph?.connections?.find((candidate: any) => {
+    if (candidate?.to?.nodeId !== ownNode.id) return false
+    const targetPort = getInterfaceKey(ownNode, candidate.to, candidate.to?.name)
+    return targetPort === `characterControl${slot}`
+  })
+  if (!connection) return ''
+
+  const controlNode = graph.nodes?.find((node: any) => node.id === connection.from?.nodeId)
+  if (!controlNode) return ''
+
+  const controlSlot = String(getInterfaceValue(controlNode, 'slot') || slot).trim()
+  return controlSlot === '6'
+    ? String(getInterfaceValue(controlNode, 'unmanagedCharacter') || getInterfaceValue(controlNode, 'character') || '').trim()
+    : String(getInterfaceValue(controlNode, 'character') || '').trim()
+}
+
+async function loadAssetOptions(kind: AssetSelectKind, intf?: any) {
   const config = ASSET_CONFIG[kind]
-  const cached = cache.get(kind)
+  const voiceCharacterId = kind === 'voice' ? getVoiceCharacterId(intf) : ''
+  const cacheKey = voiceCharacterId ? `${kind}:${voiceCharacterId}` : kind
+  const cached = cache.get(cacheKey)
   if (cached && cached.expiresAt > Date.now()) return cached.options
 
   const currentProject = await getCurrentProject()
   const projectPath = currentProject.data?.projectPath
   if (!projectPath) return []
 
-  const assetsRoot = joinPath(projectPath, 'Assets', config.folder)
+  const assetsRoot = joinPath(projectPath, 'Assets', config.folder, voiceCharacterId)
   const options = (await collectAssets(assetsRoot, config.folder, config.extensions))
     .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
 
-  cache.set(kind, { expiresAt: Date.now() + CACHE_TTL_MS, options })
+  cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, options })
   return options
 }
 
@@ -123,7 +170,7 @@ const AssetSelectComponent = defineComponent({
       loading.value = true
       error.value = ''
       try {
-        options.value = await loadAssetOptions(kind)
+        options.value = await loadAssetOptions(kind, props.intf)
       } catch (err: any) {
         error.value = err?.message || '读取资产列表失败'
         options.value = []
@@ -163,9 +210,7 @@ const AssetSelectComponent = defineComponent({
           ...options.value.map(option => h('option', { value: option.path, key: option.path }, option.name)),
         ]),
         kind === 'background' && value && isPreviewableBackground(value)
-          ? isVideoBackground(value)
-            ? h('video', { class: 'vn-asset-select-preview', src: toPreviewUrl(value), muted: true, loop: true, autoplay: true, preload: 'metadata', playsinline: true })
-            : h('img', { class: 'vn-asset-select-preview', src: toPreviewUrl(value), alt: selectedName, loading: 'lazy', decoding: 'async' })
+          ? h('div', { class: 'vn-asset-select-preview vn-asset-select-preview-lite', title: value }, isVideoBackground(value) ? '视频背景' : '图片背景')
           : null,
         error.value ? h('div', { class: 'vn-asset-select-error' }, error.value) : null,
       ])
@@ -175,10 +220,14 @@ const AssetSelectComponent = defineComponent({
 
 export class AssetSelectInterface extends NodeInterface<string> {
   public assetKind: AssetSelectKind
+  public voiceCharacterIdInputKey?: string
+  public voiceSlot?: string
 
-  constructor(name: string, value = '', assetKind: AssetSelectKind = 'background') {
+  constructor(name: string, value = '', assetKind: AssetSelectKind = 'background', options: AssetSelectOptions = {}) {
     super(name, value)
     this.assetKind = assetKind
+    this.voiceCharacterIdInputKey = options.voiceCharacterIdInputKey
+    this.voiceSlot = options.voiceSlot
     this.setComponent(AssetSelectComponent)
   }
 }

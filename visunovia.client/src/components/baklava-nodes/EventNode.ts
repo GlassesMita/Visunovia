@@ -56,19 +56,19 @@ export default defineDynamicNode({
       switch (prop.type) {
         case 'string':
           inputs[prop.name] = () =>
-            new TextInputInterface(label, prop.defaultValue || '')
+            new TextInputInterface(label, prop.defaultValue || '').setHidden(true)
           break
         case 'resource':
           inputs[prop.name] = () =>
-            new AssetSelectInterface(label, prop.defaultValue || '', getAssetKind(subType as EventType, prop.name))
+            new AssetSelectInterface(label, prop.defaultValue || '', getAssetKind(subType as EventType, prop.name)).setHidden(true)
           break
         case 'number':
           inputs[prop.name] = () =>
-            new NumberInterface(label, prop.defaultValue ?? 0)
+            new NumberInterface(label, prop.defaultValue ?? 0).setHidden(true)
           break
         case 'boolean':
           inputs[prop.name] = () =>
-            new CheckboxInterface(label, prop.defaultValue ?? false)
+            new CheckboxInterface(label, prop.defaultValue ?? false).setHidden(true)
           break
         case 'select':
           if (prop.options?.length) {
@@ -80,7 +80,7 @@ export default defineDynamicNode({
                   value: o.value,
                   text: tSync(`eventOptions.${o.value}`, o.label)
                 }))
-              )
+              ).setHidden(true)
           }
           break
       }
