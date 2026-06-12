@@ -96,13 +96,14 @@ function extractNodeProperties(node: any): Record<string, any> {
       .map(key => String(properties[key] ?? '').trim())
       .filter(Boolean)
       .slice(0, 5)
-    const dialogueCharacters = [1, 2, 3, 4, 5]
+    const dialogueCharacters = [1, 2, 3, 4, 5, 6]
       .map(index => {
         const suffix = index === 1 ? '' : String(index)
         return {
           speaker: String(properties[`speaker${suffix}`] ?? '').trim(),
           sprite: String(properties[`sprite${index}`] ?? '').trim(),
-          voice: String(properties[`voice${suffix}`] ?? '').trim(),
+          voice: String(properties[`voice${index}`] ?? properties[`voice${suffix}`] ?? '').trim(),
+          slot: String(index),
         }
       })
       .filter(item => item.speaker || item.sprite || item.voice)
@@ -119,7 +120,7 @@ function extractNodeProperties(node: any): Record<string, any> {
         .map((item, index) => ({ path: item.sprite, character: item.speaker, position: 'center', layer: index }))
       properties.voices = dialogueCharacters
         .filter(item => item.voice)
-        .map(item => ({ speaker: item.speaker, path: item.voice }))
+        .map(item => ({ speaker: item.speaker, slot: item.slot, path: item.voice }))
     }
   }
   
@@ -145,7 +146,8 @@ function buildCharacterControlsForDialogue(editor: Editor, dialogueNode: any) {
     .filter(Boolean)
     .map((item) => {
       const connectedSlot = item!.targetPort.replace('characterControl', '')
-      const slot = connectedSlot || String(getInterfaceValue(item!.controlNode, 'slot') ?? '').trim() || '1'
+      const selectedSlot = String(getInterfaceValue(item!.controlNode, 'slot') ?? '').trim()
+      const slot = selectedSlot || connectedSlot || '1'
       return {
         slot,
         character: slot === '6'

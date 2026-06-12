@@ -14,6 +14,8 @@ public class VNMetadata
     public string Version { get; set; } = "1.0";
     public string VersionCode { get; set; } = "1";
     public string CompanyName { get; set; } = "";
+    public string RatingSystem { get; set; } = "CADPA";
+    public string RatingValue { get; set; } = "12+";
 }
 
 public class VNCustomMethod

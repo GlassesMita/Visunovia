@@ -135,6 +135,8 @@ public class ProjectController : ControllerBase
                 Version = project.Metadata.Version,
                 VersionCode = project.Metadata.VersionCode,
                 CompanyName = project.Metadata.CompanyName,
+                RatingSystem = project.Metadata.RatingSystem,
+                RatingValue = project.Metadata.RatingValue,
                 ProjectPath = projectRoot,
                 SubDirectories = subDirectories
             }
@@ -286,6 +288,14 @@ public class ProjectController : ControllerBase
 
         if (request.VersionCode != null)
             project.Metadata.VersionCode = request.VersionCode;
+
+        if (request.RatingSystem != null)
+            project.Metadata.RatingSystem = NormalizeRatingSystem(request.RatingSystem);
+
+        if (request.RatingValue != null)
+            project.Metadata.RatingValue = NormalizeRatingValue(project.Metadata.RatingSystem, request.RatingValue);
+        else
+            project.Metadata.RatingValue = NormalizeRatingValue(project.Metadata.RatingSystem, project.Metadata.RatingValue);
 
         // 持久化到 .tlor 文件
         try
@@ -865,6 +875,8 @@ public class ProjectController : ControllerBase
     <version>{version}</version>
     <versionCode>{versionCode}</versionCode>
     <companyName>{companyName}</companyName>
+    <ratingSystem>CADPA</ratingSystem>
+    <ratingValue>12+</ratingValue>
   </metadata>
   <scenes>
     <scene id=""start"" />
@@ -1123,6 +1135,8 @@ public class ProjectController : ControllerBase
             changed |= EnsureMetadataElement(metadata, "version", "1.0");
             changed |= EnsureMetadataElement(metadata, "versionCode", "1");
             changed |= EnsureMetadataElement(metadata, "companyName", string.Empty);
+            changed |= EnsureMetadataElement(metadata, "ratingSystem", "CADPA");
+            changed |= EnsureMetadataElement(metadata, "ratingValue", "12+");
 
             var scenes = root.Element("scenes");
             if (scenes == null)
@@ -1234,6 +1248,26 @@ public class ProjectController : ControllerBase
         return true;
     }
 
+    private static string NormalizeRatingSystem(string value)
+    {
+        var normalized = value.Trim().ToUpperInvariant();
+        return normalized is "CADPA" or "GSRR" or "CERO" or "PEGI" ? normalized : "CADPA";
+    }
+
+    private static string NormalizeRatingValue(string ratingSystem, string value)
+    {
+        var normalizedSystem = NormalizeRatingSystem(ratingSystem);
+        var normalizedValue = value.Trim().ToUpperInvariant();
+        return normalizedSystem switch
+        {
+            "CADPA" => normalizedValue is "8+" or "12+" or "16+" ? normalizedValue : "12+",
+            "GSRR" => normalizedValue is "G" or "P" or "PG12" or "PG15" or "R18" ? normalizedValue : "PG12",
+            "CERO" => normalizedValue is "A" or "B" or "C" or "D" or "Z" ? normalizedValue : "B",
+            "PEGI" => normalizedValue is "3" or "4" or "6" or "7" or "12" or "16" or "18" ? normalizedValue : "12",
+            _ => "12+"
+        };
+    }
+
     private XDocument BuildProjectDocumentFromDirectory(string projectRoot, string oldContent)
     {
         return new XDocument(
@@ -1244,7 +1278,9 @@ public class ProjectController : ControllerBase
                     new XElement("author", ExtractXmlLikeTagValue(oldContent, "author") ?? string.Empty),
                     new XElement("version", ExtractXmlLikeTagValue(oldContent, "version") ?? "1.0"),
                     new XElement("versionCode", ExtractXmlLikeTagValue(oldContent, "versionCode") ?? "1"),
-                    new XElement("companyName", ExtractXmlLikeTagValue(oldContent, "companyName") ?? string.Empty)
+                    new XElement("companyName", ExtractXmlLikeTagValue(oldContent, "companyName") ?? string.Empty),
+                    new XElement("ratingSystem", ExtractXmlLikeTagValue(oldContent, "ratingSystem") ?? "CADPA"),
+                    new XElement("ratingValue", ExtractXmlLikeTagValue(oldContent, "ratingValue") ?? "12+")
                 ),
                 new XElement("scenes",
                     GetSceneIdsFromDirectory(projectRoot).Select(sceneId => new XElement("scene", new XAttribute("id", sceneId)))
@@ -1594,6 +1630,8 @@ public class UpdateProjectSettingsRequest
     public string? CompanyName { get; set; }
     public string? Version { get; set; }
     public string? VersionCode { get; set; }
+    public string? RatingSystem { get; set; }
+    public string? RatingValue { get; set; }
 }
 
 /// <summary>
@@ -1675,6 +1713,8 @@ public class CurrentProjectResponse
     public string Version { get; set; } = string.Empty;
     public string VersionCode { get; set; } = string.Empty;
     public string CompanyName { get; set; } = string.Empty;
+    public string RatingSystem { get; set; } = "CADPA";
+    public string RatingValue { get; set; } = "12+";
     public string ProjectPath { get; set; } = string.Empty;
     public List<string> SubDirectories { get; set; } = new();
 }

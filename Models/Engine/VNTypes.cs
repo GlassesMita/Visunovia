@@ -87,6 +87,7 @@ public class VNSprite
 public class VNVoiceLine
 {
     public string Speaker { get; set; } = string.Empty;
+    public string Slot { get; set; } = string.Empty;
     public string Path { get; set; } = string.Empty;
 }
 
@@ -209,6 +210,7 @@ public class VNDialogue
     public VNDialogueType Type { get; set; } = VNDialogueType.Dialogue;
     public string Speaker { get; set; } = string.Empty;
     public List<string> Speakers { get; set; } = new();
+    public string SpeakerSlot { get; set; } = "1";
     public string Text { get; set; } = string.Empty;
     public List<VNSprite> Sprites { get; set; } = new();
     public string Voice { get; set; } = string.Empty;

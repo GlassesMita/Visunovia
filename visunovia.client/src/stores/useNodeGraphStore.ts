@@ -265,7 +265,8 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
       .filter(Boolean)
       .map((item) => {
         const connectedSlot = item!.targetPort.replace('characterControl', '')
-        const slot = connectedSlot || String(getInterfaceValue(item!.controlNode, 'slot') ?? '').trim() || '1'
+        const selectedSlot = String(getInterfaceValue(item!.controlNode, 'slot') ?? '').trim()
+        const slot = selectedSlot || connectedSlot || '1'
         return {
           slot,
           character: slot === '6'

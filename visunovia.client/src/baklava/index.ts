@@ -53,8 +53,7 @@ function setupEventListeners(editor: Editor): void {
     const slotMatch = String(targetPort || '').match(/^characterControl(\d+)$/)
     if (!slotMatch) return
 
-    const slot = slotMatch[1]
-    setInterfaceValue(sourceNode.inputs?.slot, slot)
+    const slot = String(sourceNode.inputs?.slot?.value || slotMatch[1])
     if (slot === '6') {
       setInterfaceValue(sourceNode.inputs?.sprite, '')
     }

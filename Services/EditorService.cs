@@ -173,7 +173,9 @@ public class EditorService
                     new XElement("author", CurrentProject.Metadata.Author),
                     new XElement("version", CurrentProject.Metadata.Version),
                     new XElement("versionCode", CurrentProject.Metadata.VersionCode),
-                    new XElement("companyName", CurrentProject.Metadata.CompanyName)
+                    new XElement("companyName", CurrentProject.Metadata.CompanyName),
+                    new XElement("ratingSystem", CurrentProject.Metadata.RatingSystem),
+                    new XElement("ratingValue", CurrentProject.Metadata.RatingValue)
                 ),
                 new XElement("scenes",
                     CurrentProject.Scenes.Select(s => new XElement("scene",
@@ -496,7 +498,9 @@ public class EditorService
                 Author = root.Element("metadata")?.Element("author")?.Value ?? "",
                 Version = root.Element("metadata")?.Element("version")?.Value ?? "1.0",
                 VersionCode = root.Element("metadata")?.Element("versionCode")?.Value ?? "1",
-                CompanyName = root.Element("metadata")?.Element("companyName")?.Value ?? ""
+                CompanyName = root.Element("metadata")?.Element("companyName")?.Value ?? "",
+                RatingSystem = root.Element("metadata")?.Element("ratingSystem")?.Value ?? "CADPA",
+                RatingValue = root.Element("metadata")?.Element("ratingValue")?.Value ?? "12+"
             };
 
             CurrentProject.Scenes = new List<VNScene>();
@@ -571,7 +575,9 @@ public class EditorService
                 Author = ExtractTagValue(tlorContent, "author") ?? string.Empty,
                 Version = ExtractTagValue(tlorContent, "version") ?? "1.0",
                 VersionCode = ExtractTagValue(tlorContent, "versionCode") ?? "1",
-                CompanyName = ExtractTagValue(tlorContent, "companyName") ?? string.Empty
+                CompanyName = ExtractTagValue(tlorContent, "companyName") ?? string.Empty,
+                RatingSystem = ExtractTagValue(tlorContent, "ratingSystem") ?? "CADPA",
+                RatingValue = ExtractTagValue(tlorContent, "ratingValue") ?? "12+"
             },
             Variables = new Dictionary<string, object>(),
             Scenes = new List<VNScene>()
@@ -1025,6 +1031,7 @@ public class EditorService
                             {
                                 dialogueElement.Add(new XElement("speaker", ""));
                             }
+                            dialogueElement.Add(new XElement("speakerSlot", string.IsNullOrWhiteSpace(dialogue.SpeakerSlot) ? "1" : dialogue.SpeakerSlot));
                             if (!string.IsNullOrEmpty(dialogue.Text))
                             {
                                 dialogueElement.Add(new XElement("text", dialogue.Text));
@@ -1073,6 +1080,19 @@ public class EditorService
                             {
                                 dialogueElement.Add(new XElement("voice", ""));
                             }
+                            if (dialogue.Voices.Count > 0)
+                            {
+                                var voicesElement = new XElement("voices");
+                                foreach (var voice in dialogue.Voices)
+                                {
+                                    voicesElement.Add(new XElement("voice",
+                                        new XAttribute("slot", voice.Slot),
+                                        new XAttribute("speaker", voice.Speaker),
+                                        voice.Path
+                                    ));
+                                }
+                                dialogueElement.Add(voicesElement);
+                            }
                             if (dialogue.TextEffect != null)
                             {
                                 dialogueElement.Add(new XElement("textEffect",
@@ -1118,7 +1138,9 @@ public class EditorService
                         new XElement("author", project.Metadata.Author),
                         new XElement("version", project.Metadata.Version),
                         new XElement("versionCode", project.Metadata.VersionCode),
-                        new XElement("companyName", project.Metadata.CompanyName)
+                        new XElement("companyName", project.Metadata.CompanyName),
+                        new XElement("ratingSystem", project.Metadata.RatingSystem),
+                        new XElement("ratingValue", project.Metadata.RatingValue)
                     ),
                     scenesElement,
                     variablesElement
@@ -1150,7 +1172,9 @@ public class EditorService
                     Author = root.Element("metadata")?.Element("author")?.Value ?? "",
                     Version = root.Element("metadata")?.Element("version")?.Value ?? "1.0",
                     VersionCode = root.Element("metadata")?.Element("versionCode")?.Value ?? "1",
-                    CompanyName = root.Element("metadata")?.Element("companyName")?.Value ?? ""
+                    CompanyName = root.Element("metadata")?.Element("companyName")?.Value ?? "",
+                    RatingSystem = root.Element("metadata")?.Element("ratingSystem")?.Value ?? "CADPA",
+                    RatingValue = root.Element("metadata")?.Element("ratingValue")?.Value ?? "12+"
                 };
 
                 project.Scenes = new List<VNScene>();
@@ -1255,6 +1279,7 @@ public class EditorService
                                 {
                                     dialogue = new VNDialogue { Uuid = System.Guid.NewGuid().ToString(), Type = VNDialogueType.Dialogue };
                                     dialogue.Speaker = dialogueElem.Element("speaker")?.Value ?? "";
+                                    dialogue.SpeakerSlot = dialogueElem.Element("speakerSlot")?.Value ?? "1";
                                     dialogue.Text = dialogueElem.Element("text")?.Value ?? "";
                                     dialogue.Sprites = new List<VNSprite>();
                                     var spritesElem = dialogueElem.Element("sprites");
@@ -1281,6 +1306,15 @@ public class EditorService
                                         }
                                     }
                                     dialogue.Voice = dialogueElem.Element("voice")?.Value ?? "";
+                                    dialogue.Voices = dialogueElem.Element("voices")?.Elements("voice")
+                                        .Select(voiceElem => new VNVoiceLine
+                                        {
+                                            Slot = voiceElem.Attribute("slot")?.Value ?? "",
+                                            Speaker = voiceElem.Attribute("speaker")?.Value ?? "",
+                                            Path = voiceElem.Value ?? ""
+                                        })
+                                        .Where(voice => !string.IsNullOrWhiteSpace(voice.Path))
+                                        .ToList() ?? new List<VNVoiceLine>();
                                     var textEffectElem = dialogueElem.Element("textEffect");
                                     if (textEffectElem != null)
                                     {
@@ -1374,7 +1408,9 @@ public class EditorService
                         new XElement("author", project.Metadata.Author),
                         new XElement("version", project.Metadata.Version),
                         new XElement("versionCode", project.Metadata.VersionCode),
-                        new XElement("companyName", project.Metadata.CompanyName)
+                        new XElement("companyName", project.Metadata.CompanyName),
+                        new XElement("ratingSystem", project.Metadata.RatingSystem),
+                        new XElement("ratingValue", project.Metadata.RatingValue)
                     ),
                     new XElement("scenes",
                         project.Scenes.Select(s => new XElement("scene",
@@ -1755,8 +1791,10 @@ public class EditorService
             Uuid = EnsureUuid(node.Id),
             Type = VNDialogueType.Dialogue,
             Speaker = GetStringProperty(node, "speaker"),
+            SpeakerSlot = FirstNonEmpty(GetStringProperty(node, "speakerSlot"), "1"),
             Text = GetStringProperty(node, "text"),
-            Voice = GetStringProperty(node, "voice"),
+            Voice = FirstNonEmpty(GetStringProperty(node, "voice1"), GetStringProperty(node, "voice")),
+            Voices = GetDialogueVoices(node),
             Sprites = GetSpritesProperty(node, "sprites"),
             CharacterControls = GetCharacterControls(node, graph),
             TextEffect = GetObjectProperty<VNTextEffect>(node, "textEffect") ?? new VNTextEffect(),
@@ -1994,6 +2032,28 @@ public class EditorService
         return GetObjectProperty<List<VNSprite>>(node, key) ?? new List<VNSprite>();
     }
 
+    private static List<VNVoiceLine> GetDialogueVoices(NodeData node)
+    {
+        var voices = GetObjectProperty<List<VNVoiceLine>>(node, "voices") ?? new List<VNVoiceLine>();
+        for (var slot = 1; slot <= 6; slot++)
+        {
+            var field = $"voice{slot}";
+            var path = GetStringProperty(node, field);
+            if (!string.IsNullOrWhiteSpace(path) && !voices.Any(voice => string.Equals(voice.Path, path, StringComparison.OrdinalIgnoreCase)))
+            {
+                voices.Add(new VNVoiceLine { Slot = slot.ToString(), Path = path });
+            }
+        }
+
+        var legacyVoice = GetStringProperty(node, "voice");
+        if (!string.IsNullOrWhiteSpace(legacyVoice) && !voices.Any(voice => string.Equals(voice.Path, legacyVoice, StringComparison.OrdinalIgnoreCase)))
+        {
+            voices.Insert(0, new VNVoiceLine { Slot = FirstNonEmpty(GetStringProperty(node, "speakerSlot"), "1"), Path = legacyVoice });
+        }
+
+        return voices;
+    }
+
     private static List<VNCharacterControl> GetCharacterControls(NodeData dialogueNode, SceneGraphData graph)
     {
         var embedded = GetObjectProperty<List<VNCharacterControl>>(dialogueNode, "characterControls");
@@ -2010,9 +2070,11 @@ public class EditorService
             .Select(item => new VNCharacterControl
             {
                 Slot = FirstNonEmpty(GetStringProperty(item!.controlNode, "slot"), ExtractCharacterControlSlot(item.edge.TargetPort), "1"),
-                Character = GetStringProperty(item.controlNode, "character"),
+                Character = FirstNonEmpty(GetStringProperty(item.controlNode, "slot"), ExtractCharacterControlSlot(item.edge.TargetPort), "1") == "6"
+                    ? FirstNonEmpty(GetStringProperty(item.controlNode, "unmanagedCharacter"), GetStringProperty(item.controlNode, "character"))
+                    : GetStringProperty(item.controlNode, "character"),
                 Action = FirstNonEmpty(GetStringProperty(item.controlNode, "action"), "show"),
-                Sprite = GetStringProperty(item.controlNode, "sprite"),
+                Sprite = FirstNonEmpty(GetStringProperty(item.controlNode, "slot"), ExtractCharacterControlSlot(item.edge.TargetPort), "1") == "6" ? string.Empty : GetStringProperty(item.controlNode, "sprite"),
                 Sfx = GetStringProperty(item.controlNode, "sfx"),
                 Expression = GetStringProperty(item.controlNode, "expression"),
                 Position = FirstNonEmpty(GetStringProperty(item.controlNode, "position"), "center"),

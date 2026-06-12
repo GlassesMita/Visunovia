@@ -50,7 +50,7 @@
 
               <div class="preview-characters">
                 <img
-                  v-for="character in visibleCharacters"
+                  v-for="character in renderableCharacters"
                   :key="character.slot"
                   class="preview-character"
                   :class="[`preview-character-${character.position}`, `preview-character-${character.animation}`]"
@@ -186,6 +186,7 @@ const speaker = ref('')
 const speakerAffiliation = ref('')
 const dialogueText = ref('')
 const fullDialogueText = ref('')
+const visibleTextLength = ref(0)
 const dialogueVisible = ref(false)
 const textComplete = ref(false)
 const statusMessage = ref('')
@@ -197,8 +198,9 @@ const resourceTraceByUrl = ref<Record<string, PreviewResourceTrace>>({})
 let typewriterTimer: number | null = null
 
 const visibleCharacters = computed(() => Object.values(characterSlots.value).sort((a, b) => Number(a.slot) - Number(b.slot)))
+const renderableCharacters = computed(() => visibleCharacters.value.filter(character => character.slot !== '6' && Boolean(character.sprite && character.spriteUrl)))
 
-const renderedDialogueHtml = computed(() => DOMPurify.sanitize(renderDialogueMarkdown(dialogueText.value), {
+const renderedDialogueHtml = computed(() => DOMPurify.sanitize(renderDialogueMarkdown(fullDialogueText.value, visibleTextLength.value), {
   ADD_TAGS: ['ruby', 'rp', 'rt', 'i', 'u', 'mark', 'span'],
   ADD_ATTR: ['class', 'title'],
 }))
@@ -325,10 +327,178 @@ function normalizeDialogueEscapes(value: string) {
   })
 }
 
-function renderDialogueMarkdown(value: string) {
+function renderDialogueMarkdown(value: string, visibleLimit = Number.POSITIVE_INFINITY) {
+  const rendered = renderDialogueInlineMarkup(normalizeDialogueEscapes(value), visibleLimit)
   return markdownRenderer
-    .render(normalizeDialogueEscapes(value))
+    .render(rendered.html)
     .replace(/<br\s*\/?>\s*\n/gi, '<br />')
+}
+
+function renderDialogueInlineMarkup(value: string, visibleLimit = Number.POSITIVE_INFINITY) {
+  const initialRemaining = Number.isFinite(visibleLimit) ? visibleLimit : Number.MAX_SAFE_INTEGER
+  const state = { remaining: initialRemaining }
+  return { html: renderInlineSegment(value, state), consumed: initialRemaining - state.remaining }
+}
+
+function renderInlineSegment(value: string, state: { remaining: number }) {
+  let output = ''
+  let plain = ''
+  let index = 0
+
+  const flushPlain = () => {
+    if (!plain) return
+    output += markdownRenderer.renderInline(plain)
+    plain = ''
+  }
+
+  while (index < value.length && state.remaining > 0) {
+    const simple = parseSimpleMarkup(value, index, state)
+    if (simple) {
+      flushPlain()
+      output += simple.html
+      index = simple.end
+      continue
+    }
+
+    const annotation = parseAnnotationMarkup(value, index, state)
+    if (annotation) {
+      flushPlain()
+      output += annotation.html
+      index = annotation.end
+      continue
+    }
+
+    const char = readCodePoint(value, index)
+    plain += char.value
+    state.remaining -= 1
+    index = char.end
+  }
+
+  flushPlain()
+  return output
+}
+
+function parseSimpleMarkup(value: string, start: number, state: { remaining: number }) {
+  const config = value.startsWith('==', start)
+    ? { marker: '==', tag: 'mark' }
+    : value.startsWith('++', start)
+      ? { marker: '++', tag: 'u' }
+      : null
+  if (!config) return null
+
+  const contentStart = start + config.marker.length
+  const end = findClosingMarker(value, contentStart, config.marker)
+  if (end < 0) return null
+
+  const inner = renderInlineSegment(value.slice(contentStart, end), state)
+  return {
+    html: inner ? `<${config.tag}>${inner}</${config.tag}>` : '',
+    end: end + config.marker.length,
+  }
+}
+
+function parseAnnotationMarkup(value: string, start: number, state: { remaining: number }) {
+  const type = value.startsWith('[Ann|', start) ? 'ann' : value.startsWith('[Inside|', start) ? 'inside' : ''
+  if (!type) return null
+
+  const contentStart = start + (type === 'ann' ? '[Ann|'.length : '[Inside|'.length)
+  const end = findClosingBracket(value, contentStart)
+  if (end < 0) return null
+
+  const parts = splitTopLevelPipes(value.slice(contentStart, end))
+  if (type === 'ann') {
+    if (parts.length < 2 || !parts[0] || !parts[1]) return null
+    const before = state.remaining
+    const mainHtml = renderInlineSegment(parts[0], state)
+    if (!mainHtml && before === state.remaining) return { html: '', end: end + 1 }
+    const annotationHtml = renderInlineSegment(parts.slice(1).join('|'), { remaining: Number.POSITIVE_INFINITY })
+    return {
+      html: `<ruby>${mainHtml}<rp>(</rp><rt>${annotationHtml}</rt><rp>)</rp></ruby>`,
+      end: end + 1,
+    }
+  }
+
+  if (!parts[0]) return null
+  const before = state.remaining
+  const hiddenHtml = renderInlineSegment(parts[0], state)
+  if (!hiddenHtml && before === state.remaining) return { html: '', end: end + 1 }
+  const title = stripHtml(renderInlineSegment(parts.slice(1).join('|') || '你知道的太多了', { remaining: Number.POSITIVE_INFINITY }))
+  return {
+    html: `<span class="dialog-inside" title="${escapeHtmlAttribute(title)}">${hiddenHtml}</span>`,
+    end: end + 1,
+  }
+}
+
+function findClosingMarker(value: string, start: number, marker: string) {
+  let index = start
+  while (index < value.length) {
+    if (value.startsWith(marker, index)) return index
+    const char = readCodePoint(value, index)
+    index = char.end
+  }
+  return -1
+}
+
+function findClosingBracket(value: string, start: number) {
+  let depth = 0
+  let index = start
+  while (index < value.length) {
+    if (value.startsWith('[Ann|', index) || value.startsWith('[Inside|', index)) {
+      depth += 1
+      index += value.startsWith('[Ann|', index) ? '[Ann|'.length : '[Inside|'.length
+      continue
+    }
+    if (value[index] === ']') {
+      if (depth === 0) return index
+      depth -= 1
+    }
+    index += 1
+  }
+  return -1
+}
+
+function splitTopLevelPipes(value: string) {
+  const parts: string[] = []
+  let depth = 0
+  let start = 0
+  let index = 0
+  while (index < value.length) {
+    if (value.startsWith('[Ann|', index) || value.startsWith('[Inside|', index)) {
+      depth += 1
+      index += value.startsWith('[Ann|', index) ? '[Ann|'.length : '[Inside|'.length
+      continue
+    }
+    if (value[index] === ']' && depth > 0) depth -= 1
+    if (value[index] === '|' && depth === 0) {
+      parts.push(value.slice(start, index))
+      start = index + 1
+    }
+    index += 1
+  }
+  parts.push(value.slice(start))
+  return parts
+}
+
+function readCodePoint(value: string, start: number) {
+  const codePoint = value.codePointAt(start)
+  const char = codePoint === undefined ? '' : String.fromCodePoint(codePoint)
+  return { value: char, end: start + char.length }
+}
+
+function countDialogueVisibleCharacters(value: string) {
+  return renderDialogueInlineMarkup(normalizeDialogueEscapes(value), Number.POSITIVE_INFINITY).consumed
+}
+
+function stripHtml(value: string) {
+  return value.replace(/<[^>]*>/g, '')
+}
+
+function escapeHtmlAttribute(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
 }
 
 watch(
@@ -431,6 +601,7 @@ function resetPlaybackState() {
   speakerAffiliation.value = ''
   dialogueText.value = ''
   fullDialogueText.value = ''
+  visibleTextLength.value = 0
   dialogueVisible.value = false
   textComplete.value = false
   statusMessage.value = ''
@@ -511,6 +682,7 @@ function runFromNode(nodeId: string | null, reason = 'advance') {
 
 function renderDialogueNode(node: PreviewNode) {
   applyCharacterControls(node)
+  playDialogueVoices(node)
   choices.value = []
   statusMessage.value = ''
   const speakerId = getDialogueSpeaker(node)
@@ -525,23 +697,24 @@ function startTypewriter(text: string) {
   stopTypewriter()
   fullDialogueText.value = text
   dialogueText.value = ''
-  textComplete.value = text.length === 0
+  visibleTextLength.value = 0
+  const totalVisibleLength = countDialogueVisibleCharacters(text)
+  textComplete.value = totalVisibleLength === 0
 
-  if (!text) return
+  if (totalVisibleLength === 0) return
 
-  let index = 0
   const step = () => {
-    index += 1
-    dialogueText.value = text.slice(0, index)
-    if (index >= text.length) {
+    visibleTextLength.value += 1
+    dialogueText.value = stripHtml(renderDialogueInlineMarkup(normalizeDialogueEscapes(text), visibleTextLength.value).html)
+    if (visibleTextLength.value >= totalVisibleLength) {
       textComplete.value = true
       typewriterTimer = null
       return
     }
-    typewriterTimer = window.setTimeout(step, getTypewriterDelay(text[index]))
+    typewriterTimer = window.setTimeout(step, getTypewriterDelay(dialogueText.value.slice(-1)))
   }
 
-  typewriterTimer = window.setTimeout(step, getTypewriterDelay(text[0]))
+  typewriterTimer = window.setTimeout(step, getTypewriterDelay(''))
 }
 
 function stopTypewriter() {
@@ -554,6 +727,7 @@ function stopTypewriter() {
 function completeTypewriter() {
   stopTypewriter()
   dialogueText.value = fullDialogueText.value
+  visibleTextLength.value = countDialogueVisibleCharacters(fullDialogueText.value)
   textComplete.value = true
 }
 
@@ -562,11 +736,35 @@ function getTypewriterDelay(character: string) {
 }
 
 function getDialogueSpeaker(node: PreviewNode) {
+  const speakerSlot = String(node.data.speakerSlot ?? '').trim()
+  const controls = getCharacterControlsForDialogue(node)
+  if (speakerSlot === 'all') {
+    return visibleCharacters.value.map(character => character.character).filter(Boolean).join(' / ')
+  }
+  if (speakerSlot) {
+    const controlledSpeakerSlot = controls.find((control: any) => String(control?.slot || '') === speakerSlot)
+    if (controlledSpeakerSlot?.character || controlledSpeakerSlot?.unmanagedCharacter) {
+      return String(speakerSlot === '6'
+        ? controlledSpeakerSlot.unmanagedCharacter || controlledSpeakerSlot.character || ''
+        : controlledSpeakerSlot.character || '').trim()
+    }
+    const slot6OnlyControl = controls.length > 0
+      && !controls.some((control: any) => String(control?.slot || '') !== '6')
+      && controls.find((control: any) => String(control?.slot || '') === '6')
+    if (speakerSlot === '1' && slot6OnlyControl) {
+      return String((slot6OnlyControl as any).unmanagedCharacter || (slot6OnlyControl as any).character || '').trim()
+    }
+    return String(characterSlots.value[speakerSlot]?.character || '').trim()
+  }
+
   const directSpeaker = String(node.data.speaker || node.data.character || '').trim()
   if (directSpeaker) return directSpeaker
 
-  const controls = getCharacterControlsForDialogue(node)
-  return String(controls.find((control: any) => control?.character)?.character || '').trim()
+  const firstSpeakerControl = controls.find((control: any) => control?.character || control?.unmanagedCharacter)
+  if (!firstSpeakerControl) return ''
+  return String(firstSpeakerControl.slot === '6'
+    ? firstSpeakerControl.unmanagedCharacter || firstSpeakerControl.character || ''
+    : firstSpeakerControl.character || '').trim()
 }
 
 function renderBranchNode(node: PreviewNode) {
@@ -719,12 +917,17 @@ function applyCharacterControls(dialogueNode: PreviewNode) {
       continue
     }
 
-    const sprite = String(control.sprite || nextSlots[slot]?.sprite || '')
-    const spriteUrl = resolveAssetUrl(sprite, 'Characters')
-    registerResourceTrace(createResourceTrace(dialogueNode, 'character', `角色立绘 slot ${slot}`, 'characterControls.sprite', sprite, spriteUrl))
+    const sprite = slot === '6' ? '' : String(control.sprite || nextSlots[slot]?.sprite || '')
+    const spriteUrl = sprite ? resolveAssetUrl(sprite, 'Characters') : ''
+    const character = slot === '6'
+      ? String(control.unmanagedCharacter || control.character || nextSlots[slot]?.character || '')
+      : String(control.character || nextSlots[slot]?.character || '')
+    if (sprite) {
+      registerResourceTrace(createResourceTrace(dialogueNode, 'character', `角色立绘 slot ${slot}`, 'characterControls.sprite', sprite, spriteUrl))
+    }
     nextSlots[slot] = {
       slot,
-      character: String(control.character || nextSlots[slot]?.character || ''),
+      character,
       sprite,
       spriteUrl,
       position: String(control.position || nextSlots[slot]?.position || 'center'),
@@ -744,13 +947,43 @@ function getCharacterControlsForDialogue(dialogueNode: PreviewNode) {
       if (!controlNode || controlNode.type !== 'CharacterControlNode') return null
       const slotFromPort = normalizePort(connection.to.port).replace('characterControl', '')
       return {
-        slot: slotFromPort || controlNode.data.slot || '1',
         ...controlNode.data,
+        slot: controlNode.data.slot || slotFromPort || '1',
       }
     })
     .filter(Boolean)
 
   return [...inlineControls, ...linkedControls]
+}
+
+function playDialogueVoices(node: PreviewNode) {
+  const voiceEntries = collectDialogueVoices(node)
+  for (const voice of voiceEntries) {
+    playVoice(voice.path, createResourceTrace(node, 'voice', `语音 slot ${voice.slot}`, voice.field, voice.path, resolveAssetUrl(voice.path, 'Voices')))
+  }
+}
+
+function collectDialogueVoices(node: PreviewNode) {
+  const entries: Array<{ slot: string; path: string; field: string }> = []
+  for (let slot = 1; slot <= 6; slot += 1) {
+    const field = `voice${slot}`
+    const path = String(node.data[field] || '').trim()
+    if (path) entries.push({ slot: String(slot), path, field })
+  }
+
+  if (Array.isArray(node.data.voices)) {
+    node.data.voices.forEach((voice: any, index: number) => {
+      const path = String(voice?.path || voice?.voice || voice || '').trim()
+      if (path) entries.push({ slot: String(voice?.slot || index + 1), path, field: 'voices' })
+    })
+  }
+
+  const legacyVoice = String(node.data.voice || '').trim()
+  if (legacyVoice && !entries.some(entry => entry.path === legacyVoice)) {
+    entries.push({ slot: String(node.data.speakerSlot || '1'), path: legacyVoice, field: 'voice' })
+  }
+
+  return entries
 }
 
 function setCharacterSlot(slot: string, data: Omit<CharacterSlotState, 'slot' | 'spriteUrl'>, sourceNode?: PreviewNode) {

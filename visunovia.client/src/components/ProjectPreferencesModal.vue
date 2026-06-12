@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useUIStore } from '@/stores/useUIStore'
 import { getCurrentProject, updateProjectSettings } from '@/api/projectApi'
@@ -12,6 +12,8 @@ const projectName = ref('')
 const companyName = ref('')
 const version = ref('')
 const versionCode = ref('')
+const ratingSystem = ref<RatingSystem>('CADPA')
+const ratingValue = ref('12+')
 const projectPath = ref('')
 const subDirectories = ref<string[]>([])
 const isLoading = ref(false)
@@ -19,6 +21,55 @@ const isSaving = ref(false)
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
 const hasProject = ref(false)
+
+type RatingSystem = 'CADPA' | 'GSRR' | 'CERO' | 'PEGI'
+
+interface RatingOption {
+  value: string
+  label: string
+  image: string
+}
+
+const ratingSystems: Array<{ value: RatingSystem; label: string }> = [
+  { value: 'CADPA', label: 'CADPA' },
+  { value: 'GSRR', label: 'GSRR' },
+  { value: 'CERO', label: 'CERO' },
+  { value: 'PEGI', label: 'PEGI' },
+]
+
+const ratingOptions: Record<RatingSystem, RatingOption[]> = {
+  CADPA: [
+    { value: '8+', label: '8+', image: '/images/Rating_Labels/CADPA_8+.svg' },
+    { value: '12+', label: '12+', image: '/images/Rating_Labels/CADPA_12+.svg' },
+    { value: '16+', label: '16+', image: '/images/Rating_Labels/CADPA_16+.svg' },
+  ],
+  GSRR: [
+    { value: 'G', label: '普遍级', image: '/images/Rating_Labels/GSRR_G_0_logo.svg' },
+    { value: 'P', label: '保护级', image: '/images/Rating_Labels/GSRR_P_6_logo.svg' },
+    { value: 'PG12', label: '辅12级', image: '/images/Rating_Labels/GSRR_PG_12_logo.svg' },
+    { value: 'PG15', label: '辅15级', image: '/images/Rating_Labels/GSRR_PG_15_logo.svg' },
+    { value: 'R18', label: '限制级', image: '/images/Rating_Labels/GSRR_R_18_logo.svg' },
+  ],
+  CERO: [
+    { value: 'A', label: 'A', image: '/images/Rating_Labels/CERO_A.svg' },
+    { value: 'B', label: 'B', image: '/images/Rating_Labels/CERO_B.svg' },
+    { value: 'C', label: 'C', image: '/images/Rating_Labels/CERO_C.svg' },
+    { value: 'D', label: 'D', image: '/images/Rating_Labels/CERO_D.svg' },
+    { value: 'Z', label: 'Z', image: '/images/Rating_Labels/CERO_Z.svg' },
+  ],
+  PEGI: [
+    { value: '3', label: '3', image: '/images/Rating_Labels/PEGI_3.svg' },
+    { value: '4', label: '4', image: '/images/Rating_Labels/PEGI_4.svg' },
+    { value: '6', label: '6', image: '/images/Rating_Labels/PEGI_6.svg' },
+    { value: '7', label: '7', image: '/images/Rating_Labels/PEGI_7.svg' },
+    { value: '12', label: '12', image: '/images/Rating_Labels/PEGI_12.svg' },
+    { value: '16', label: '16', image: '/images/Rating_Labels/PEGI_16.svg' },
+    { value: '18', label: '18', image: '/images/Rating_Labels/PEGI_18.svg' },
+  ],
+}
+
+const currentRatingOptions = computed(() => ratingOptions[ratingSystem.value])
+const selectedRatingOption = computed(() => currentRatingOptions.value.find(option => option.value === ratingValue.value) ?? currentRatingOptions.value[0])
 
 async function loadProjectInfo() {
   isLoading.value = true
@@ -31,6 +82,8 @@ async function loadProjectInfo() {
       companyName.value = result.data.companyName
       version.value = result.data.version
       versionCode.value = result.data.versionCode
+      ratingSystem.value = result.data.ratingSystem || 'CADPA'
+      ratingValue.value = normalizeRatingValue(ratingSystem.value, result.data.ratingValue)
       projectPath.value = result.data.projectPath
       subDirectories.value = result.data.subDirectories
     } else {
@@ -55,6 +108,8 @@ async function handleSave() {
       companyName: companyName.value.trim(),
       version: version.value.trim(),
       versionCode: versionCode.value.trim(),
+      ratingSystem: ratingSystem.value,
+      ratingValue: ratingValue.value,
     })
     success.value = t('Project.SettingsSaved', '项目设置已保存').value
   } catch (e: any) {
@@ -62,6 +117,11 @@ async function handleSave() {
   } finally {
     isSaving.value = false
   }
+}
+
+function normalizeRatingValue(system: RatingSystem, value?: string) {
+  const options = ratingOptions[system]
+  return options.some(option => option.value === value) ? value! : options[0].value
 }
 
 function handleClose() {
@@ -80,6 +140,8 @@ watch(() => uiStore.showProjectPreferences, (visible) => {
     companyName.value = ''
     version.value = ''
     versionCode.value = ''
+    ratingSystem.value = 'CADPA'
+    ratingValue.value = '12+'
     projectPath.value = ''
     subDirectories.value = []
     error.value = null
@@ -87,6 +149,10 @@ watch(() => uiStore.showProjectPreferences, (visible) => {
     hasProject.value = false
     loadProjectInfo()
   }
+})
+
+watch(ratingSystem, (system) => {
+  ratingValue.value = normalizeRatingValue(system, ratingValue.value)
 })
 </script>
 
@@ -179,6 +245,26 @@ watch(() => uiStore.showProjectPreferences, (visible) => {
                     placeholder="1"
                     :disabled="isSaving"
                   />
+                </div>
+              </div>
+
+              <!-- Rating System -->
+              <div class="ppm-field">
+                <label class="ppm-label">{{ t('Project.RatingSystem', '分级制度') }}</label>
+                <div class="ppm-rating-select-row">
+                  <select v-model="ratingSystem" class="ppm-input ppm-select" :disabled="isSaving">
+                    <option v-for="system in ratingSystems" :key="system.value" :value="system.value">
+                      {{ system.label }}
+                    </option>
+                  </select>
+                  <select v-model="ratingValue" class="ppm-input ppm-select" :disabled="isSaving">
+                    <option v-for="option in currentRatingOptions" :key="option.value" :value="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                  <div class="ppm-rating-preview">
+                    <img class="ppm-rating-label" :src="selectedRatingOption.image" :alt="selectedRatingOption.label" />
+                  </div>
                 </div>
               </div>
 
@@ -370,6 +456,37 @@ watch(() => uiStore.showProjectPreferences, (visible) => {
 
 .ppm-input::placeholder {
   color: #666666;
+}
+
+.ppm-select {
+  flex: 1;
+}
+
+.ppm-rating-select-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ppm-rating-label {
+  width: 60px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.ppm-rating-preview {
+  width: 78px;
+  min-height: 44px;
+  padding: 6px 8px;
+  background: #252526;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .ppm-readonly-path {

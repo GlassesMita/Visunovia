@@ -237,6 +237,8 @@ export interface CurrentProjectInfo {
   version: string
   versionCode: string
   companyName: string
+  ratingSystem: 'CADPA' | 'GSRR' | 'CERO' | 'PEGI'
+  ratingValue: string
   projectPath: string
   subDirectories: string[]
 }
@@ -246,6 +248,8 @@ export interface UpdateProjectSettingsRequest {
   companyName?: string
   version?: string
   versionCode?: string
+  ratingSystem?: 'CADPA' | 'GSRR' | 'CERO' | 'PEGI'
+  ratingValue?: string
 }
 
 export interface CharacterConfigEntry {

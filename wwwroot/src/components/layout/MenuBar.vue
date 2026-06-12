@@ -71,6 +71,8 @@ const menus = computed<Menu[]>(() => [
       { key: 'save', labelKey: 'menu.save', action: 'saveFile', shortcut: 'Ctrl+S' },
       { key: 'saveAs', labelKey: 'menu.saveAs', action: 'saveFileAs', shortcut: 'Ctrl+Shift+S' },
       { key: 'divider1', labelKey: '', divider: true },
+      { key: 'projectPreferences', labelKey: 'Menu.ProjectPreferences', action: 'openProjectPreferences' },
+      { key: 'divider2', labelKey: '', divider: true },
       { key: 'exit', labelKey: 'menu.exit', action: 'exitApp' },
     ],
   },
@@ -177,6 +179,9 @@ function executeAction(action: string) {
       } else {
         uiStore.openProjectPopup()
       }
+      break
+    case 'openProjectPreferences':
+      uiStore.openProjectPreferences()
       break
     case 'toggleConsole':
       uiStore.togglePanel('console')
