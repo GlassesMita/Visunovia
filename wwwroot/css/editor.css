@@ -1,14 +1,7 @@
-@font-face {
-    font-family: 'BlueakaBetaGBK-DemiBold';
-    src: url('/fonts/BlueakaBetaGBK-DemiBold.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-}
-
 body {
     background: #0D0D0D;
     color: #999999;
-    font-family: 'BlueakaBetaGBK-DemiBold', sans-serif;
+    font-family: Gadugi, 'Segoe UI', 'Microsoft YaHei UI', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
     margin: 0;
     padding: 0;
 }

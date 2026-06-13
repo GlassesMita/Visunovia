@@ -1,6 +1,6 @@
 @import '@baklavajs/themes/dist/syrup-dark.css';
 
-/* 排除蓝图节点使用自定义字体，保持原有系统字体 */
+/* 蓝图编辑器统一字体栈 */
 .baklava-editor,
 .baklava-editor *,
 .baklava-node,
@@ -13,7 +13,7 @@
 .baklava-context-menu *,
 .baklava-node-palette,
 .baklava-node-palette * {
-  font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+  font-family: Gadugi, 'Segoe UI', 'Microsoft YaHei UI', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif !important;
 }
 
 :root {
