@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosError } from 'axios'
 import type { ApiResponse, VNSceneGraph, VNNode, VNEdge } from '@/types'
+import { reportBackendRequestFailure, reportBackendRequestSuccess } from '@/composables/useBackendConnectionMonitor'
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: '/api',
@@ -10,10 +11,14 @@ const apiClient: AxiosInstance = axios.create({
 })
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    reportBackendRequestSuccess(response.status)
+    return response
+  },
   (error: AxiosError) => {
     const message = (error.response?.data as { message?: string })?.message || error.message
     console.error('API Error:', message)
+    reportBackendRequestFailure(error)
     return Promise.reject(error)
   }
 )

@@ -39,7 +39,7 @@ defineEmits<{ close: [] }>()
 }
 
 .node-details-dialog {
-  width: min(760px, 92vw);
+  width: min(860px, 92vw);
   max-height: min(860px, 88vh);
   display: flex;
   flex-direction: column;
@@ -51,6 +51,9 @@ defineEmits<{ close: [] }>()
 }
 
 .node-details-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -58,6 +61,7 @@ defineEmits<{ close: [] }>()
   padding: 16px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   color: #f0f0f0;
+  background: #1f1f2d;
 }
 
 .node-details-header h3 {
@@ -86,6 +90,7 @@ defineEmits<{ close: [] }>()
 
 .node-details-body {
   min-height: 420px;
+  flex: 1;
   overflow: auto;
 }
 

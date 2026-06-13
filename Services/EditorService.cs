@@ -1796,6 +1796,7 @@ public class EditorService
     private VNDialogue ConvertDialogueNode(NodeData node, SceneGraphData graph)
     {
         var characterControls = GetCharacterControls(node, graph);
+        var voices = GetDialogueVoices(node, characterControls, CurrentProjectPath);
 
         return new VNDialogue
         {
@@ -1804,8 +1805,8 @@ public class EditorService
             Speaker = GetStringProperty(node, "speaker"),
             SpeakerSlot = FirstNonEmpty(GetStringProperty(node, "speakerSlot"), "1"),
             Text = GetStringProperty(node, "text"),
-            Voice = FirstNonEmpty(GetStringProperty(node, "voice1"), GetStringProperty(node, "voice")),
-            Voices = GetDialogueVoices(node, characterControls, CurrentProjectPath),
+            Voice = voices.FirstOrDefault()?.Path ?? string.Empty,
+            Voices = voices,
             Sprites = GetSpritesProperty(node, "sprites"),
             CharacterControls = characterControls,
             TextEffect = GetObjectProperty<VNTextEffect>(node, "textEffect") ?? new VNTextEffect(),
@@ -2045,18 +2046,53 @@ public class EditorService
 
     private static List<VNVoiceLine> GetDialogueVoices(NodeData node, List<VNCharacterControl>? characterControls = null, string? currentProjectPath = null)
     {
-        var voices = GetObjectProperty<List<VNVoiceLine>>(node, "voices") ?? new List<VNVoiceLine>();
+        var hasModernVoiceFields = node.Properties.ContainsKey("voiceCount")
+            || Enumerable.Range(1, 5).Any(slot => node.Properties.ContainsKey($"voice{slot}"));
+
+        if (hasModernVoiceFields)
+        {
+            var voiceCountText = GetStringProperty(node, "voiceCount");
+            var voiceCount = int.TryParse(voiceCountText, out var parsedVoiceCount)
+                ? Math.Clamp(parsedVoiceCount, 0, 5)
+                : 5;
+
+            var modernVoices = new List<VNVoiceLine>();
+            for (var slot = 1; slot <= voiceCount; slot++)
+            {
+                var path = GetStringProperty(node, $"voice{slot}").Trim();
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    continue;
+                }
+
+                modernVoices.Add(new VNVoiceLine
+                {
+                    Slot = slot.ToString(),
+                    Path = path
+                });
+            }
+
+            return modernVoices
+                .GroupBy(voice => voice.Path, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .ToList();
+        }
+
+        var voices = (GetObjectProperty<List<VNVoiceLine>>(node, "voices") ?? new List<VNVoiceLine>())
+            .Where(voice => !string.IsNullOrWhiteSpace(voice.Path))
+            .ToList();
+
         for (var slot = 1; slot <= 6; slot++)
         {
             var field = $"voice{slot}";
-            var path = GetStringProperty(node, field);
+            var path = GetStringProperty(node, field).Trim();
             if (!string.IsNullOrWhiteSpace(path) && !voices.Any(voice => string.Equals(voice.Path, path, StringComparison.OrdinalIgnoreCase)))
             {
                 voices.Add(new VNVoiceLine { Slot = slot.ToString(), Path = path });
             }
         }
 
-        var legacyVoice = GetStringProperty(node, "voice");
+        var legacyVoice = GetStringProperty(node, "voice").Trim();
         if (!string.IsNullOrWhiteSpace(legacyVoice) && !voices.Any(voice => string.Equals(voice.Path, legacyVoice, StringComparison.OrdinalIgnoreCase)))
         {
             voices.Insert(0, new VNVoiceLine { Slot = FirstNonEmpty(GetStringProperty(node, "speakerSlot"), "1"), Path = legacyVoice });

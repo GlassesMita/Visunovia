@@ -226,7 +226,7 @@ export function useLorToBlueprint() {
           voice3: asArray((dialogue as any).voices)[2]?.path || '',
           voice4: asArray((dialogue as any).voices)[3]?.path || '',
           voice5: asArray((dialogue as any).voices)[4]?.path || '',
-          voice6: asArray((dialogue as any).voices)[5]?.path || '',
+          voiceCount: Math.min(5, Math.max(1, asArray((dialogue as any).voices).length || (dialogue.voice ? 1 : 0))),
           speakerSlot: (dialogue as any).speakerSlot || '1',
           speakers: asArray((dialogue as any).speakers).slice(0, 5),
           text: dialogue.text || '',
@@ -359,11 +359,12 @@ export function useLorToBlueprint() {
    */
   function convertLorToBlueprint(scene: LorScene): SerializedSceneGraph {
     if (Array.isArray(scene.nodes) && scene.nodes.length > 0) {
+      const dialogueById = new Map(scene.dialogues.map(dialogue => [dialogue.uuid, dialogue]))
       const nodes = scene.nodes.map((node) => ({
         ...node,
         uuid: node.uuid || node.id,
         id: node.id || node.uuid,
-        properties: normalizeAssetProperties(node.properties || {}),
+        properties: normalizeAssetProperties(repairLegacyNodeProperties(node, dialogueById.get(node.id || node.uuid))),
         position: normalizeBlueprintPosition(node.position || { x: 0, y: 0 }),
         nextNodeUuids: node.nextNodeUuids || [],
       }))
@@ -402,6 +403,43 @@ export function useLorToBlueprint() {
             })).filter(connection => nodeIds.has(connection.sourceNodeUuid) && nodeIds.has(connection.targetNodeUuid))
           : [],
       }
+    }
+
+    function repairLegacyNodeProperties(node: SerializedNode, dialogue?: LorDialogue) {
+      const properties: Record<string, any> = { ...(node.properties || {}) }
+
+      if (node.nodeType === 'DialogueNode' && dialogue?.type === 'Dialogue') {
+        const voices = asArray((dialogue as any).voices).slice(0, 5)
+        const slot6Control = asArray((dialogue as any).characterControls)
+          .find((control: any) => String(control?.slot || '') === '6')
+
+        properties.speakerSlot = properties.speakerSlot || (dialogue as any).speakerSlot || '1'
+        properties.text = properties.text || dialogue.text || ''
+        properties.voiceCount = String(Math.min(5, Math.max(
+          Number(properties.voiceCount || 0),
+          voices.length,
+          dialogue.voice ? 1 : 0,
+          1
+        )))
+        properties.voice1 = properties.voice1 || dialogue.voice || voices[0]?.path || ''
+        for (let index = 1; index < 5; index += 1) {
+          const key = `voice${index + 1}`
+          properties[key] = properties[key] || voices[index]?.path || ''
+        }
+        if (String(properties.speakerSlot) === '6') {
+          properties.unmanagedCharacter = properties.unmanagedCharacter || slot6Control?.unmanagedCharacter || slot6Control?.character || ''
+        }
+      }
+
+      if (node.nodeType === 'CharacterControlNode') {
+        const slot = String(properties.slot || '')
+        if (slot === '6') {
+          properties.unmanagedCharacter = properties.unmanagedCharacter || properties.character || ''
+          properties.character = ''
+        }
+      }
+
+      return properties
     }
 
     const nodes: SerializedNode[] = []

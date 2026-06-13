@@ -96,8 +96,13 @@ function getVoiceCharacterId(intf: any) {
   const ownNode = intf?.node
   const explicitKey = String(intf?.voiceCharacterIdInputKey || '').trim()
   if (explicitKey) {
-    const explicitValue = String(getInterfaceValue(ownNode, explicitKey) || '').trim()
-    if (explicitValue) return explicitValue
+    const speakerSlot = String(getInterfaceValue(ownNode, 'speakerSlot') || '').trim()
+    if (!speakerSlot || speakerSlot === 'all') return ''
+    if (speakerSlot === '6') {
+      const explicitValue = String(getInterfaceValue(ownNode, explicitKey) || '').trim()
+      if (explicitValue) return explicitValue
+      return ''
+    }
   }
 
   const slot = String(intf?.voiceSlot || '').trim()

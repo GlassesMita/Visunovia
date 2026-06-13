@@ -71,8 +71,10 @@
                 <button
                   v-for="choice in choices"
                   :key="choice.port"
+                  :class="{ 'preview-choice-selected': selectedChoicePort === choice.port }"
+                  :disabled="isChoiceNavigating"
                   type="button"
-                  @click="selectChoice(choice.port)"
+                  @click="selectChoice(choice)"
                 >
                   {{ choice.text }}
                 </button>
@@ -114,12 +116,18 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
 import type { GraphConnection, GraphNode } from '@/stores/useNodeGraphStore'
 import { useCharacterStore } from '@/stores/useCharacterStore'
 import { resolveAssetUrl } from '@/utils/assetPaths'
+import {
+  countDialogueVisibleCharacters,
+  normalizeDialogueEscapes,
+  renderDialogueInlineMarkup,
+  renderDialogueMarkdown,
+  stripHtml,
+} from '@/utils/dialogueMarkdown'
 
 type PreviewSettings = {
   previewWidth?: number
@@ -142,6 +150,7 @@ type CharacterSlotState = {
 type PreviewChoice = {
   text: string
   port: string
+  index: number
 }
 
 type PreviewNode = {
@@ -186,17 +195,6 @@ const PREVIEW_RESOLUTIONS = [
   { key: '1920x1080', label: '1920 × 1080', width: 1920, height: 1080 },
   { key: '1280x720', label: '1280 × 720', width: 1280, height: 720 },
 ]
-const markdownRenderer = new MarkdownIt({
-  breaks: true,
-  html: true,
-  linkify: true,
-  typographer: true,
-})
-markdownRenderer.enable(['table', 'strikethrough'])
-markdownRenderer.inline.ruler.before('link', 'visunovia_ruby_annotation', createRubyAnnotationRule())
-markdownRenderer.inline.ruler.before('link', 'visunovia_inside_annotation', createInsideAnnotationRule())
-markdownRenderer.inline.ruler.before('emphasis', 'visunovia_mark', createSimpleInlineRule('==', 'mark'))
-markdownRenderer.inline.ruler.before('emphasis', 'visunovia_underline', createSimpleInlineRule('++', 'u'))
 
 const nodeGraphStore = useNodeGraphStore()
 const characterStore = useCharacterStore()
@@ -215,10 +213,12 @@ const textComplete = ref(false)
 const statusMessage = ref('')
 const previewEnded = ref(false)
 const choices = ref<PreviewChoice[]>([])
-const characterSlots = ref<Record<string, CharacterSlotState>>({})
-const bgmAudio = ref<HTMLAudioElement | null>(null)
+const selectedChoicePort = ref('')
+const isChoiceNavigating = ref(false)
 const stageRef = ref<HTMLElement | null>(null)
+const bgmAudio = ref<HTMLAudioElement | null>(null)
 const stageModalVisible = ref(false)
+const characterSlots = ref<Record<string, CharacterSlotState>>({})
 const resourceTraceByUrl = ref<Record<string, PreviewResourceTrace>>({})
 let typewriterTimer: number | null = null
 
@@ -226,15 +226,15 @@ const visibleCharacters = computed(() => Object.values(characterSlots.value).sor
 const renderableCharacters = computed(() => visibleCharacters.value.filter(character => character.slot !== '6' && Boolean(character.sprite && character.spriteUrl)))
 
 const POSITION_LEFT: Record<string, string> = {
-  left: '10%',
+  left: '13%',
   center: '50%',
-  right: '60%',
+  right: '87%',
 }
 
 const POSITION_TRANSFORM: Record<string, string> = {
   left: 'translateX(0)',
   center: 'translateX(-50%)',
-  right: 'translateX(0)',
+  right: 'translateX(-100%)',
 }
 
 const EASING_CURVES: Record<string, string> = {
@@ -262,288 +262,6 @@ const stageStyle = computed(() => ({
   '--preview-width': viewport.value.width,
   '--preview-height': viewport.value.height,
 }))
-
-function createSimpleInlineRule(marker: string, tag: string) {
-  return (state: any, silent: boolean) => {
-    const start = state.pos
-    if (!state.src.startsWith(marker, start)) return false
-
-    const contentStart = start + marker.length
-    const end = state.src.indexOf(marker, contentStart)
-    if (end < 0 || end === contentStart) return false
-
-    if (!silent) {
-      const openToken = state.push(`${tag}_open`, tag, 1)
-      openToken.markup = marker
-      const textToken = state.push('text', '', 0)
-      textToken.content = state.src.slice(contentStart, end)
-      const closeToken = state.push(`${tag}_close`, tag, -1)
-      closeToken.markup = marker
-    }
-
-    state.pos = end + marker.length
-    return true
-  }
-}
-
-function createRubyAnnotationRule() {
-  return (state: any, silent: boolean) => {
-    const start = state.pos
-    const marker = '[Ann|'
-    if (!state.src.startsWith(marker, start)) return false
-
-    const contentStart = start + marker.length
-    const separator = state.src.indexOf('|', contentStart)
-    if (separator < 0) return false
-
-    const end = state.src.indexOf(']', separator + 1)
-    if (end < 0) return false
-
-    const mainText = state.src.slice(contentStart, separator)
-    const annotationText = state.src.slice(separator + 1, end)
-    if (!mainText || !annotationText) return false
-
-    if (!silent) {
-      state.push('ruby_open', 'ruby', 1)
-      const mainToken = state.push('text', '', 0)
-      mainToken.content = mainText
-      state.push('rp_open', 'rp', 1)
-      const leftParenToken = state.push('text', '', 0)
-      leftParenToken.content = '('
-      state.push('rp_close', 'rp', -1)
-      state.push('rt_open', 'rt', 1)
-      const annotationToken = state.push('text', '', 0)
-      annotationToken.content = annotationText
-      state.push('rt_close', 'rt', -1)
-      state.push('rp_open', 'rp', 1)
-      const rightParenToken = state.push('text', '', 0)
-      rightParenToken.content = ')'
-      state.push('rp_close', 'rp', -1)
-      state.push('ruby_close', 'ruby', -1)
-    }
-
-    state.pos = end + 1
-    return true
-  }
-}
-
-function createInsideAnnotationRule() {
-  return (state: any, silent: boolean) => {
-    const start = state.pos
-    const marker = '[Inside|'
-    if (!state.src.startsWith(marker, start)) return false
-
-    const contentStart = start + marker.length
-    const end = state.src.indexOf(']', contentStart)
-    if (end < 0) return false
-
-    const content = state.src.slice(contentStart, end)
-    const separator = content.indexOf('|')
-    const hiddenText = separator >= 0 ? content.slice(0, separator) : content
-    const titleText = (separator >= 0 ? content.slice(separator + 1) : '').trim() || '你知道的太多了'
-    if (!hiddenText) return false
-
-    if (!silent) {
-      const openToken = state.push('span_open', 'span', 1)
-      openToken.attrs = [
-        ['class', 'dialog-inside'],
-        ['title', titleText],
-      ]
-      const textToken = state.push('text', '', 0)
-      textToken.content = hiddenText
-      state.push('span_close', 'span', -1)
-    }
-
-    state.pos = end + 1
-    return true
-  }
-}
-
-function normalizeDialogueEscapes(value: string) {
-  return value.replace(/\\([nrt\\])/g, (_, escaped: string) => {
-    const replacements: Record<string, string> = {
-      n: '<br />',
-      r: '',
-      t: '&emsp;',
-      '\\': '\\',
-    }
-    return replacements[escaped] ?? escaped
-  })
-}
-
-function renderDialogueMarkdown(value: string, visibleLimit = Number.POSITIVE_INFINITY) {
-  const rendered = renderDialogueInlineMarkup(normalizeDialogueEscapes(value), visibleLimit)
-  return markdownRenderer
-    .render(rendered.html)
-    .replace(/<br\s*\/?>\s*\n/gi, '<br />')
-}
-
-function renderDialogueInlineMarkup(value: string, visibleLimit = Number.POSITIVE_INFINITY) {
-  const initialRemaining = Number.isFinite(visibleLimit) ? visibleLimit : Number.MAX_SAFE_INTEGER
-  const state = { remaining: initialRemaining }
-  return { html: renderInlineSegment(value, state), consumed: initialRemaining - state.remaining }
-}
-
-function renderInlineSegment(value: string, state: { remaining: number }) {
-  let output = ''
-  let plain = ''
-  let index = 0
-
-  const flushPlain = () => {
-    if (!plain) return
-    output += markdownRenderer.renderInline(plain)
-    plain = ''
-  }
-
-  while (index < value.length && state.remaining > 0) {
-    const simple = parseSimpleMarkup(value, index, state)
-    if (simple) {
-      flushPlain()
-      output += simple.html
-      index = simple.end
-      continue
-    }
-
-    const annotation = parseAnnotationMarkup(value, index, state)
-    if (annotation) {
-      flushPlain()
-      output += annotation.html
-      index = annotation.end
-      continue
-    }
-
-    const char = readCodePoint(value, index)
-    plain += char.value
-    state.remaining -= 1
-    index = char.end
-  }
-
-  flushPlain()
-  return output
-}
-
-function parseSimpleMarkup(value: string, start: number, state: { remaining: number }) {
-  const config = value.startsWith('==', start)
-    ? { marker: '==', tag: 'mark' }
-    : value.startsWith('++', start)
-      ? { marker: '++', tag: 'u' }
-      : null
-  if (!config) return null
-
-  const contentStart = start + config.marker.length
-  const end = findClosingMarker(value, contentStart, config.marker)
-  if (end < 0) return null
-
-  const inner = renderInlineSegment(value.slice(contentStart, end), state)
-  return {
-    html: inner ? `<${config.tag}>${inner}</${config.tag}>` : '',
-    end: end + config.marker.length,
-  }
-}
-
-function parseAnnotationMarkup(value: string, start: number, state: { remaining: number }) {
-  const type = value.startsWith('[Ann|', start) ? 'ann' : value.startsWith('[Inside|', start) ? 'inside' : ''
-  if (!type) return null
-
-  const contentStart = start + (type === 'ann' ? '[Ann|'.length : '[Inside|'.length)
-  const end = findClosingBracket(value, contentStart)
-  if (end < 0) return null
-
-  const parts = splitTopLevelPipes(value.slice(contentStart, end))
-  if (type === 'ann') {
-    if (parts.length < 2 || !parts[0] || !parts[1]) return null
-    const before = state.remaining
-    const mainHtml = renderInlineSegment(parts[0], state)
-    if (!mainHtml && before === state.remaining) return { html: '', end: end + 1 }
-    const annotationHtml = renderInlineSegment(parts.slice(1).join('|'), { remaining: Number.POSITIVE_INFINITY })
-    return {
-      html: `<ruby>${mainHtml}<rp>(</rp><rt>${annotationHtml}</rt><rp>)</rp></ruby>`,
-      end: end + 1,
-    }
-  }
-
-  if (!parts[0]) return null
-  const before = state.remaining
-  const hiddenHtml = renderInlineSegment(parts[0], state)
-  if (!hiddenHtml && before === state.remaining) return { html: '', end: end + 1 }
-  const title = stripHtml(renderInlineSegment(parts.slice(1).join('|') || '你知道的太多了', { remaining: Number.POSITIVE_INFINITY }))
-  return {
-    html: `<span class="dialog-inside" title="${escapeHtmlAttribute(title)}">${hiddenHtml}</span>`,
-    end: end + 1,
-  }
-}
-
-function findClosingMarker(value: string, start: number, marker: string) {
-  let index = start
-  while (index < value.length) {
-    if (value.startsWith(marker, index)) return index
-    const char = readCodePoint(value, index)
-    index = char.end
-  }
-  return -1
-}
-
-function findClosingBracket(value: string, start: number) {
-  let depth = 0
-  let index = start
-  while (index < value.length) {
-    if (value.startsWith('[Ann|', index) || value.startsWith('[Inside|', index)) {
-      depth += 1
-      index += value.startsWith('[Ann|', index) ? '[Ann|'.length : '[Inside|'.length
-      continue
-    }
-    if (value[index] === ']') {
-      if (depth === 0) return index
-      depth -= 1
-    }
-    index += 1
-  }
-  return -1
-}
-
-function splitTopLevelPipes(value: string) {
-  const parts: string[] = []
-  let depth = 0
-  let start = 0
-  let index = 0
-  while (index < value.length) {
-    if (value.startsWith('[Ann|', index) || value.startsWith('[Inside|', index)) {
-      depth += 1
-      index += value.startsWith('[Ann|', index) ? '[Ann|'.length : '[Inside|'.length
-      continue
-    }
-    if (value[index] === ']' && depth > 0) depth -= 1
-    if (value[index] === '|' && depth === 0) {
-      parts.push(value.slice(start, index))
-      start = index + 1
-    }
-    index += 1
-  }
-  parts.push(value.slice(start))
-  return parts
-}
-
-function readCodePoint(value: string, start: number) {
-  const codePoint = value.codePointAt(start)
-  const char = codePoint === undefined ? '' : String.fromCodePoint(codePoint)
-  return { value: char, end: start + char.length }
-}
-
-function countDialogueVisibleCharacters(value: string) {
-  return renderDialogueInlineMarkup(normalizeDialogueEscapes(value), Number.POSITIVE_INFINITY).consumed
-}
-
-function stripHtml(value: string) {
-  return value.replace(/<[^>]*>/g, '')
-}
-
-function escapeHtmlAttribute(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-}
 
 watch(
   () => props.visible,
@@ -696,6 +414,8 @@ function resetPlaybackState() {
   statusMessage.value = ''
   previewEnded.value = false
   choices.value = []
+  selectedChoicePort.value = ''
+  isChoiceNavigating.value = false
   characterSlots.value = {}
   resourceTraceByUrl.value = {}
   stopAudio()
@@ -741,6 +461,12 @@ function runFromNode(nodeId: string | null, reason = 'advance') {
       continue
     }
 
+    if (node.type === 'CharacterControlNode') {
+      processCharacterControlNode(node)
+      nextNodeId = getNextNodeId(node.id)
+      continue
+    }
+
     if (node.type === 'EndNode') {
       processEndNode(node)
       return
@@ -780,6 +506,10 @@ function renderDialogueNode(node: PreviewNode) {
   speakerAffiliation.value = speakerInfo.affiliation
   startTypewriter(String(node.data.text || ''))
   dialogueVisible.value = true
+}
+
+function processCharacterControlNode(node: PreviewNode) {
+  applyCharacterControlData(node.data, node)
 }
 
 function startTypewriter(text: string) {
@@ -860,21 +590,28 @@ function renderBranchNode(node: PreviewNode) {
   dialogueVisible.value = false
   statusMessage.value = String(node.data.condition || '请选择分支')
   choices.value = [
-    { text: '是', port: 'execTrue' },
-    { text: '否', port: 'execFalse' },
+    { text: '是', port: 'execTrue', index: 1 },
+    { text: '否', port: 'execFalse', index: 2 },
   ].filter((choice) => Boolean(getNextNodeId(node.id, choice.port)))
 }
 
 function renderChoiceNode(node: PreviewNode) {
   dialogueVisible.value = false
-  statusMessage.value = '请选择选项'
+  selectedChoicePort.value = ''
+  isChoiceNavigating.value = false
+  statusMessage.value = ''
   choices.value = Object.entries(node.data)
     .filter(([key]) => key.startsWith('choiceText_'))
     .map(([key, value]) => ({
       text: String(value || `选项 ${key.replace('choiceText_', '')}`),
       port: `execOut_${key.replace('choiceText_', '')}`,
+      index: Number(key.replace('choiceText_', '')) || 0,
     }))
     .filter((choice) => Boolean(getNextNodeId(node.id, choice.port)))
+
+  if (choices.value.length === 0) {
+    pauseWithError('选择节点没有可用分支连接', { node, connections: graphConnections.value })
+  }
 }
 
 function processEventNode(node: PreviewNode) {
@@ -995,47 +732,7 @@ function applyCharacterControls(dialogueNode: PreviewNode) {
   const controls = getCharacterControlsForDialogue(dialogueNode)
   const nextSlots = { ...characterSlots.value }
 
-  for (const control of controls) {
-    const slot = String(control.slot || '1')
-    const action = String(control.action || 'show').toLowerCase()
-
-    if (control.sfx) {
-      playSfx(String(control.sfx), 0.9)
-    }
-
-    if (action === 'hide') {
-      delete nextSlots[slot]
-      continue
-    }
-
-    const sprite = slot === '6' ? '' : String(control.sprite || nextSlots[slot]?.sprite || '')
-    const spriteUrl = sprite ? resolveAssetUrl(sprite, 'Characters') : ''
-    const character = slot === '6'
-      ? String(control.unmanagedCharacter || control.character || nextSlots[slot]?.character || '')
-      : String(control.character || nextSlots[slot]?.character || '')
-    if (sprite) {
-      registerResourceTrace(createResourceTrace(dialogueNode, 'character', `角色立绘 slot ${slot}`, 'characterControls.sprite', sprite, spriteUrl))
-    }
-    const fromPosition = String(control.fromPosition || '').trim()
-    const requestedTargetPosition = String(control.toPosition || '').trim()
-    const targetPosition = requestedTargetPosition && requestedTargetPosition !== 'none'
-      ? requestedTargetPosition
-      : String(control.position || nextSlots[slot]?.position || 'center')
-    const animation = String(control.animation || (action === 'move' ? 'move' : 'fade'))
-    const shouldMove = (action === 'move' || animation === 'move') && requestedTargetPosition !== 'none'
-
-    nextSlots[slot] = {
-      slot,
-      character,
-      sprite,
-      spriteUrl,
-      position: targetPosition,
-      animation,
-      fromPosition: shouldMove ? (fromPosition || nextSlots[slot]?.position || targetPosition) : '',
-      easing: String(control.easing || 'easeOutCubic'),
-      duration: Number(control.duration ?? 0.3),
-    }
-  }
+  controls.forEach((control: any) => applyCharacterControlData(control, dialogueNode, nextSlots))
 
   characterSlots.value = nextSlots
 }
@@ -1043,11 +740,18 @@ function applyCharacterControls(dialogueNode: PreviewNode) {
 function getCharacterControlsForDialogue(dialogueNode: PreviewNode) {
   const inlineControls = Array.isArray(dialogueNode.data.characterControls) ? dialogueNode.data.characterControls : []
   const linkedControls = graphConnections.value
-    .filter((connection) => connection.to.nodeId === dialogueNode.id && normalizePort(connection.to.port).startsWith('characterControl'))
+    .filter((connection) => connection.to.nodeId === dialogueNode.id)
     .map((connection) => {
-      const controlNode = findNode(connection.from.nodeId)
+      const controlNode = graphNodes.value.find((node) => node.id === connection.from.nodeId)
       if (!controlNode || controlNode.type !== 'CharacterControlNode') return null
-      const slotFromPort = normalizePort(connection.to.port).replace('characterControl', '')
+
+      const targetPort = normalizePort(connection.to.port)
+      const sourcePort = normalizePort(connection.from.port)
+      const isLegacyControlPort = targetPort.startsWith('characterControl')
+      const isOverviewControlLink = sourcePort === 'controlOut' && targetPort === 'execIn'
+      if (!isLegacyControlPort && !isOverviewControlLink) return null
+
+      const slotFromPort = isLegacyControlPort ? targetPort.replace('characterControl', '') : ''
       return {
         ...controlNode.data,
         slot: controlNode.data.slot || slotFromPort || '1',
@@ -1058,32 +762,78 @@ function getCharacterControlsForDialogue(dialogueNode: PreviewNode) {
   return [...inlineControls, ...linkedControls]
 }
 
+function applyCharacterControlData(control: any, sourceNode?: PreviewNode, targetSlots?: Record<string, CharacterSlotState>) {
+  const nextSlots = targetSlots || { ...characterSlots.value }
+  const slot = String(control.slot || '1')
+  const action = String(control.action || 'show').toLowerCase()
+
+  if (action === 'hide') {
+    const hiddenSprite = nextSlots[slot]?.sprite || ''
+    const hiddenSpriteUrl = hiddenSprite ? resolveAssetUrl(hiddenSprite, 'Characters') : ''
+    if (sourceNode && hiddenSprite) {
+      registerResourceTrace(createResourceTrace(sourceNode, 'character', `角色立绘 slot ${slot}`, 'characterControls.sprite', hiddenSprite, hiddenSpriteUrl))
+    }
+    delete nextSlots[slot]
+    if (!targetSlots) characterSlots.value = nextSlots
+    return
+  }
+
+  const sprite = slot === '6' ? '' : String(control.sprite || nextSlots[slot]?.sprite || '')
+  const spriteUrl = sprite ? resolveAssetUrl(sprite, 'Characters') : ''
+  const character = slot === '6'
+    ? String(control.unmanagedCharacter || control.character || nextSlots[slot]?.character || '')
+    : String(control.character || nextSlots[slot]?.character || '')
+  if (spriteUrl && sourceNode) {
+    registerResourceTrace(createResourceTrace(sourceNode, 'character', `角色立绘 slot ${slot}`, 'characterControls.sprite', sprite, spriteUrl))
+  }
+  if (control.sfx && sourceNode) {
+    playSfx(String(control.sfx), 0.9, createResourceTrace(sourceNode, 'sfx', `角色音效 slot ${slot}`, 'characterControls.sfx', String(control.sfx), resolveAssetUrl(String(control.sfx), 'Sfx')))
+  }
+  const targetPosition = control.toPosition && control.toPosition !== 'none'
+    ? String(control.toPosition)
+    : String(control.position || nextSlots[slot]?.position || 'center')
+  const fromPosition = String(control.fromPosition || '')
+  const shouldMove = control.action === 'move' || (control.animation === 'move' && control.toPosition && control.toPosition !== 'none')
+  nextSlots[slot] = {
+    slot,
+    character,
+    sprite,
+    spriteUrl,
+    position: targetPosition,
+    fromPosition: shouldMove ? (fromPosition || nextSlots[slot]?.position || targetPosition) : '',
+    animation: String(control.animation || 'fade'),
+    easing: String(control.easing || 'easeOutCubic'),
+    duration: Number(control.duration || 0.3),
+  }
+  if (!targetSlots) characterSlots.value = nextSlots
+}
+
 function playDialogueVoices(node: PreviewNode) {
   const voiceEntries = collectDialogueVoices(node)
-  for (const voice of voiceEntries) {
-    playVoice(voice.path, createResourceTrace(node, 'voice', `语音 slot ${voice.slot}`, voice.field, voice.path, resolveAssetUrl(voice.path, 'Voices')))
-  }
+  voiceEntries.forEach((voice) => {
+    playVoice(voice.path, createResourceTrace(node, 'voice', `语音 ${voice.slot}`, voice.field, voice.path, resolveAssetUrl(voice.path, 'Voices')))
+  })
 }
 
 function collectDialogueVoices(node: PreviewNode) {
   const entries: Array<{ slot: string; path: string; field: string }> = []
-  for (let slot = 1; slot <= 6; slot += 1) {
-    const field = `voice${slot}`
+  const voiceCount = Math.max(0, Math.min(5, Number(node.data.voiceCount ?? 5) || 0))
+
+  for (let index = 1; index <= voiceCount; index += 1) {
+    const field = `voice${index}`
     const path = String(node.data[field] || '').trim()
-    if (path) entries.push({ slot: String(slot), path, field })
+    if (path) entries.push({ slot: String(index), path, field })
   }
 
   if (Array.isArray(node.data.voices)) {
-    node.data.voices.forEach((voice: any, index: number) => {
-      const path = String(voice?.path || voice?.voice || voice || '').trim()
+    node.data.voices.slice(0, 5).forEach((voice: any, index: number) => {
+      const path = String(voice?.path || voice || '').trim()
       if (path) entries.push({ slot: String(voice?.slot || index + 1), path, field: 'voices' })
     })
   }
 
   const legacyVoice = String(node.data.voice || '').trim()
-  if (legacyVoice && !entries.some(entry => entry.path === legacyVoice)) {
-    entries.push({ slot: String(node.data.speakerSlot || '1'), path: legacyVoice, field: 'voice' })
-  }
+  if (legacyVoice) entries.push({ slot: String(node.data.speakerSlot || '1'), path: legacyVoice, field: 'voice' })
 
   return entries
 }
@@ -1170,16 +920,27 @@ function advancePreview() {
   runFromNode(nextNodeId, 'dialogue-click')
 }
 
-function selectChoice(port: string) {
-  if (previewEnded.value) return
-  const nextNodeId = getNextNodeId(currentNodeId.value, port)
+async function selectChoice(choice: PreviewChoice) {
+  if (previewEnded.value || isChoiceNavigating.value) return
+  const nextNodeId = getNextNodeId(currentNodeId.value, choice.port)
   if (!nextNodeId) {
-    pauseWithError(`选项端口没有连接：${port}`, { currentNodeId: currentNodeId.value, port, connections: graphConnections.value })
+    pauseWithError(`选项端口没有连接：${choice.port}`, { currentNodeId: currentNodeId.value, port: choice.port, connections: graphConnections.value })
     return
   }
+
+  selectedChoicePort.value = choice.port
+  isChoiceNavigating.value = true
+  await waitForChoicePressAnimation()
+
   choices.value = []
+  selectedChoicePort.value = ''
+  isChoiceNavigating.value = false
   statusMessage.value = ''
-  runFromNode(nextNodeId, `choice:${port}`)
+  runFromNode(nextNodeId, `choice:${choice.port}`)
+}
+
+function waitForChoicePressAnimation() {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, 320))
 }
 
 function getNextNodeId(nodeId: string | null, sourcePort?: string): string | null {
@@ -1191,7 +952,11 @@ function getNextNodeId(nodeId: string | null, sourcePort?: string): string | nul
   if (connection?.to.nodeId) return connection.to.nodeId
 
   const node = findNode(nodeId)
-  const fallbackNext = !sourcePort ? node?.nextNodeUuids?.[0] : undefined
+  const choicePortMatch = String(sourcePort || '').match(/^execOut_(\d+)$/)
+  const choiceFallbackIndex = choicePortMatch ? Math.max(0, Number(choicePortMatch[1]) - 1) : -1
+  const fallbackNext = sourcePort
+    ? choiceFallbackIndex >= 0 ? node?.nextNodeUuids?.[choiceFallbackIndex] : undefined
+    : node?.nextNodeUuids?.[0]
   if (fallbackNext) {
     console.warn('[PreviewPopup] 未找到执行连接，使用 nextNodeUuids 兜底', { nodeId, fallbackNext, node })
     return fallbackNext
@@ -1203,7 +968,7 @@ function getNextNodeId(nodeId: string | null, sourcePort?: string): string | nul
 
 function isExecOutPort(port: string) {
   const normalizedPort = normalizePort(port)
-  return normalizedPort === 'execOut' || normalizedPort.startsWith('execOut_') || normalizedPort === 'execTrue' || normalizedPort === 'execFalse'
+  return normalizedPort === 'execOut' || normalizedPort === 'controlOut' || normalizedPort.startsWith('execOut_') || normalizedPort === 'execTrue' || normalizedPort === 'execFalse'
 }
 
 function findNode(nodeId: string) {
@@ -2078,26 +1843,75 @@ function closePreview() {
 .preview-choices {
   position: absolute;
   left: 50%;
-  bottom: 18%;
+  bottom: 14.8%;
   display: flex;
-  min-width: 34%;
+  width: min(74%, calc(var(--preview-width, 1920) * 1180px / 1920));
   flex-direction: column;
-  gap: 14px;
+  gap: calc(var(--preview-width, 1920) * 22px / 1920);
   transform: translateX(-50%);
+  z-index: 8;
 }
 
 .preview-choices button {
-  padding: 18px 26px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 12px;
-  background: rgba(20, 31, 49, 0.92);
+  position: relative;
+  min-height: calc(var(--preview-width, 1920) * 95px / 1920);
+  padding: calc(var(--preview-width, 1920) * 18px / 1920) calc(var(--preview-width, 1920) * 72px / 1920);
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(90deg, rgba(84, 139, 190, 0.2), rgba(255, 255, 255, 0.76) 18%, rgba(255, 255, 255, 0.86) 50%, rgba(255, 255, 255, 0.76) 82%, rgba(84, 139, 190, 0.2)),
+    linear-gradient(135deg, rgba(119, 172, 223, 0.55) 0 10%, transparent 10% 22%, rgba(180, 216, 247, 0.55) 22% 34%, transparent 34% 48%, rgba(125, 174, 219, 0.5) 48% 60%, transparent 60% 100%);
+  background-blend-mode: screen;
+  box-shadow: 0 calc(var(--preview-width, 1920) * 10px / 1920) calc(var(--preview-width, 1920) * 24px / 1920) rgba(0, 32, 76, 0.22);
   color: #ffffff;
-  font-size: 26px;
+  font-family: "Franklin Gothic Demi", "Franklin Gothic Medium", Gadugi, "Segoe UI", sans-serif !important;
+  font-size: calc(var(--preview-width, 1920) * 37px / 1920);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-align: center;
+  text-shadow: 0 2px 6px rgba(0, 32, 76, 0.42), 0 0 2px #00204c;
   cursor: pointer;
+  transform-origin: center;
+  transition: filter 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+  clip-path: polygon(5.5% 0, 94.5% 0, 100% 50%, 94.5% 100%, 5.5% 100%, 0 50%);
+  overflow: hidden;
 }
 
-.preview-choices button:hover {
-  background: rgba(14, 99, 156, 0.96);
+.preview-choices button::before,
+.preview-choices button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.preview-choices button::before {
+  background:
+    linear-gradient(120deg, rgba(22, 74, 124, 0.22), transparent 18% 82%, rgba(22, 74, 124, 0.24)),
+    repeating-linear-gradient(120deg, rgba(110, 166, 222, 0.24) 0 74px, rgba(255, 255, 255, 0.18) 74px 150px, rgba(91, 144, 199, 0.18) 150px 232px);
+  opacity: 0.9;
+  mix-blend-mode: multiply;
+}
+
+.preview-choices button::after {
+  inset: calc(var(--preview-width, 1920) * 6px / 1920) calc(var(--preview-width, 1920) * 12px / 1920);
+  border-top: calc(var(--preview-width, 1920) * 2px / 1920) solid rgba(255, 255, 255, 0.92);
+  border-bottom: calc(var(--preview-width, 1920) * 2px / 1920) solid rgba(123, 191, 246, 0.58);
+  clip-path: polygon(5.2% 0, 94.8% 0, 100% 50%, 94.8% 100%, 5.2% 100%, 0 50%);
+}
+
+.preview-choices button:hover:not(:disabled) {
+  filter: brightness(1.08) saturate(1.08);
+  transform: scale(1.018);
+  box-shadow: 0 calc(var(--preview-width, 1920) * 12px / 1920) calc(var(--preview-width, 1920) * 30px / 1920) rgba(0, 83, 160, 0.28);
+}
+
+.preview-choices button:disabled {
+  cursor: default;
+}
+
+.preview-choice-selected {
+  animation: preview-choice-press 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .preview-status {
@@ -2139,6 +1953,21 @@ function closePreview() {
   }
   50% {
     transform: translateY(-10px);
+  }
+}
+
+@keyframes preview-choice-press {
+  0% {
+    transform: scale(1);
+    filter: brightness(1) saturate(1);
+  }
+  44% {
+    transform: scale(0.94);
+    filter: brightness(1.16) saturate(1.16);
+  }
+  100% {
+    transform: scale(1.04);
+    filter: brightness(1.1) saturate(1.08);
   }
 }
 </style>

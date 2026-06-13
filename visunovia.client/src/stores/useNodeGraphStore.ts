@@ -19,6 +19,7 @@ function normalizePortName(portName: string | undefined, interfaces?: Record<str
   if (name === '→') {
     if (interfaces?.execOut) return 'execOut'
     if (interfaces?.execIn) return 'execIn'
+    if (interfaces?.controlOut) return 'controlOut'
   }
   if (name === 'exec_out') return interfaces?.execOut ? 'execOut' : 'execOut'
   if (name === 'exec_in') return interfaces?.execIn ? 'execIn' : 'execIn'
@@ -259,6 +260,7 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
         if (!controlNode || normalizeNodeType(extractNodeType(controlNode)) !== 'CharacterControlNode') return null
 
         const targetPort = findInterfaceKey(dialogueNode.inputs, connection.to, connection.to.name)
+        if (!targetPort.startsWith('characterControl')) return null
 
         return { controlNode, targetPort }
       })

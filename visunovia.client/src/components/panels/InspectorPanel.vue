@@ -61,11 +61,20 @@
       <!-- 动态属性渲染区域 -->
       <div class="properties-section">
         <div class="section-title">{{ t('properties.title') || 'Properties' }}</div>
+
+        <div v-if="selectedNode.type === 'DialogueNode'" class="dialogue-preview-toolbar">
+          <div class="dialogue-preview-title">文本预览</div>
+          <div class="dialogue-preview-box">
+            <span v-if="dialoguePreviewSpeaker" class="dialogue-preview-speaker">{{ dialoguePreviewSpeaker }}</span>
+            <span class="dialogue-preview-text markdown-body" v-html="renderSafeMarkdown(getPropertyValue('text') || '')"></span>
+          </div>
+        </div>
         
         <div 
           v-for="prop in dynamicProperties" 
           :key="prop.name"
           class="property-group"
+          v-show="shouldShowProperty(prop.name)"
         >
           <label :title="getPropertyDescription(prop.name)">
             {{ getPropertyLabel(prop.name) }}
@@ -91,8 +100,10 @@
             v-else-if="prop.type === 'number'"
             type="number"
             step="0.01"
+            :min="prop.name === 'voiceCount' ? 0 : undefined"
+            :max="prop.name === 'voiceCount' ? 5 : undefined"
             :value="getPropertyValue(prop.name)"
-            @input="updateProperty(prop.name, parseFloat(($event.target as HTMLInputElement).value))"
+            @input="updateProperty(prop.name, normalizeNumberProperty(prop.name, parseFloat(($event.target as HTMLInputElement).value)))"
             class="prop-input prop-number"
           />
           
@@ -197,6 +208,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import DOMPurify from 'dompurify'
 import { useLocalization } from '@/composables/useLocalization'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
@@ -215,6 +227,7 @@ import ResourcePickerModal from '@/components/modals/ResourcePickerModal.vue'
 import { RESOURCE_TYPE_EXTENSIONS, type ResourceType } from '@/stores/useResourceRegistry'
 import { getEntries, type DirEntry } from '@/api/fileBrowser'
 import { getCurrentProject } from '@/api/projectApi'
+import { renderDialogueMarkdown } from '@/utils/dialogueMarkdown'
 
 const { t } = useLocalization()
 const editorStore = useEditorStore()
@@ -305,13 +318,14 @@ const dynamicProperties = computed((): PropertyConfig[] => {
           { value: 'all', label: '全员' },
         ],
       },
-      { name: 'voice1', type: 'resource', defaultValue: '', label: '角色 1 语音' },
-      { name: 'voice2', type: 'resource', defaultValue: '', label: '角色 2 语音' },
-      { name: 'voice3', type: 'resource', defaultValue: '', label: '角色 3 语音' },
-      { name: 'voice4', type: 'resource', defaultValue: '', label: '角色 4 语音' },
-      { name: 'voice5', type: 'resource', defaultValue: '', label: '角色 5 语音' },
-      { name: 'voice6', type: 'resource', defaultValue: '', label: '角色 6 语音' },
-      { name: 'text', type: 'string', defaultValue: '' },
+      { name: 'unmanagedCharacter', type: 'string', defaultValue: '', label: 'Slot 6 角色名' },
+      { name: 'text', type: 'string', defaultValue: '', label: '输入内容' },
+      { name: 'voiceCount', type: 'number', defaultValue: 1, label: '语音数量' },
+      { name: 'voice1', type: 'resource', defaultValue: '', label: '语音 1' },
+      { name: 'voice2', type: 'resource', defaultValue: '', label: '语音 2' },
+      { name: 'voice3', type: 'resource', defaultValue: '', label: '语音 3' },
+      { name: 'voice4', type: 'resource', defaultValue: '', label: '语音 4' },
+      { name: 'voice5', type: 'resource', defaultValue: '', label: '语音 5' },
     ],
     CharacterControlNode: [
       { name: 'character', type: 'character', defaultValue: '', label: 'CharacterID' },
@@ -471,8 +485,37 @@ function getPropertyValue(name: string): any {
   return selectedNode.value.data[name]
 }
 
+const dialoguePreviewSpeaker = computed(() => {
+  const slot = String(getPropertyValue('speakerSlot') || '')
+  if (!slot) return ''
+  if (slot === 'all') return '全员'
+  if (slot === '6') return String(getPropertyValue('unmanagedCharacter') || '旁白')
+  return `角色 ${slot}`
+})
+
+function getDialogueVoiceCount() {
+  return Math.max(0, Math.min(5, Number(getPropertyValue('voiceCount') ?? 1) || 0))
+}
+
+function shouldShowProperty(name: string): boolean {
+  if (selectedNode.value?.type !== 'DialogueNode') return true
+  if (name === 'unmanagedCharacter') return String(getPropertyValue('speakerSlot') || '') === '6'
+  const voiceMatch = name.match(/^voice(\d)$/)
+  if (voiceMatch) return Number(voiceMatch[1]) <= getDialogueVoiceCount()
+  return true
+}
+
+function normalizeNumberProperty(name: string, value: number) {
+  if (name !== 'voiceCount') return Number.isFinite(value) ? value : 0
+  if (!Number.isFinite(value)) return 0
+  return Math.max(0, Math.min(5, Math.round(value)))
+}
+
 function updateProperty(name: string, value: any) {
   if (!selectedNode.value) return
+  if (name === 'speakerSlot' && value !== '6') {
+    updateProperty('unmanagedCharacter', '')
+  }
   
   // 更新本地数据引用（用于响应式显示）
   if (selectedNode.value.data) {
@@ -510,38 +553,10 @@ function handleInspectorTab(event: KeyboardEvent) {
 }
 
 function renderSafeMarkdown(value: any): string {
-  const escaped = escapeHtml(String(value ?? ''))
-
-  return escaped
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/__([^_]+)__/g, '<strong>$1</strong>')
-    .replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, '$1<em>$2</em>')
-    .replace(/(^|[^_])_([^_]+)_(?!_)/g, '$1<em>$2</em>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, url) => renderSafeLink(label, url))
-    .replace(/\n/g, '<br>')
-}
-
-function renderSafeLink(label: string, rawUrl: string): string {
-  const url = rawUrl.replace(/&amp;/g, '&').trim()
-  if (!/^(https?:|mailto:)/i.test(url)) {
-    return label
-  }
-
-  return `<a href="${escapeAttribute(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
-function escapeAttribute(value: string): string {
-  return escapeHtml(value).replace(/`/g, '&#96;')
+  return DOMPurify.sanitize(renderDialogueMarkdown(String(value ?? '')), {
+    ADD_TAGS: ['ruby', 'rp', 'rt', 'i', 'u', 'mark', 'span'],
+    ADD_ATTR: ['class', 'title'],
+  })
 }
 
 function onEventSubTypeChange() {
@@ -761,6 +776,178 @@ function onResourcePicked(path: string) {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.dialogue-preview-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 10px;
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #172033 0%, #111827 100%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.dialogue-preview-title {
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.dialogue-preview-box {
+  min-height: 54px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.92);
+  color: #e5e7eb;
+  font-family: Gadugi, "Segoe UI", sans-serif !important;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.32;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  word-break: break-word;
+}
+
+.dialogue-preview-speaker {
+  display: inline-flex;
+  margin-right: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.28);
+  color: #bfdbfe;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dialogue-preview-text {
+  color: rgba(255, 255, 255, 0.94) !important;
+  font: inherit !important;
+  line-height: inherit !important;
+  white-space: pre-wrap !important;
+}
+
+.dialogue-preview-text :deep(p) {
+  margin: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+  line-height: inherit !important;
+}
+
+.dialogue-preview-text :deep(*) {
+  color: inherit !important;
+  line-height: inherit !important;
+}
+
+.dialogue-preview-text :deep(p + p) {
+  margin-top: 0.35em !important;
+}
+
+.dialogue-preview-text :deep(h1),
+.dialogue-preview-text :deep(h2),
+.dialogue-preview-text :deep(h3),
+.dialogue-preview-text :deep(h4),
+.dialogue-preview-text :deep(h5),
+.dialogue-preview-text :deep(h6) {
+  margin: 0 0 0.16em !important;
+  color: #ffffff !important;
+  font-family: inherit !important;
+  font-weight: 700 !important;
+  line-height: 1.08 !important;
+}
+
+.dialogue-preview-text :deep(h1) { font-size: 1.28em !important; }
+.dialogue-preview-text :deep(h2) { font-size: 1.18em !important; }
+.dialogue-preview-text :deep(h3),
+.dialogue-preview-text :deep(h4),
+.dialogue-preview-text :deep(h5),
+.dialogue-preview-text :deep(h6) { font-size: 1.08em !important; }
+
+.dialogue-preview-text :deep(strong) {
+  color: inherit !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: 700 !important;
+  line-height: inherit !important;
+}
+
+.dialogue-preview-text :deep(em),
+.dialogue-preview-text :deep(i) {
+  color: inherit !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-style: oblique 12deg !important;
+  font-synthesis: style !important;
+  font-synthesis-style: auto !important;
+  line-height: inherit !important;
+  display: inline-block !important;
+  transform: skewX(-9deg) !important;
+  transform-origin: left bottom !important;
+}
+
+.dialogue-preview-text :deep(em::after),
+.dialogue-preview-text :deep(i::after) {
+  content: "" !important;
+  display: inline-block !important;
+  width: 0.14em !important;
+}
+
+.dialogue-preview-text :deep(ruby) {
+  color: inherit !important;
+  font: inherit !important;
+  ruby-position: over !important;
+  ruby-align: center !important;
+  text-emphasis: none !important;
+}
+
+.dialogue-preview-text :deep(rt) {
+  color: inherit !important;
+  font-family: inherit !important;
+  font-size: 0.44em !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  text-shadow: inherit !important;
+}
+
+.dialogue-preview-text :deep(rp) {
+  display: none !important;
+}
+
+.dialogue-preview-text :deep(.dialog-inside),
+.dialogue-preview-text :deep(.dialog-inside a),
+.dialogue-preview-text :deep(a .dialog-inside),
+.dialogue-preview-text :deep(.dialog-inside a.new) {
+  background-color: #252525 !important;
+  color: rgba(255, 255, 255, 0) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0) !important;
+  text-shadow: none !important;
+  transition: background-color 0.5s ease, color 0.5s ease, -webkit-text-fill-color 0.5s ease, text-shadow 0.5s ease !important;
+}
+
+.dialogue-preview-text :deep(.dialog-inside:hover),
+.dialogue-preview-text :deep(.dialog-inside:active),
+.dialogue-preview-text :deep(.dialog-inside:hover .dialog-inside),
+.dialogue-preview-text :deep(.dialog-inside:active .dialog-inside) {
+  background-color: transparent !important;
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: inherit !important;
+}
+
+.dialogue-preview-box :deep(code) {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dialogue-preview-box :deep(a) {
+  color: #93c5fd;
 }
 
 .section-title {

@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <BackendConnectionModal />
     <div v-if="!isReady && isEditorRoute" class="loading-screen">
       <div class="loading-spinner"></div>
       <p>{{ t('app.loading') }}</p>
@@ -13,15 +14,20 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLocalization } from '@/composables/useLocalization'
 import { useLocalizationStore } from '@/stores/useLocalizationStore'
+import { useBackendConnectionMonitor } from '@/composables/useBackendConnectionMonitor'
+import BackendConnectionModal from '@/components/BackendConnectionModal.vue'
 const { t } = useLocalization()
 const localizationStore = useLocalizationStore()
 const route = useRoute()
 const isReady = ref(false)
+const { startBackendHealthMonitor } = useBackendConnectionMonitor()
 
 // 编辑器页面需要等待本地化初始化，其他页面（Preferences/About 等 Popup）可直接渲染
 const isEditorRoute = computed(() => route.path === '/' || route.name === 'editor')
 
 onMounted(async () => {
+  startBackendHealthMonitor()
+
   try {
     await localizationStore.initialize()
     isReady.value = true

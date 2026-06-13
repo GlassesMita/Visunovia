@@ -140,6 +140,7 @@ function buildCharacterControlsForDialogue(editor: Editor, dialogueNode: any) {
       if (!controlNode || normalizeNodeType(extractNodeType(controlNode)) !== 'CharacterControlNode') return null
 
       const targetPort = findInterfaceKey(dialogueNode.inputs, conn.to, conn.to.name)
+      if (!targetPort.startsWith('characterControl')) return null
 
       return { controlNode, targetPort }
     })
@@ -180,6 +181,7 @@ function normalizePortName(portName: string | undefined, interfaces?: Record<str
   if (name === '→') {
     if (interfaces?.execOut) return 'execOut'
     if (interfaces?.execIn) return 'execIn'
+    if (interfaces?.controlOut) return 'controlOut'
   }
 
   const characterControlMatch = name.match(/(?:◆|characterControl)\s*(\d+)/i)

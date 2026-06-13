@@ -7,7 +7,7 @@ import {
 import { tSync } from '@/services/translationService'
 import { characterSelectOptions } from '@/services/characterOptions'
 import { SpriteSelectInterface } from '@/components/baklava-interfaces/SpriteSelectInterface'
-import { ARROW_SYMBOL, setNodeI18nTitle } from './BaseNode'
+import { ARROW_SYMBOL, createExecInPort, createExecOutPort, setNodeI18nTitle } from './BaseNode'
 
 export const NODE_COLOR = '#7B1FA2'
 
@@ -53,9 +53,10 @@ export default defineNode({
   type: 'CharacterControlNode',
   title: 'Character Control',
   inputs: {
+    execIn: createExecInPort(ARROW_SYMBOL),
+    slot: () => new SelectInterface(tSync('characterControl.slot', 'Character Slot'), '1', characterSlots),
     character: () => new SelectInterface(tSync('eventProps.characterId', 'Character'), '', characterSelectOptions),
     unmanagedCharacter: () => new TextInputInterface(tSync('characterControl.unmanagedCharacter', 'Slot 6 Character Name'), '').setHidden(true),
-    slot: () => new SelectInterface(tSync('characterControl.slot', 'Character Slot'), '1', characterSlots),
     action: () => new SelectInterface(tSync('characterControl.action', 'Action'), 'show', visibilityActions),
     sprite: () => new SpriteSelectInterface(tSync('characterControl.sprite', 'Sprite'), ''),
     sfx: () => new TextInputInterface(tSync('characterControl.sfx', 'Sound Effect'), ''),
@@ -71,12 +72,13 @@ export default defineNode({
     duration: () => new NumberInterface(tSync('eventProps.duration', 'Duration'), 0.3),
   },
   outputs: {
-    controlOut: () => new NodeInterface(ARROW_SYMBOL, undefined),
+    controlOut: () => new NodeInterface(ARROW_SYMBOL, undefined).setPort(true),
+    execOut: createExecOutPort(ARROW_SYMBOL),
   },
   onCreate() {
-    Object.values((this as any).inputs || {}).forEach((input: any) => {
+    Object.entries((this as any).inputs || {}).forEach(([key, input]: [string, any]) => {
       input.node = this
-      if (!input.port && typeof input.setHidden === 'function') input.setHidden(true)
+      if (!input.port && key !== 'slot' && key !== 'character' && typeof input.setHidden === 'function') input.setHidden(true)
     })
     setNodeI18nTitle(this, 'nodes.characterControl', 'Character Control')
   },

@@ -9,6 +9,8 @@
           :node="node"
           :selected="selected"
           :dragging="dragging"
+          @pointerenter="(ev: PointerEvent) => showNodeHover(ev, node)"
+          @pointerleave="hideNodeHover"
           @dblclick.stop="() => openNodeDetails(node)"
           @select="onSelect"
           @start-drag="onStartDrag"
@@ -46,6 +48,22 @@
         Delete
       </button>
     </div>
+    <aside
+      v-if="hoverPanel.visible && hoverPanel.node"
+      class="visunovia-node-hover-panel"
+      @pointerdown.stop
+    >
+      <div class="visunovia-node-hover-kicker">节点信息</div>
+      <div class="visunovia-node-hover-title">{{ getHoverNodeTitle(hoverPanel.node) }}</div>
+      <div class="visunovia-node-hover-id">{{ hoverPanel.node.id }}</div>
+      <div class="visunovia-node-hover-grid">
+        <template v-for="item in getHoverNodeItems(hoverPanel.node)" :key="item.key">
+          <span>{{ item.label }}</span>
+          <strong>{{ item.value }}</strong>
+        </template>
+      </div>
+      <div class="visunovia-node-hover-hint">双击节点打开完整配置</div>
+    </aside>
     <div v-else-if="isInitialized && !baklava" class="loading">
       <p>Failed to initialize editor</p>
     </div>
@@ -59,6 +77,7 @@
 import { onMounted, onUnmounted, reactive, shallowRef } from 'vue'
 import { BaklavaEditor, Components, useBaklava } from '@baklavajs/renderer-vue'
 import { registerAllNodes } from '@/baklava/nodeRegistry'
+import { characterSelectOptions } from '@/services/characterOptions'
 import { useLocalizationStore } from '@/stores/useLocalizationStore'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
@@ -80,6 +99,10 @@ const nodeMenu = reactive({
   visible: false,
   x: 0,
   y: 0,
+  node: null as any,
+})
+const hoverPanel = reactive({
+  visible: false,
   node: null as any,
 })
 
@@ -105,8 +128,63 @@ function closeNodeMenu() {
   nodeMenu.node = null
 }
 
+function showNodeHover(_ev: PointerEvent, node: any) {
+  hoverPanel.node = node
+  hoverPanel.visible = true
+}
+
+function hideNodeHover() {
+  hoverPanel.visible = false
+  hoverPanel.node = null
+}
+
+function getInputValue(node: any, key: string) {
+  return node?.inputs?.[key]?.value ?? node?.data?.[key] ?? ''
+}
+
+function getCharacterLabel(value: string) {
+  const id = String(value || '').trim()
+  if (!id) return '未选择'
+  const option = characterSelectOptions.find((item: any) => item.value === id || item.text === id)
+  return option?.text || id
+}
+
+function getHoverNodeTitle(node: any) {
+  return String(node?.title || node?.type || 'Node')
+}
+
+function getHoverNodeItems(node: any) {
+  const type = String(node?.type || '')
+  if (type === 'CharacterControlNode') {
+    return [
+      { key: 'slot', label: 'Slot', value: getInputValue(node, 'slot') || '1' },
+      { key: 'character', label: '角色', value: getInputValue(node, 'slot') === '6'
+        ? String(getInputValue(node, 'unmanagedCharacter') || getInputValue(node, 'character') || '未设置')
+        : getCharacterLabel(String(getInputValue(node, 'character') || '')) },
+      { key: 'action', label: '动作', value: getInputValue(node, 'action') || 'show' },
+      { key: 'sprite', label: '立绘', value: getInputValue(node, 'sprite') || '无' },
+      { key: 'position', label: '位置', value: getInputValue(node, 'position') || 'center' },
+      { key: 'animation', label: '动画', value: getInputValue(node, 'animation') || 'fade' },
+    ]
+  }
+
+  if (type === 'DialogueNode') {
+    return [
+      { key: 'speakerSlot', label: '说话 Slot', value: getInputValue(node, 'speakerSlot') || '无' },
+      { key: 'voiceCount', label: '语音数量', value: getInputValue(node, 'voiceCount') || '0' },
+      { key: 'text', label: '文本', value: String(getInputValue(node, 'text') || '无').slice(0, 80) },
+    ]
+  }
+
+  return Object.entries(node?.inputs || {})
+    .filter(([, iface]: any) => iface?.value !== undefined)
+    .slice(0, 8)
+    .map(([key, iface]: any) => ({ key, label: key, value: String(iface.value || '无') }))
+}
+
 function openNodeDetails(node: any) {
   if (!node?.id) return
+  hideNodeHover()
   editorStore.selectNode(node.id)
   uiStore.openNodeDetailsModal()
 }
@@ -234,6 +312,73 @@ onUnmounted(() => {
 
 .visunovia-node-context-item:hover {
   background: #094771;
+}
+
+.visunovia-node-hover-panel {
+  position: absolute;
+  top: 72px;
+  right: 18px;
+  z-index: 9000;
+  width: min(340px, 32vw);
+  max-height: calc(100% - 96px);
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  border-radius: 12px;
+  background: rgba(17, 24, 39, 0.96);
+  color: #e5e7eb;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+
+.visunovia-node-hover-kicker {
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.visunovia-node-hover-title {
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.visunovia-node-hover-id {
+  margin-top: 3px;
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10px;
+  word-break: break-all;
+}
+
+.visunovia-node-hover-grid {
+  display: grid;
+  grid-template-columns: minmax(72px, auto) minmax(0, 1fr);
+  gap: 8px 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.22);
+  font-size: 12px;
+}
+
+.visunovia-node-hover-grid span {
+  color: #94a3b8;
+}
+
+.visunovia-node-hover-grid strong {
+  overflow: hidden;
+  color: #f8fafc;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visunovia-node-hover-hint {
+  margin-top: 12px;
+  color: #bfdbfe;
+  font-size: 11px;
 }
 
 .loading {
