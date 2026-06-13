@@ -553,8 +553,10 @@ watch(
       await nextTick()
       restartPreview()
       window.addEventListener('keydown', handlePreviewKeydown)
+      window.addEventListener('contextmenu', handlePreviewContextMenu)
     } else {
       window.removeEventListener('keydown', handlePreviewKeydown)
+      window.removeEventListener('contextmenu', handlePreviewContextMenu)
       stopAudio()
     }
   }
@@ -571,6 +573,7 @@ watch(
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handlePreviewKeydown)
+  window.removeEventListener('contextmenu', handlePreviewContextMenu)
   stopTypewriter()
   stopAudio()
   closeStageModal()
@@ -592,6 +595,20 @@ function requestPreviewStageFullscreen() {
   if (!target || document.fullscreenElement) return
   target.requestFullscreen().catch((error) => {
     console.warn('[PreviewPopup] 全屏请求失败', error)
+  })
+}
+
+function isObsBrowserSourceUserAgent() {
+  return /\bOBS\/\d+(?:\.\d+)*\b/i.test(navigator.userAgent)
+}
+
+function handlePreviewContextMenu(event: MouseEvent) {
+  if (!isObsBrowserSourceUserAgent()) return
+  if (document.fullscreenElement !== stageRef.value) return
+
+  event.preventDefault()
+  document.exitFullscreen().catch((error) => {
+    console.warn('[PreviewPopup] OBS 右键退出全屏失败', error)
   })
 }
 
