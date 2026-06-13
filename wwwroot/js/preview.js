@@ -14,6 +14,133 @@ app.previewState = {
 
 app.previewVideoBackgroundExtensions = ['.mp4', '.webm', '.m4v', '.mov', '.ogv'];
 
+app.previewPopupWindow = null;
+app.previewPopupSize = { width: 1920, height: 1080 };
+
+app.openPreviewPopup = function (width, height) {
+    width = Number(width) || 1920;
+    height = Number(height) || 1080;
+    app.previewPopupSize = { width: width, height: height };
+
+    var features = [
+        'popup=yes',
+        'width=' + width,
+        'height=' + height,
+        'resizable=yes',
+        'scrollbars=no'
+    ].join(',');
+
+    var popup = window.open('', 'VisunoviaPreviewPopup', features);
+    if (!popup) {
+        app.setStatus('弹窗被浏览器拦截，请允许弹出窗口后重试');
+        return;
+    }
+
+    app.previewPopupWindow = popup;
+    app.writePreviewPopupDocument(popup, width, height);
+    app.syncPreviewPopup();
+    popup.focus();
+};
+
+app.writePreviewPopupDocument = function (popup, width, height) {
+    popup.document.open();
+    popup.document.write('<!doctype html>'
+        + '<html lang="zh-CN">'
+        + '<head>'
+        + '<meta charset="utf-8">'
+        + '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        + '<title>Visunovia 预览</title>'
+        + '<link rel="stylesheet" href="/css/editor.css">'
+        + '<style>'
+        + 'html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#000;}'
+        + '.preview-overlay{display:block;position:fixed;inset:0;width:100vw;height:100vh;background:#000;}'
+        + '.preview-controls,.preview-close{display:none!important;}'
+        + '.preview-stage-size{position:fixed;inset:0;width:100vw;height:100vh;overflow:hidden;background:#000;}'
+        + '</style>'
+        + '</head>'
+        + '<body>'
+        + '<div class="preview-stage-size" style="aspect-ratio:' + width + '/' + height + '">'
+        + '<div class="preview-overlay visible" id="previewPopupStage">'
+        + '<img class="preview-bg" id="popupPreviewBg" alt="" />'
+        + '<video class="preview-bg" id="popupPreviewBgVideo" autoplay loop muted playsinline preload="auto" style="display:none;"></video>'
+        + '<img class="preview-char" id="popupPreviewChar" alt="" style="display:none;" />'
+        + '<div class="preview-dialogue" id="popupPreviewDialogue" style="display:none;">'
+        + '<div class="preview-speaker" id="popupPreviewSpeaker"></div>'
+        + '<div class="preview-text" id="popupPreviewText"></div>'
+        + '</div>'
+        + '<div class="preview-choices" id="popupPreviewChoices" style="display:none;"></div>'
+        + '</div>'
+        + '</div>'
+        + '</body>'
+        + '</html>');
+    popup.document.close();
+};
+
+app.syncPreviewPopup = function () {
+    var popup = app.previewPopupWindow;
+    if (!popup || popup.closed || !popup.document) return;
+
+    var sourceImageBg = document.getElementById('previewBg');
+    var sourceVideoBg = document.getElementById('previewBgVideo');
+    var sourceChar = document.getElementById('previewChar');
+    var sourceDialogue = document.getElementById('previewDialogue');
+    var sourceSpeaker = document.getElementById('previewSpeaker');
+    var sourceText = document.getElementById('previewText');
+    var sourceChoices = document.getElementById('previewChoices');
+
+    app.copyPreviewImageElement(sourceImageBg, popup.document.getElementById('popupPreviewBg'));
+    app.copyPreviewVideoElement(sourceVideoBg, popup.document.getElementById('popupPreviewBgVideo'));
+    app.copyPreviewImageElement(sourceChar, popup.document.getElementById('popupPreviewChar'));
+    app.copyPreviewPanelElement(sourceDialogue, popup.document.getElementById('popupPreviewDialogue'));
+
+    var popupSpeaker = popup.document.getElementById('popupPreviewSpeaker');
+    var popupText = popup.document.getElementById('popupPreviewText');
+    var popupChoices = popup.document.getElementById('popupPreviewChoices');
+
+    if (popupSpeaker && sourceSpeaker) popupSpeaker.textContent = sourceSpeaker.textContent;
+    if (popupText && sourceText) popupText.textContent = sourceText.textContent;
+    if (popupChoices && sourceChoices) {
+        popupChoices.style.display = sourceChoices.style.display;
+        popupChoices.innerHTML = sourceChoices.innerHTML;
+        var buttons = popupChoices.querySelectorAll('button');
+        for (var i = 0; i < buttons.length; i++) {
+            buttons[i].removeAttribute('onclick');
+            buttons[i].disabled = true;
+        }
+    }
+};
+
+app.copyPreviewImageElement = function (source, target) {
+    if (!source || !target) return;
+    target.style.display = source.style.display;
+    if (source.getAttribute('src')) {
+        target.src = source.getAttribute('src');
+    } else {
+        target.removeAttribute('src');
+    }
+};
+
+app.copyPreviewVideoElement = function (source, target) {
+    if (!source || !target) return;
+    target.style.display = source.style.display;
+    if (source.getAttribute('src')) {
+        if (target.getAttribute('src') !== source.getAttribute('src')) {
+            target.src = source.getAttribute('src');
+            target.load();
+        }
+        target.play().catch(function () { });
+    } else {
+        target.pause();
+        target.removeAttribute('src');
+        target.load();
+    }
+};
+
+app.copyPreviewPanelElement = function (source, target) {
+    if (!source || !target) return;
+    target.style.display = source.style.display;
+};
+
 app.isPreviewVideoBackground = function (path) {
     var cleanPath = String(path || '').split(/[?#]/)[0].toLowerCase();
     for (var i = 0; i < app.previewVideoBackgroundExtensions.length; i++) {
@@ -98,6 +225,7 @@ app.startPreview = function (data) {
     }
 
     app.advancePreview();
+    app.syncPreviewPopup();
 };
 
 app.advancePreview = function () {
@@ -134,6 +262,7 @@ app.advancePreview = function () {
 
     var dialogue = scene.dialogues[state.currentDialogueIndex];
     app.renderPreviewDialogue(dialogue, scene);
+    app.syncPreviewPopup();
 };
 
 app.goBackPreview = function () {
@@ -152,6 +281,7 @@ app.goBackPreview = function () {
     var scene = state.scenes[state.currentSceneIndex];
     var dialogue = scene.dialogues[state.currentDialogueIndex];
     app.renderPreviewDialogue(dialogue, scene);
+    app.syncPreviewPopup();
 };
 
 app.renderPreviewDialogue = function (dialogue, scene) {
@@ -474,6 +604,7 @@ app.showPreviewEnd = function () {
         if (textEl) textEl.textContent = '— 预览结束 —';
     }
     if (choicesEl) choicesEl.style.display = 'none';
+    app.syncPreviewPopup();
 };
 
 app.resetPreviewState = function () {
@@ -503,4 +634,9 @@ app.resetPreviewState = function () {
     if (charEl) { charEl.src = ''; charEl.style.display = 'none'; }
     if (dialogueEl) dialogueEl.style.display = 'none';
     if (choicesEl) choicesEl.style.display = 'none';
+
+    if (app.previewPopupWindow && !app.previewPopupWindow.closed) {
+        app.previewPopupWindow.close();
+    }
+    app.previewPopupWindow = null;
 };

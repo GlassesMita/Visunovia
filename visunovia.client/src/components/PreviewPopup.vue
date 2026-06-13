@@ -20,6 +20,11 @@
                 </option>
               </select>
             </label>
+            <div class="preview-popup-window-actions" aria-label="录制演出预览">
+              <span>录制模式</span>
+              <button type="button" @click="openStageModal(1920, 1080)">1080P</button>
+              <button type="button" @click="openStageModal(1280, 720)">720P</button>
+            </div>
             <button type="button" @click="restartPreview">重新播放</button>
             <button class="preview-popup-close" type="button" @click="closePreview">✕</button>
           </div>
@@ -31,6 +36,7 @@
             :style="stageShellStyle"
           >
             <div
+              ref="stageRef"
               class="preview-stage"
               :style="stageStyle"
               @click="advanceFromStage"
@@ -89,6 +95,19 @@
 
         <audio ref="bgmAudio" loop></audio>
       </section>
+
+      <Teleport to="body">
+        <div v-if="stageModalVisible" class="preview-recording-modal" @click.self="closeStageModal">
+          <div class="preview-recording-launcher" role="dialog" aria-modal="true" aria-label="录制演出模式">
+            <h3>录制演出模式</h3>
+            <p>{{ viewport.width }} × {{ viewport.height }}</p>
+            <button type="button" class="preview-recording-play" @click="startFullscreenRecordingPreview">
+              ▶ 播放并进入全屏
+            </button>
+            <button type="button" class="preview-recording-cancel" @click="closeStageModal">取消</button>
+          </div>
+        </div>
+      </Teleport>
     </div>
   </Transition>
 </template>
@@ -198,6 +217,8 @@ const previewEnded = ref(false)
 const choices = ref<PreviewChoice[]>([])
 const characterSlots = ref<Record<string, CharacterSlotState>>({})
 const bgmAudio = ref<HTMLAudioElement | null>(null)
+const stageRef = ref<HTMLElement | null>(null)
+const stageModalVisible = ref(false)
 const resourceTraceByUrl = ref<Record<string, PreviewResourceTrace>>({})
 let typewriterTimer: number | null = null
 
@@ -552,7 +573,31 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handlePreviewKeydown)
   stopTypewriter()
   stopAudio()
+  closeStageModal()
 })
+
+function openStageModal(width: number, height: number) {
+  applyPreviewResolution(width, height)
+  stageModalVisible.value = true
+}
+
+function startFullscreenRecordingPreview() {
+  stageModalVisible.value = false
+  requestPreviewStageFullscreen()
+  restartPreview()
+}
+
+function requestPreviewStageFullscreen() {
+  const target = stageRef.value
+  if (!target || document.fullscreenElement) return
+  target.requestFullscreen().catch((error) => {
+    console.warn('[PreviewPopup] 全屏请求失败', error)
+  })
+}
+
+function closeStageModal() {
+  stageModalVisible.value = false
+}
 
 function loadViewportSettings() {
   const settings = readSettings()
@@ -617,6 +662,7 @@ function restartPreview() {
 
   const startNode = graphNodes.value.find((node) => node.type === 'StartNode') || graphNodes.value[0]
   currentNodeId.value = startNode.id
+
   runFromNode(startNode.id, 'restart')
 }
 
@@ -1456,6 +1502,15 @@ function closePreview() {
   cursor: pointer;
 }
 
+.preview-popup-window-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #cbd5e1;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .preview-popup-actions button {
   border: 1px solid #3e3e42;
   border-radius: 6px;
@@ -1504,6 +1559,81 @@ function closePreview() {
   forced-color-adjust: none !important;
   isolation: isolate !important;
   contain: layout paint style !important;
+}
+
+.preview-stage:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  scale: 1 !important;
+  transform: none !important;
+  background: #000000 !important;
+}
+
+.preview-stage:fullscreen .preview-continue-indicator {
+  display: none !important;
+}
+
+.preview-recording-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.82);
+  color: #ffffff;
+  font-family: Gadugi, "Segoe UI", sans-serif;
+}
+
+.preview-recording-launcher {
+  width: min(420px, calc(100vw - 40px));
+  padding: 28px;
+  text-align: center;
+  background: rgba(17, 24, 39, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+
+.preview-recording-launcher h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.preview-recording-launcher p {
+  margin: 0 0 22px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.preview-recording-play,
+.preview-recording-cancel {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.preview-recording-play {
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.preview-recording-play:hover {
+  background: #1d4ed8;
+}
+
+.preview-recording-cancel {
+  margin-top: 10px;
+  background: #334155;
+  color: #cbd5e1;
+}
+
+.preview-recording-cancel:hover {
+  background: #475569;
 }
 
 .preview-stage,
