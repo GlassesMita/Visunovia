@@ -800,6 +800,72 @@ msgstr "API Base URL"
 msgid "settings.requestTimeout"
 msgstr "Request Timeout"
 
+msgid "settings.language.desc"
+msgstr "Interface display language"
+
+msgid "settings.theme.desc"
+msgstr "Editor color scheme"
+
+msgid "settings.placeholderCompany.desc"
+msgstr "Default company name placeholder for new projects"
+
+msgid "settings.placeholderProduct.desc"
+msgstr "Default product name placeholder for new projects"
+
+msgid "settings.autoSave.desc"
+msgstr "Automatically save the current scene"
+
+msgid "settings.autoSaveInterval.desc"
+msgstr "Auto-save interval in seconds"
+
+msgid "settings.showGrid.desc"
+msgstr "Show grid lines in the editor"
+
+msgid "settings.gridSize.desc"
+msgstr "Grid cell size in pixels"
+
+msgid "settings.snapEnabled.desc"
+msgstr "Snap nodes to the grid while moving"
+
+msgid "settings.defaultZoom.desc"
+msgstr "Default zoom level for new scenes"
+
+msgid "settings.defaultNodeSize.desc"
+msgstr "Default width for new nodes"
+
+msgid "settings.previewWidth.desc"
+msgstr "Preview window width in pixels"
+
+msgid "settings.previewHeight.desc"
+msgstr "Preview window height in pixels"
+
+msgid "settings.fullscreenPreview.desc"
+msgstr "Preview in fullscreen by default"
+
+msgid "settings.apiBaseUrl.desc"
+msgstr "Backend API service URL"
+
+msgid "settings.requestTimeout.desc"
+msgstr "HTTP request timeout in milliseconds"
+
+msgid "extensionInterference.title"
+msgstr "Display interference detected"
+
+msgid "extensionInterference.message"
+msgstr "A browser extension or forced color rule appears to be changing the application colors. Disable the extension or add this app to its allowlist to restore the intended theme."
+
+msgid "extensionInterference.expected"
+msgstr "Expected"
+
+msgid "extensionInterference.actual"
+msgstr "Actual"
+
+msgid "extensionInterference.dismiss"
+msgstr "Dismiss"
+
+msgid "extensionInterference.recheck"
+msgstr "Check again"
+
 # Project Settings
 msgid "projectSettings.title"
 msgstr "Project Settings"

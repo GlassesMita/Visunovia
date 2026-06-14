@@ -797,6 +797,72 @@ msgstr "API 基礎位址"
 msgid "settings.requestTimeout"
 msgstr "請求逾時"
 
+msgid "settings.language.desc"
+msgstr "介面顯示語言"
+
+msgid "settings.theme.desc"
+msgstr "編輯器配色方案"
+
+msgid "settings.placeholderCompany.desc"
+msgstr "新建專案時預設的公司名稱（預留文字）"
+
+msgid "settings.placeholderProduct.desc"
+msgstr "新建專案時預設的產品名稱（預留文字）"
+
+msgid "settings.autoSave.desc"
+msgstr "自動儲存目前場景"
+
+msgid "settings.autoSaveInterval.desc"
+msgstr "自動儲存間隔（秒）"
+
+msgid "settings.showGrid.desc"
+msgstr "在編輯器中顯示格線"
+
+msgid "settings.gridSize.desc"
+msgstr "格線儲存格大小（像素）"
+
+msgid "settings.snapEnabled.desc"
+msgstr "節點移動時對齊到格線"
+
+msgid "settings.defaultZoom.desc"
+msgstr "新建場景的預設縮放級別"
+
+msgid "settings.defaultNodeSize.desc"
+msgstr "新建節點的預設寬度"
+
+msgid "settings.previewWidth.desc"
+msgstr "預覽視窗寬度（像素）"
+
+msgid "settings.previewHeight.desc"
+msgstr "預覽視窗高度（像素）"
+
+msgid "settings.fullscreenPreview.desc"
+msgstr "預設以全螢幕模式預覽"
+
+msgid "settings.apiBaseUrl.desc"
+msgstr "後端 API 服務位址"
+
+msgid "settings.requestTimeout.desc"
+msgstr "HTTP 請求逾時時間（毫秒）"
+
+msgid "extensionInterference.title"
+msgstr "偵測到顯示干擾"
+
+msgid "extensionInterference.message"
+msgstr "瀏覽器外掛或強制色彩規則似乎正在修改應用程式色彩。請停用相關外掛，或將本應用程式加入外掛白名單，以恢復預期主題。"
+
+msgid "extensionInterference.expected"
+msgstr "預期"
+
+msgid "extensionInterference.actual"
+msgstr "實際"
+
+msgid "extensionInterference.dismiss"
+msgstr "忽略"
+
+msgid "extensionInterference.recheck"
+msgstr "重新偵測"
+
 # Project Settings
 msgid "projectSettings.title"
 msgstr "專案設定"

@@ -596,7 +596,10 @@ function renderBranchNode(node: PreviewNode) {
 }
 
 function renderChoiceNode(node: PreviewNode) {
-  dialogueVisible.value = false
+  if (fullDialogueText.value) {
+    completeTypewriter()
+    dialogueVisible.value = true
+  }
   selectedChoicePort.value = ''
   isChoiceNavigating.value = false
   statusMessage.value = ''
@@ -915,8 +918,9 @@ function advancePreview() {
     pauseWithError('当前对白节点没有下一个执行连接，预览已暂停', { currentNodeId: currentNodeId.value, connections: graphConnections.value })
     return
   }
-  dialogueVisible.value = false
   stopTypewriter()
+  const nextNode = findNode(nextNodeId)
+  dialogueVisible.value = nextNode?.type === 'ChoiceNode' && Boolean(fullDialogueText.value)
   runFromNode(nextNodeId, 'dialogue-click')
 }
 
@@ -1843,7 +1847,7 @@ function closePreview() {
 .preview-choices {
   position: absolute;
   left: 50%;
-  bottom: 14.8%;
+  top: 29%;
   display: flex;
   width: min(74%, calc(var(--preview-width, 1920) * 1180px / 1920));
   flex-direction: column;
@@ -1858,31 +1862,25 @@ function closePreview() {
   padding: calc(var(--preview-width, 1920) * 18px / 1920) calc(var(--preview-width, 1920) * 72px / 1920);
   border: 0;
   border-radius: 0;
-  background:
-    linear-gradient(90deg, rgba(84, 139, 190, 0.2), rgba(255, 255, 255, 0.76) 18%, rgba(255, 255, 255, 0.86) 50%, rgba(255, 255, 255, 0.76) 82%, rgba(84, 139, 190, 0.2)),
-    linear-gradient(135deg, rgba(119, 172, 223, 0.55) 0 10%, transparent 10% 22%, rgba(180, 216, 247, 0.55) 22% 34%, transparent 34% 48%, rgba(125, 174, 219, 0.5) 48% 60%, transparent 60% 100%);
-  background-blend-mode: screen;
+  background: url('/images/UI/Stage/Img_Growth_Effect_LabelBg.png') center / 100% 100% no-repeat;
+  background-blend-mode: normal;
   box-shadow: 0 calc(var(--preview-width, 1920) * 10px / 1920) calc(var(--preview-width, 1920) * 24px / 1920) rgba(0, 32, 76, 0.22);
-  color: #ffffff;
+  color: #000000 !important;
   font-family: "Franklin Gothic Demi", "Franklin Gothic Medium", Gadugi, "Segoe UI", sans-serif !important;
   font-size: calc(var(--preview-width, 1920) * 37px / 1920);
   font-weight: 700;
   letter-spacing: 0.03em;
   text-align: center;
-  text-shadow: 0 2px 6px rgba(0, 32, 76, 0.42), 0 0 2px #00204c;
+  text-shadow: none;
   cursor: pointer;
   transform-origin: center;
   transition: filter 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
-  clip-path: polygon(5.5% 0, 94.5% 0, 100% 50%, 94.5% 100%, 5.5% 100%, 0 50%);
   overflow: hidden;
 }
 
 .preview-choices button::before,
 .preview-choices button::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+  display: none;
 }
 
 .preview-choices button::before {

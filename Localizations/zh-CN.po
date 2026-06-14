@@ -799,6 +799,72 @@ msgstr "API 基础地址"
 msgid "settings.requestTimeout"
 msgstr "请求超时"
 
+msgid "settings.language.desc"
+msgstr "界面显示语言"
+
+msgid "settings.theme.desc"
+msgstr "编辑器配色方案"
+
+msgid "settings.placeholderCompany.desc"
+msgstr "新建项目时默认的公司名称（占位符）"
+
+msgid "settings.placeholderProduct.desc"
+msgstr "新建项目时默认的产品名称（占位符）"
+
+msgid "settings.autoSave.desc"
+msgstr "自动保存当前场景"
+
+msgid "settings.autoSaveInterval.desc"
+msgstr "自动保存间隔（秒）"
+
+msgid "settings.showGrid.desc"
+msgstr "在编辑器中显示网格线"
+
+msgid "settings.gridSize.desc"
+msgstr "网格单元格大小（像素）"
+
+msgid "settings.snapEnabled.desc"
+msgstr "节点移动时对齐到网格"
+
+msgid "settings.defaultZoom.desc"
+msgstr "新建场景的默认缩放级别"
+
+msgid "settings.defaultNodeSize.desc"
+msgstr "新建节点的默认宽度"
+
+msgid "settings.previewWidth.desc"
+msgstr "预览窗口宽度（像素）"
+
+msgid "settings.previewHeight.desc"
+msgstr "预览窗口高度（像素）"
+
+msgid "settings.fullscreenPreview.desc"
+msgstr "默认以全屏模式预览"
+
+msgid "settings.apiBaseUrl.desc"
+msgstr "后端 API 服务地址"
+
+msgid "settings.requestTimeout.desc"
+msgstr "HTTP 请求超时时间（毫秒）"
+
+msgid "extensionInterference.title"
+msgstr "检测到显示干扰"
+
+msgid "extensionInterference.message"
+msgstr "浏览器插件或强制颜色规则似乎正在修改应用颜色。请禁用相关插件，或将本应用加入插件白名单，以恢复预期主题。"
+
+msgid "extensionInterference.expected"
+msgstr "预期"
+
+msgid "extensionInterference.actual"
+msgstr "实际"
+
+msgid "extensionInterference.dismiss"
+msgstr "忽略"
+
+msgid "extensionInterference.recheck"
+msgstr "重新检测"
+
 # Project Settings
 msgid "projectSettings.title"
 msgstr "项目设置"

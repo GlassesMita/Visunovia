@@ -797,6 +797,72 @@ msgstr "APIベースURL"
 msgid "settings.requestTimeout"
 msgstr "リクエストタイムアウト"
 
+msgid "settings.language.desc"
+msgstr "インターフェイスの表示言語"
+
+msgid "settings.theme.desc"
+msgstr "エディタの配色テーマ"
+
+msgid "settings.placeholderCompany.desc"
+msgstr "新規プロジェクトの既定の会社名プレースホルダー"
+
+msgid "settings.placeholderProduct.desc"
+msgstr "新規プロジェクトの既定の製品名プレースホルダー"
+
+msgid "settings.autoSave.desc"
+msgstr "現在のシーンを自動保存します"
+
+msgid "settings.autoSaveInterval.desc"
+msgstr "自動保存間隔（秒）"
+
+msgid "settings.showGrid.desc"
+msgstr "エディタにグリッド線を表示します"
+
+msgid "settings.gridSize.desc"
+msgstr "グリッドセルのサイズ（ピクセル）"
+
+msgid "settings.snapEnabled.desc"
+msgstr "ノード移動時にグリッドへスナップします"
+
+msgid "settings.defaultZoom.desc"
+msgstr "新規シーンの既定ズームレベル"
+
+msgid "settings.defaultNodeSize.desc"
+msgstr "新規ノードの既定幅"
+
+msgid "settings.previewWidth.desc"
+msgstr "プレビューウィンドウの幅（ピクセル）"
+
+msgid "settings.previewHeight.desc"
+msgstr "プレビューウィンドウの高さ（ピクセル）"
+
+msgid "settings.fullscreenPreview.desc"
+msgstr "既定でフルスクリーンでプレビューします"
+
+msgid "settings.apiBaseUrl.desc"
+msgstr "バックエンド API サービス URL"
+
+msgid "settings.requestTimeout.desc"
+msgstr "HTTP リクエストタイムアウト（ミリ秒）"
+
+msgid "extensionInterference.title"
+msgstr "表示への干渉を検出しました"
+
+msgid "extensionInterference.message"
+msgstr "ブラウザ拡張機能または強制カラー設定がアプリの色を変更している可能性があります。拡張機能を無効にするか、このアプリを許可リストに追加して、意図したテーマを復元してください。"
+
+msgid "extensionInterference.expected"
+msgstr "期待値"
+
+msgid "extensionInterference.actual"
+msgstr "実際"
+
+msgid "extensionInterference.dismiss"
+msgstr "閉じる"
+
+msgid "extensionInterference.recheck"
+msgstr "再確認"
+
 # Project Settings
 msgid "projectSettings.title"
 msgstr "プロジェクト設定"

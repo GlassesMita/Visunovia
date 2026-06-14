@@ -27,7 +27,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.language') || 'Language' }}</label>
-            <p class="setting-desc">界面显示语言</p>
+            <p class="setting-desc">{{ t('settings.language.desc') }}</p>
           </div>
           <div class="setting-control">
             <select v-model="settings.language" @change="onLanguageChange">
@@ -45,7 +45,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.theme') || 'Theme' }}</label>
-            <p class="setting-desc">编辑器配色方案</p>
+            <p class="setting-desc">{{ t('settings.theme.desc') }}</p>
           </div>
           <div class="setting-control">
             <select v-model="settings.theme" @change="onThemeChange">
@@ -58,7 +58,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.placeholderCompany') || 'Company Name' }}</label>
-            <p class="setting-desc">新建项目时默认的公司名称（占位符）</p>
+            <p class="setting-desc">{{ t('settings.placeholderCompany.desc') }}</p>
           </div>
           <div class="setting-control">
             <input type="text" v-model="settings.placeholderCompanyName" placeholder="Abydos Highschool" />
@@ -68,7 +68,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.placeholderProduct') || 'Product Name' }}</label>
-            <p class="setting-desc">新建项目时默认的产品名称（占位符）</p>
+            <p class="setting-desc">{{ t('settings.placeholderProduct.desc') }}</p>
           </div>
           <div class="setting-control">
             <input type="text" v-model="settings.placeholderProductName" placeholder="Anubis" />
@@ -83,7 +83,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.autoSave') || 'Auto Save' }}</label>
-            <p class="setting-desc">自动保存当前场景</p>
+            <p class="setting-desc">{{ t('settings.autoSave.desc') }}</p>
           </div>
           <div class="setting-control">
             <label class="toggle-switch">
@@ -96,7 +96,7 @@
         <div class="setting-row" v-if="settings.autoSave">
           <div class="setting-label">
             <label>{{ t('settings.autoSaveInterval') || 'Auto Save Interval' }}</label>
-            <p class="setting-desc">自动保存间隔（秒）</p>
+            <p class="setting-desc">{{ t('settings.autoSaveInterval.desc') }}</p>
           </div>
           <div class="setting-control">
             <input type="number" v-model.number="settings.autoSaveInterval" min="10" max="300" step="10" />
@@ -106,7 +106,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.showGrid') || 'Show Grid' }}</label>
-            <p class="setting-desc">在编辑器中显示网格线</p>
+            <p class="setting-desc">{{ t('settings.showGrid.desc') }}</p>
           </div>
           <div class="setting-control">
             <label class="toggle-switch">
@@ -119,7 +119,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.gridSize') || 'Grid Size' }}</label>
-            <p class="setting-desc">网格单元格大小（像素）</p>
+            <p class="setting-desc">{{ t('settings.gridSize.desc') }}</p>
           </div>
           <div class="setting-control">
             <input type="number" v-model.number="settings.gridSize" min="10" max="50" step="5" />
@@ -129,7 +129,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.snapEnabled') || 'Snap to Grid' }}</label>
-            <p class="setting-desc">节点移动时对齐到网格</p>
+            <p class="setting-desc">{{ t('settings.snapEnabled.desc') }}</p>
           </div>
           <div class="setting-control">
             <label class="toggle-switch">
@@ -142,7 +142,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.defaultZoom') || 'Default Zoom' }}</label>
-            <p class="setting-desc">新建场景的默认缩放级别</p>
+            <p class="setting-desc">{{ t('settings.defaultZoom.desc') }}</p>
           </div>
           <div class="setting-control">
             <select v-model="settings.defaultZoom">
@@ -158,7 +158,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.defaultNodeSize') || 'Default Node Size' }}</label>
-            <p class="setting-desc">新建节点的默认宽度</p>
+            <p class="setting-desc">{{ t('settings.defaultNodeSize.desc') }}</p>
           </div>
           <div class="setting-control">
             <input type="number" v-model.number="settings.defaultNodeSize" min="100" max="400" step="50" />
@@ -173,7 +173,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.previewWidth') || 'Preview Width' }}</label>
-            <p class="setting-desc">预览窗口宽度（像素）</p>
+            <p class="setting-desc">{{ t('settings.previewWidth.desc') }}</p>
           </div>
           <div class="setting-control">
             <input type="number" v-model.number="settings.previewWidth" min="640" max="3840" step="320" />
@@ -183,7 +183,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.previewHeight') || 'Preview Height' }}</label>
-            <p class="setting-desc">预览窗口高度（像素）</p>
+            <p class="setting-desc">{{ t('settings.previewHeight.desc') }}</p>
           </div>
           <div class="setting-control">
             <input type="number" v-model.number="settings.previewHeight" min="360" max="2160" step="180" />
@@ -193,7 +193,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.fullscreenPreview') || 'Fullscreen Preview' }}</label>
-            <p class="setting-desc">默认以全屏模式预览</p>
+            <p class="setting-desc">{{ t('settings.fullscreenPreview.desc') }}</p>
           </div>
           <div class="setting-control">
             <label class="toggle-switch">
@@ -211,7 +211,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.apiBaseUrl') || 'API Base URL' }}</label>
-            <p class="setting-desc">后端 API 服务地址</p>
+            <p class="setting-desc">{{ t('settings.apiBaseUrl.desc') }}</p>
           </div>
           <div class="setting-control">
             <input type="text" v-model="settings.apiBaseUrl" placeholder="/api" />
@@ -221,7 +221,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.requestTimeout') || 'Request Timeout' }}</label>
-            <p class="setting-desc">HTTP 请求超时时间（毫秒）</p>
+            <p class="setting-desc">{{ t('settings.requestTimeout.desc') }}</p>
           </div>
           <div class="setting-control">
             <input type="number" v-model.number="settings.requestTimeout" min="5000" max="120000" step="5000" />
@@ -251,6 +251,7 @@
 import { reactive, ref, onMounted, markRaw } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useLocalizationStore } from '@/stores/useLocalizationStore'
+import { useTheme, type ThemeMode } from '@/composables/useTheme'
 import { settingsApi } from '@/api'
 import {
   Settings2,
@@ -262,6 +263,7 @@ import type { Component } from 'vue'
 
 const { t, changeLanguage, availableLanguages } = useLocalization()
 const localizationStore = useLocalizationStore()
+const { loadTheme, setTheme } = useTheme()
 
 const SETTINGS_STORAGE_KEY = 'visunovia-settings'
 
@@ -304,9 +306,9 @@ const saveMessage = ref('')
 const saveError = ref(false)
 
 // 同步加载设置（无异步等待，立即渲染）
-onMounted(() => {
+onMounted(async () => {
   loadSettings()
-  applyTheme(settings.theme)
+  settings.theme = await loadTheme()
 })
 
 function loadSettings() {
@@ -350,11 +352,7 @@ async function onLanguageChange() {
 }
 
 function onThemeChange() {
-  applyTheme(settings.theme)
-}
-
-function applyTheme(theme: 'dark' | 'light') {
-  document.documentElement.setAttribute('data-theme', theme)
+  setTheme(settings.theme as ThemeMode).catch(() => {})
 }
 
 async function saveSettings() {
@@ -397,7 +395,7 @@ function resetSettings() {
   settings.apiBaseUrl = '/api'
   settings.requestTimeout = 30000
 
-  applyTheme('dark')
+  setTheme('dark').catch(() => {})
   changeLanguage('zh-CN').catch(() => {})
   saveSettings()
 }
@@ -408,8 +406,8 @@ function resetSettings() {
 .preferences-root {
   display: flex;
   height: 100vh;
-  background: #1e1e1e;
-  color: #cccccc;
+  background: var(--vn-bg);
+  color: var(--vn-text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
 }
@@ -418,8 +416,8 @@ function resetSettings() {
 .prefs-sidebar {
   width: 200px;
   min-width: 200px;
-  background: #252526;
-  border-right: 1px solid #3e3e42;
+  background: var(--vn-bg-elevated);
+  border-right: 1px solid var(--vn-border);
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -433,10 +431,10 @@ function resetSettings() {
   padding: 16px 16px 12px;
   font-size: 13px;
   font-weight: 600;
-  color: #e0e0e0;
+  color: var(--vn-text-soft);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid #3e3e42;
+  border-bottom: 1px solid var(--vn-border);
   margin-bottom: 4px;
 }
 
@@ -446,7 +444,7 @@ function resetSettings() {
   gap: 10px;
   padding: 8px 16px;
   font-size: 13px;
-  color: #bbbbbb;
+  color: var(--vn-text-muted);
   cursor: pointer;
   transition: background 0.1s, color 0.1s;
   border-left: 3px solid transparent;
@@ -454,14 +452,14 @@ function resetSettings() {
 }
 
 .sidebar-item:hover {
-  background: #2a2d2e;
-  color: #e0e0e0;
+  background: var(--vn-surface-muted);
+  color: var(--vn-text-soft);
 }
 
 .sidebar-item.active {
-  background: #37373d;
-  color: #ffffff;
-  border-left-color: #007acc;
+  background: var(--vn-surface);
+  color: var(--vn-text);
+  border-left-color: var(--vn-accent);
 }
 
 /* ========== Content Area ========== */
@@ -482,9 +480,9 @@ function resetSettings() {
   margin: 0 0 24px;
   font-size: 18px;
   font-weight: 600;
-  color: #e0e0e0;
+  color: var(--vn-text-soft);
   padding-bottom: 12px;
-  border-bottom: 1px solid #3e3e42;
+  border-bottom: 1px solid var(--vn-border);
 }
 
 /* ========== Setting Row ========== */
@@ -493,7 +491,7 @@ function resetSettings() {
   align-items: flex-start;
   justify-content: space-between;
   padding: 12px 0;
-  border-bottom: 1px solid #2d2d30;
+  border-bottom: 1px solid var(--vn-border);
   gap: 24px;
 }
 
@@ -510,14 +508,14 @@ function resetSettings() {
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: #cccccc;
+  color: var(--vn-text);
   margin-bottom: 2px;
 }
 
 .setting-desc {
   margin: 0;
   font-size: 12px;
-  color: #888888;
+  color: var(--vn-text-muted);
   line-height: 1.4;
 }
 
@@ -534,10 +532,10 @@ function resetSettings() {
 .setting-control input[type="number"],
 .setting-control select {
   padding: 6px 10px;
-  background: #3c3c3c;
-  border: 1px solid #555555;
+  background: var(--vn-control-bg);
+  border: 1px solid var(--vn-border-strong);
   border-radius: 3px;
-  color: #e0e0e0;
+  color: var(--vn-text-soft);
   font-size: 13px;
   width: 160px;
   transition: border-color 0.15s;
@@ -548,7 +546,7 @@ function resetSettings() {
 .setting-control input[type="number"]:focus,
 .setting-control select:focus {
   outline: none;
-  border-color: #007acc;
+  border-color: var(--vn-accent);
 }
 
 .setting-control select {
@@ -556,8 +554,8 @@ function resetSettings() {
 }
 
 .setting-control select option {
-  background: #2d2d30;
-  color: #e0e0e0;
+  background: var(--vn-surface);
+  color: var(--vn-text-soft);
 }
 
 /* Toggle Switch */
@@ -579,7 +577,7 @@ function resetSettings() {
 .toggle-slider {
   position: absolute;
   inset: 0;
-  background: #555555;
+  background: var(--vn-border-strong);
   border-radius: 22px;
   transition: background 0.2s;
 }
@@ -597,7 +595,7 @@ function resetSettings() {
 }
 
 .toggle-switch input:checked + .toggle-slider {
-  background: #007acc;
+  background: var(--vn-accent);
 }
 
 .toggle-switch input:checked + .toggle-slider::before {
@@ -610,8 +608,8 @@ function resetSettings() {
   align-items: center;
   justify-content: space-between;
   padding: 12px 32px;
-  background: #252526;
-  border-top: 1px solid #3e3e42;
+  background: var(--vn-bg-elevated);
+  border-top: 1px solid var(--vn-border);
   flex-shrink: 0;
 }
 
@@ -633,21 +631,21 @@ function resetSettings() {
 }
 
 .btn-save {
-  background: #007acc;
+  background: var(--vn-accent);
   color: #ffffff;
 }
 
 .btn-save:hover {
-  background: #1a8ad4;
+  background: var(--vn-accent-hover);
 }
 
 .btn-reset {
-  background: #3c3c3c;
-  color: #cccccc;
+  background: var(--vn-control-bg);
+  color: var(--vn-text);
 }
 
 .btn-reset:hover {
-  background: #4a4a4a;
+  background: var(--vn-surface-muted);
 }
 
 .save-toast {

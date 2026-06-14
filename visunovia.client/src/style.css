@@ -4,20 +4,76 @@
 
 :root {
   font-family: Gadugi, 'Segoe UI', 'Microsoft YaHei UI', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 18px;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: light dark;
+  color: var(--vn-text) !important;
+  color-scheme: dark;
+  forced-color-adjust: none;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-fill-color: var(--vn-text) !important;
+  --vn-bg: #1e1e1e;
+  --vn-bg-elevated: #252526;
+  --vn-surface: #2d2d30;
+  --vn-surface-muted: #333337;
+  --vn-control-bg: #3c3c3c;
+  --vn-text: #ffffff;
+  --vn-text-soft: #e0e0e0;
+  --vn-text-muted: #a7a7a7;
+  --vn-border: #3e3e42;
+  --vn-border-strong: #555555;
+  --vn-accent: #007acc;
+  --vn-accent-hover: #1a8ad4;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --vn-bg: #f3f4f6;
+  --vn-bg-elevated: #ffffff;
+  --vn-surface: #ffffff;
+  --vn-surface-muted: #eef2f7;
+  --vn-control-bg: #ffffff;
+  --vn-text: #111827;
+  --vn-text-soft: #1f2937;
+  --vn-text-muted: #4b5563;
+  --vn-border: #d1d5db;
+  --vn-border-strong: #9ca3af;
+  --vn-accent: #2563eb;
+  --vn-accent-hover: #1d4ed8;
+}
+
+html,
+body,
+#app,
+#app * {
+  color: var(--vn-text) !important;
+  -webkit-text-fill-color: var(--vn-text) !important;
+  forced-color-adjust: none !important;
+}
+
+#app .preview-stage .preview-affiliation {
+  color: #7accf9 !important;
+  -webkit-text-fill-color: #7accf9 !important;
+  text-shadow: 0 3px 8px rgba(0, 32, 76, 0.38) !important;
+}
+
+#app .preview-stage .preview-choices button,
+#app .preview-stage .preview-choices button * {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  text-shadow: none !important;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: var(--vn-bg);
   font-family: Gadugi, 'Segoe UI', 'Microsoft YaHei UI', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 18px;
 }
 
 #app {
