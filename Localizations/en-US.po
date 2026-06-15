@@ -533,16 +533,91 @@ msgid "nodes.delay"
 msgstr "Delay"
 
 msgid "nodes.event"
-msgstr "事件"
+msgstr "Event"
 
 msgid "nodes.logic"
-msgstr "逻辑"
+msgstr "Logic"
 
 msgid "nodes.choice"
-msgstr "选择"
+msgstr "Choice"
 
 msgid "nodes.resources"
-msgstr "资源"
+msgstr "Resources"
+
+msgid "nodes.characterControl"
+msgstr "Character Control"
+
+msgid "characterControl.characterControls"
+msgstr "Character Controls"
+
+msgid "characterControl.preview"
+msgstr "Stage Preview"
+
+msgid "characterControl.modifiedSlots"
+msgstr "modified slots"
+
+msgid "characterControl.noPreview"
+msgstr "No visible character changes"
+
+msgid "characterControl.noChange"
+msgstr "No Change"
+
+msgid "characterControl.unselected"
+msgstr "Unselected"
+
+msgid "characterControl.slot"
+msgstr "Character Slot"
+
+msgid "characterControl.action"
+msgstr "Action"
+
+msgid "characterControl.show"
+msgstr "Show Character"
+
+msgid "characterControl.hide"
+msgstr "Hide Character"
+
+msgid "characterControl.update"
+msgstr "Update Character"
+
+msgid "characterControl.move"
+msgstr "Move Character"
+
+msgid "characterControl.sprite"
+msgstr "Sprite"
+
+msgid "characterControl.sfx"
+msgstr "Sound Effect"
+
+msgid "characterControl.unmanagedCharacter"
+msgstr "Slot 6 Character Name"
+
+msgid "characterControl.fromPosition"
+msgstr "From Position"
+
+msgid "characterControl.toPosition"
+msgstr "To Position"
+
+msgid "characterControl.currentPosition"
+msgstr "Current Position"
+
+msgid "characterControl.noMove"
+msgstr "No Move"
+
+msgid "characterControl.animation"
+msgstr "Animation"
+
+msgid "characterControl.animation.none"
+msgstr "None"
+
+msgid "characterControl.animation.pop"
+msgstr "Pop"
+
+msgid "characterControl.animation.move"
+msgstr "Move"
+
+msgid "characterControl.easing"
+msgstr "Easing"
 
 
 msgid "nodes.conditional.placeholder"

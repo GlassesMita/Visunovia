@@ -1,3 +1,44 @@
+.modal-overlay,
+.modal-overlay *,
+.modal-overlay *::before,
+.modal-overlay *::after {
+    box-sizing: border-box;
+}
+
+.modal-overlay button,
+.modal-overlay input,
+.modal-overlay optgroup,
+.modal-overlay select,
+.modal-overlay textarea {
+    margin: 0;
+    border-radius: 0;
+    font: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    background: transparent;
+}
+
+.modal-overlay button,
+.modal-overlay [type="button"],
+.modal-overlay [type="reset"],
+.modal-overlay [type="submit"],
+.modal-overlay input,
+.modal-overlay select,
+.modal-overlay textarea {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.modal-overlay button,
+.modal-overlay [type="button"],
+.modal-overlay [type="reset"],
+.modal-overlay [type="submit"] {
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-align: inherit;
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;

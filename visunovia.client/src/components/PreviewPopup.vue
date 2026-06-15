@@ -95,7 +95,7 @@
           </div>
         </div>
 
-        <audio ref="bgmAudio" loop></audio>
+        <audio ref="bgmAudio"></audio>
       </section>
 
       <Teleport to="body">
@@ -509,7 +509,7 @@ function renderDialogueNode(node: PreviewNode) {
 }
 
 function processCharacterControlNode(node: PreviewNode) {
-  applyCharacterControlData(node.data, node)
+  applyCharacterControlEntries(node.data, node)
 }
 
 function startTypewriter(text: string) {
@@ -624,7 +624,7 @@ function processEventNode(node: PreviewNode) {
   if (subType === 'changeBackground') {
     setBackground(resourcePath.value, createResourceTrace(node, 'background', '背景', resourcePath.field, resourcePath.value, resolveAssetUrl(resourcePath.value, 'Backgrounds')))
   } else if (subType === 'playBgm') {
-    playBgm(resourcePath.value, Number(node.data.volume ?? 1), createResourceTrace(node, 'bgm', 'BGM', resourcePath.field, resourcePath.value, resolveAssetUrl(resourcePath.value, 'Musics')))
+    playBgm(resourcePath.value, Number(node.data.volume ?? 1), toBoolean(node.data.loop, true), createResourceTrace(node, 'bgm', 'BGM', resourcePath.field, resourcePath.value, resolveAssetUrl(resourcePath.value, 'Musics')))
   } else if (subType === 'stopBgm') {
     stopAudio()
   } else if (subType === 'playSfx') {
@@ -735,9 +735,31 @@ function applyCharacterControls(dialogueNode: PreviewNode) {
   const controls = getCharacterControlsForDialogue(dialogueNode)
   const nextSlots = { ...characterSlots.value }
 
-  controls.forEach((control: any) => applyCharacterControlData(control, dialogueNode, nextSlots))
+  controls.forEach((control: any) => applyCharacterControlEntries(control, dialogueNode, nextSlots))
 
   characterSlots.value = nextSlots
+}
+
+function parseCharacterControlEntries(control: any) {
+  const rawControls = control?.characterControls ?? control?.characterControlsJson
+  if (Array.isArray(rawControls)) return rawControls
+  if (typeof rawControls === 'string' && rawControls.trim()) {
+    try {
+      const parsed = JSON.parse(rawControls)
+      if (Array.isArray(parsed)) return parsed
+    } catch (error) {
+      console.warn('[PreviewPopup] 角色控制数据解析失败', error)
+    }
+  }
+
+  return [control]
+}
+
+function applyCharacterControlEntries(control: any, sourceNode?: PreviewNode, targetSlots?: Record<string, CharacterSlotState>) {
+  parseCharacterControlEntries(control)
+    .map((entry: any) => ({ ...entry, action: entry.action || entry.mode || 'none' }))
+    .filter((entry: any) => String(entry.action || entry.mode || 'none').toLowerCase() !== 'none')
+    .forEach((entry: any) => applyCharacterControlData(entry, sourceNode, targetSlots))
 }
 
 function getCharacterControlsForDialogue(dialogueNode: PreviewNode) {
@@ -751,7 +773,7 @@ function getCharacterControlsForDialogue(dialogueNode: PreviewNode) {
       const targetPort = normalizePort(connection.to.port)
       const sourcePort = normalizePort(connection.from.port)
       const isLegacyControlPort = targetPort.startsWith('characterControl')
-      const isOverviewControlLink = sourcePort === 'controlOut' && targetPort === 'execIn'
+      const isOverviewControlLink = (sourcePort === 'controlOut' || sourcePort === 'execOut') && targetPort === 'execIn'
       if (!isLegacyControlPort && !isOverviewControlLink) return null
 
       const slotFromPort = isLegacyControlPort ? targetPort.replace('characterControl', '') : ''
@@ -768,7 +790,10 @@ function getCharacterControlsForDialogue(dialogueNode: PreviewNode) {
 function applyCharacterControlData(control: any, sourceNode?: PreviewNode, targetSlots?: Record<string, CharacterSlotState>) {
   const nextSlots = targetSlots || { ...characterSlots.value }
   const slot = String(control.slot || '1')
-  const action = String(control.action || 'show').toLowerCase()
+  const action = String(control.action || control.mode || 'show').toLowerCase()
+
+  if (action === 'none') return
+  if (action === 'show' && slot !== '6' && !control.character && !control.sprite && !nextSlots[slot]) return
 
   if (action === 'hide') {
     const hiddenSprite = nextSlots[slot]?.sprite || ''
@@ -1020,9 +1045,23 @@ function normalizeEventParameters(parameters: Record<string, any>) {
     imagePath: background,
     bgmFile,
     bgmPath: bgmFile,
+    volume: parameters.volume,
+    loop: parameters.loop,
     sfxPath: parameters.soundFile || parameters.sfx || resource,
     voicePath: parameters.voiceFile || parameters.voice || resource,
   }
+}
+
+function toBoolean(value: unknown, fallback = false) {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value !== 0
+
+  const normalized = String(value ?? '').trim().toLowerCase()
+  if (!normalized) return fallback
+  if (['true', '1', 'yes', 'y', 'on'].includes(normalized)) return true
+  if (['false', '0', 'no', 'n', 'off'].includes(normalized)) return false
+
+  return fallback
 }
 
 function normalizePreviewConnections(connections: GraphConnection[]): PreviewConnection[] {
@@ -1091,14 +1130,15 @@ function isVideoAsset(path: string) {
   return VIDEO_ASSET_EXTENSIONS.has(extension)
 }
 
-function playBgm(path: string, volume: number, trace?: PreviewResourceTrace) {
+function playBgm(path: string, volume: number, loop: boolean, trace?: PreviewResourceTrace) {
   if (!bgmAudio.value || !path) return
   const url = trace?.resolvedUrl || resolveAssetUrl(path, 'Musics')
   registerResourceTrace(trace)
   bgmAudio.value.src = url
   bgmAudio.value.volume = Math.max(0, Math.min(1, volume))
+  bgmAudio.value.loop = loop
   bgmAudio.value.play().catch((error) => {
-    console.warn('[PreviewPopup] BGM 播放失败:', { path, url, error })
+    console.warn('[PreviewPopup] BGM 播放失败:', { path, url, loop, error })
   })
 }
 
@@ -1690,44 +1730,69 @@ function closePreview() {
 }
 
 .preview-text :deep(.dialog-inside),
-.preview-text :deep(.dialog-inside a),
-.preview-text :deep(a .dialog-inside),
-.preview-text :deep(.dialog-inside a.new) {
-  background-color: #252525 !important;
-  color: rgba(255, 255, 255, 0) !important;
-  -webkit-text-fill-color: rgba(255, 255, 255, 0) !important;
+:global(#app #app) .preview-popup-overlay .preview-text :deep(.dialog-inside) {
+  display: inline !important;
+  background-color: #000000FF !important;
+  color: #FFFFFF00 !important;
+  -webkit-text-fill-color: #FFFFFF00 !important;
   text-shadow: none !important;
-  transition: background-color 0.5s ease, color 0.5s ease, -webkit-text-fill-color 0.5s ease, text-shadow 0.5s ease !important;
+  text-decoration-color: transparent !important;
+  transition: background-color 0.5s, color 0.5s, -webkit-text-fill-color 0.5s !important;
+}
+
+.preview-text :deep(.dialog-inside *),
+:global(#app #app) .preview-popup-overlay .preview-text :deep(.dialog-inside *) {
+  background: transparent !important;
+  color: currentColor !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: inherit !important;
+  text-decoration-color: currentColor !important;
 }
 
 .preview-text :deep(.dialog-inside:hover),
-.preview-text :deep(.dialog-inside:active),
-.preview-text :deep(.dialog-inside:hover .dialog-inside),
-.preview-text :deep(.dialog-inside:active .dialog-inside) {
-  background-color: transparent !important;
-  color: inherit !important;
-  -webkit-text-fill-color: currentColor !important;
-  text-shadow: inherit !important;
+:global(#app #app) .preview-popup-overlay .preview-text :deep(.dialog-inside:hover) {
+  background-color: #00000000 !important;
+  color: #FFFFFFFF !important;
+  -webkit-text-fill-color: #FFFFFFFF !important;
+  text-decoration-color: currentColor !important;
 }
 
-.preview-text :deep(.dialog-inside:hover a),
-.preview-text :deep(a:hover .dialog-inside),
-.preview-text :deep(.dialog-inside:active a),
-.preview-text :deep(a:active .dialog-inside) {
-  background-color: transparent !important;
-  color: lightblue !important;
-  -webkit-text-fill-color: lightblue !important;
+.preview-text :deep(.dialog-inside:not(:hover)),
+:global(#app #app) .preview-popup-overlay .preview-text :deep(.dialog-inside:not(:hover)) {
+  background-color: #000000FF !important;
+  color: #FFFFFF00 !important;
+  -webkit-text-fill-color: #FFFFFF00 !important;
 }
 
-.preview-text :deep(.dialog-inside:hover .new),
-.preview-text :deep(.dialog-inside .new:hover),
-.preview-text :deep(.new:hover .dialog-inside),
-.preview-text :deep(.dialog-inside:active .new),
-.preview-text :deep(.dialog-inside .new:active),
-.preview-text :deep(.new:active .dialog-inside) {
-  background-color: transparent !important;
-  color: #ba0000 !important;
-  -webkit-text-fill-color: #ba0000 !important;
+:global(html body #app #app .preview-popup-overlay .preview-text .dialog-inside),
+:global(html body #app #app .preview-popup-overlay .preview-text .dialog-inside:not(:hover)) {
+  background-color: #000000FF !important;
+  color: #FFFFFF00 !important;
+  -webkit-text-fill-color: #FFFFFF00 !important;
+  text-shadow: none !important;
+  text-decoration-color: transparent !important;
+  transition: background-color 0.5s, color 0.5s, -webkit-text-fill-color 0.5s !important;
+}
+
+:global(html body #app #app .preview-popup-overlay .preview-text .dialog-inside *),
+:global(html body #app #app .preview-popup-overlay .preview-text .dialog-inside:not(:hover) *) {
+  color: #FFFFFF00 !important;
+  -webkit-text-fill-color: #FFFFFF00 !important;
+  text-shadow: none !important;
+  text-decoration-color: transparent !important;
+}
+
+:global(html body #app #app .preview-popup-overlay .preview-text .dialog-inside:hover) {
+  background-color: #00000000 !important;
+  color: #FFFFFFFF !important;
+  -webkit-text-fill-color: #FFFFFFFF !important;
+  text-decoration-color: currentColor !important;
+}
+
+:global(html body #app #app .preview-popup-overlay .preview-text .dialog-inside:hover *) {
+  color: #FFFFFFFF !important;
+  -webkit-text-fill-color: #FFFFFFFF !important;
+  text-decoration-color: currentColor !important;
 }
 
 .preview-text :deep(del),

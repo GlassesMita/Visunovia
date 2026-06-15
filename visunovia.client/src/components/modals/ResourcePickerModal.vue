@@ -21,9 +21,18 @@
               @click="handleSelect(file.path)"
               @dblclick="handleConfirm(file.path)"
             >
-              <!-- 图片预览或文件图标 -->
+              <!-- 图片/视频预览或文件图标 -->
+              <video
+                v-if="file.isVideo && file.thumbnail"
+                :src="file.thumbnail"
+                class="file-thumbnail file-video-thumbnail"
+                muted
+                loop
+                playsinline
+                preload="metadata"
+              ></video>
               <img
-                v-if="isImageType && file.thumbnail"
+                v-else-if="file.isImage && file.thumbnail"
                 :src="file.thumbnail"
                 :alt="file.name"
                 class="file-thumbnail"
@@ -77,10 +86,33 @@ const emit = defineEmits<{
 const { t } = useLocalization()
 const selectedPath = ref('')
 
-/** 图片类型的资源类型集合 */
-const IMAGE_TYPES: ResourceType[] = ['image']
+const BACKGROUND_VIDEO_EXTENSIONS = ['.mp4', '.webm', '.m4v', '.mov', '.ogv']
+const IMAGE_EXTENSIONS = RESOURCE_TYPE_EXTENSIONS.image
 
-const isImageType = computed(() => IMAGE_TYPES.includes(props.resourceType))
+function getFileExt(name: string | undefined): string {
+  const fileName = name || ''
+  const dotIndex = fileName.lastIndexOf('.')
+  return dotIndex >= 0 ? fileName.slice(dotIndex).toLowerCase() : ''
+}
+
+function isBackgroundAsset(path: string | undefined): boolean {
+  return /[\\/]Backgrounds[\\/]/i.test(path || '')
+}
+
+function isCharacterAsset(path: string | undefined): boolean {
+  return /[\\/]Characters[\\/]/i.test(path || '')
+}
+
+function getAllowedExtensions() {
+  const exts = RESOURCE_TYPE_EXTENSIONS[props.resourceType] || []
+  const allFiles = props.files || []
+  const shouldIncludeBackgroundVideos = props.resourceType === 'image'
+    && allFiles.some(file => isBackgroundAsset(file.path || file.name))
+
+  return shouldIncludeBackgroundVideos
+    ? Array.from(new Set([...exts, ...BACKGROUND_VIDEO_EXTENSIONS]))
+    : exts
+}
 
 /** 模态框标题 */
 const modalTitle = computed(() => {
@@ -100,18 +132,28 @@ const modalTitle = computed(() => {
 /** 过滤后的文件列表 */
 const filteredFiles = computed(() => {
   const allFiles = props.files || []
-  const exts = RESOURCE_TYPE_EXTENSIONS[props.resourceType] || []
+  const exts = getAllowedExtensions()
   return allFiles
     .filter((f: any) => {
-      const ext = f.name?.slice(f.name.lastIndexOf('.')).toLowerCase() || ''
+      const ext = getFileExt(f.name)
       return exts.includes(ext)
     })
-    .map((f: any) => ({
-      name: f.name,
-      path: f.path || f.name,
-      ext: f.name?.slice(f.name.lastIndexOf('.')).toLowerCase() || '',
-      thumbnail: f.path ? resolveAssetUrl(f.path, 'Backgrounds') : '',
-    }))
+    .map((f: any) => {
+      const path = f.path || f.name
+      const ext = getFileExt(f.name)
+      const isImage = IMAGE_EXTENSIONS.includes(ext)
+      const isVideo = BACKGROUND_VIDEO_EXTENSIONS.includes(ext)
+      return {
+        name: f.name,
+        path,
+        ext,
+        isImage,
+        isVideo,
+        thumbnail: (isImage || isVideo) && path
+          ? resolveAssetUrl(path, isCharacterAsset(path) ? 'Characters' : 'Backgrounds')
+          : '',
+      }
+    })
 })
 
 function isSelected(path: string): boolean {
@@ -159,11 +201,14 @@ watch(() => props.visible, (val) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  isolation: isolate;
+  z-index: 2147483647;
 }
 .resource-picker-modal {
-  width: 640px;
-  max-height: 70vh;
+  position: relative;
+  z-index: 1;
+  width: min(920px, 92vw);
+  max-height: 86vh;
   background: #1e1e2e;
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -197,12 +242,12 @@ watch(() => props.visible, (val) => {
   padding: 16px;
   overflow-y: auto;
   min-height: 200px;
-  max-height: 50vh;
+  max-height: 68vh;
 }
 .file-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
 }
 .file-item {
   border: 2px solid transparent;
@@ -219,15 +264,18 @@ watch(() => props.visible, (val) => {
 .file-item:hover { border-color: #555; background: #333348; }
 .file-item.selected { border-color: #7c3aed; background: rgba(124, 58, 237, 0.15); }
 .file-thumbnail {
-  width: 80px;
-  height: 60px;
-  object-fit: cover;
+  width: 100%;
+  height: 140px;
+  object-fit: contain;
   border-radius: 4px;
   background: #111;
 }
+.file-video-thumbnail {
+  display: block;
+}
 .file-icon {
-  width: 80px;
-  height: 60px;
+  width: 100%;
+  height: 140px;
   display: flex;
   align-items: center;
   justify-content: center;

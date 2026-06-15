@@ -7,6 +7,11 @@ export interface SceneInfo {
   content?: string
 }
 
+export interface SceneListItem {
+  id: string
+  lorFilePath: string
+}
+
 export interface ProjectParseResult {
   scenes: SceneInfo[]
 }
@@ -96,10 +101,10 @@ export async function importProject(projectPath: string): Promise<ProjectParseRe
 /**
  * 获取项目的场景列表（不包含完整内容）
  */
-export async function getProjectScenes(projectPath: string): Promise<SceneInfo[]> {
+export async function getProjectScenes(projectPath: string): Promise<SceneListItem[]> {
   const response = await apiClient.get<{
     success: boolean
-    data: SceneInfo[]
+    data: SceneListItem[]
   }>('/project/scenes', {
     params: { projectPath },
   })
@@ -109,6 +114,39 @@ export async function getProjectScenes(projectPath: string): Promise<SceneInfo[]
   }
 
   return response.data.data
+}
+
+export async function createScene(sceneId: string): Promise<void> {
+  const response = await apiClient.post<{
+    success: boolean
+    error?: string
+  }>('/project/scenes', { sceneId })
+
+  if (!response.data?.success) {
+    throw new Error(response.data?.error || '新建场景失败')
+  }
+}
+
+export async function renameScene(sceneId: string, newSceneId: string): Promise<void> {
+  const response = await apiClient.put<{
+    success: boolean
+    error?: string
+  }>(`/project/scenes/${encodeURIComponent(sceneId)}/rename`, { newSceneId })
+
+  if (!response.data?.success) {
+    throw new Error(response.data?.error || '重命名场景失败')
+  }
+}
+
+export async function deleteScene(sceneId: string): Promise<void> {
+  const response = await apiClient.delete<{
+    success: boolean
+    error?: string
+  }>(`/project/scenes/${encodeURIComponent(sceneId)}`)
+
+  if (!response.data?.success) {
+    throw new Error(response.data?.error || '删除场景失败')
+  }
 }
 
 /**
@@ -258,6 +296,7 @@ export interface CharacterConfigEntry {
   affiliation?: string
   color?: string
   avatar?: string
+  sprites?: string[]
   note?: string
 }
 
@@ -271,6 +310,7 @@ type RawCharacterConfigEntry = CharacterConfigEntry & {
   Affiliation?: string
   Color?: string
   Avatar?: string
+  Sprites?: string[]
   Note?: string
 }
 
@@ -287,6 +327,7 @@ function normalizeCharacterConfig(config?: RawCharacterConfigResponse): Characte
       affiliation: character.affiliation || character.Affiliation || '',
       color: character.color || character.Color || '',
       avatar: character.avatar || character.Avatar || '',
+      sprites: character.sprites || character.Sprites || [],
       note: character.note || character.Note || '',
     })).filter(character => character.id)
   }
@@ -316,7 +357,7 @@ export async function updateProjectSettings(
 }
 
 /**
- * 读取当前项目 Assets/Characters/characters.json 角色附加配置。
+ * 读取当前项目 Assets/Characters/Manifest.resona 角色附加配置。
  */
 export async function getCharacterConfig(): Promise<CharacterConfigResponse> {
   const response = await apiClient.get<{
@@ -333,7 +374,7 @@ export async function getCharacterConfig(): Promise<CharacterConfigResponse> {
 }
 
 /**
- * 写入当前项目 Assets/Characters/characters.json 角色附加配置。
+ * 写入当前项目 Assets/Characters/Manifest.resona 角色附加配置。
  */
 export async function saveCharacterConfig(config: CharacterConfigResponse): Promise<CharacterConfigResponse> {
   const response = await apiClient.put<{

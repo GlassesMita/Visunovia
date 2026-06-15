@@ -12,6 +12,7 @@ export interface CharacterProfile {
   color: string
   avatar: string
   spriteFolder: string
+  sprites: string[]
   note: string
 }
 
@@ -29,6 +30,7 @@ function normalizeCharacter(raw: Partial<CharacterProfile>, index = 0): Characte
     color: raw.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length],
     avatar: raw.avatar || '',
     spriteFolder: raw.spriteFolder || '',
+    sprites: raw.sprites || [],
     note: raw.note || '',
   }
 }
@@ -99,9 +101,24 @@ export const useCharacterStore = defineStore('characters', () => {
         affiliation: character.affiliation,
         color: character.color,
         avatar: toRelativeCharacterPath(projectRoot.value, character.avatar),
+        sprites: character.sprites.map(sprite => toRelativeCharacterPath(projectRoot.value, sprite)),
         note: character.note,
       }))
     })
+  }
+
+  async function findSpriteFiles(characterFolder: string) {
+    try {
+      const result = await getEntries(characterFolder)
+      return result.entries
+        .filter(entry => !entry.isDirectory && isImageFile(entry.name))
+        .filter(entry => !/[\\/]Avatars[\\/]/i.test(entry.path || ''))
+        .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
+        .map(entry => entry.path || '')
+        .filter(Boolean)
+    } catch {
+      return []
+    }
   }
 
   async function findDefaultAvatar(characterFolder: string) {
@@ -154,6 +171,9 @@ export const useCharacterStore = defineStore('characters', () => {
             ? toAbsoluteCharacterPath(projectPath, configured.avatar)
             : await findDefaultAvatar(folder.path),
           spriteFolder: folder.path,
+          sprites: (configured?.sprites && configured.sprites.length > 0)
+            ? configured.sprites.map(sprite => toAbsoluteCharacterPath(projectPath, sprite))
+            : await findSpriteFiles(folder.path),
           note: configured?.note || '',
         }, index)
       }))
@@ -187,6 +207,7 @@ export const useCharacterStore = defineStore('characters', () => {
     character.color = updates.color || character.color
     character.avatar = updates.avatar ?? character.avatar
     character.spriteFolder = updates.spriteFolder ?? character.spriteFolder
+    character.sprites = updates.sprites ?? character.sprites
     character.note = updates.note ?? character.note
     syncCharacterSelectOptions(characters.value)
     await save()
@@ -222,5 +243,6 @@ export const useCharacterStore = defineStore('characters', () => {
     updateCharacter,
     removeCharacter,
     ensureCharacter,
+    findSpriteFiles,
   }
 })

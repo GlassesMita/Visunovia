@@ -13,6 +13,7 @@ export const useUIStore = defineStore('ui', () => {
   const showNewProjectModal = ref(false)
   const showProjectPreferences = ref(false)
   const showCharacterManager = ref(false)
+  const showSceneManager = ref(false)
   const showPreviewPopup = ref(false)
   const showNodeDetailsModal = ref(false)
   const activePanel = ref<string | null>(null)
@@ -102,6 +103,14 @@ export const useUIStore = defineStore('ui', () => {
     showCharacterManager.value = false
   }
 
+  function openSceneManager() {
+    showSceneManager.value = true
+  }
+
+  function closeSceneManager() {
+    showSceneManager.value = false
+  }
+
   function openPreviewPopup() {
     showPreviewPopup.value = true
     previewReloadToken.value += 1
@@ -165,6 +174,9 @@ export const useUIStore = defineStore('ui', () => {
     showCharacterManager,
     openCharacterManager,
     closeCharacterManager,
+    showSceneManager,
+    openSceneManager,
+    closeSceneManager,
     showPreviewPopup,
     previewReloadToken,
     openPreviewPopup,

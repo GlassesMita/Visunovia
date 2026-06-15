@@ -149,6 +149,18 @@ function getCharacterLabel(value: string) {
   return option?.text || id
 }
 
+function parseCharacterControls(node: any) {
+  const raw = getInputValue(node, 'characterControlsJson') || node?.data?.characterControlsJson || node?.data?.characterControls
+  if (Array.isArray(raw)) return raw
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(String(raw))
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
 function getHoverNodeTitle(node: any) {
   return String(node?.title || node?.type || 'Node')
 }
@@ -156,15 +168,20 @@ function getHoverNodeTitle(node: any) {
 function getHoverNodeItems(node: any) {
   const type = String(node?.type || '')
   if (type === 'CharacterControlNode') {
+    const controls = parseCharacterControls(node).filter((control: any) => String(control?.mode || control?.action || 'none') !== 'none')
+    if (controls.length > 0) {
+      return [
+        { key: 'count', label: '修改 Slot', value: String(controls.length) },
+        { key: 'slots', label: 'Slot', value: controls.map((control: any) => `${control.slot}:${control.mode || control.action}`).join(', ') },
+        { key: 'characters', label: '角色', value: controls.map((control: any) => control.slot === '6'
+          ? (control.unmanagedCharacter || control.character || '未设置')
+          : getCharacterLabel(String(control.character || ''))).join(' / ') },
+      ]
+    }
+
     return [
-      { key: 'slot', label: 'Slot', value: getInputValue(node, 'slot') || '1' },
-      { key: 'character', label: '角色', value: getInputValue(node, 'slot') === '6'
-        ? String(getInputValue(node, 'unmanagedCharacter') || getInputValue(node, 'character') || '未设置')
-        : getCharacterLabel(String(getInputValue(node, 'character') || '')) },
-      { key: 'action', label: '动作', value: getInputValue(node, 'action') || 'show' },
-      { key: 'sprite', label: '立绘', value: getInputValue(node, 'sprite') || '无' },
-      { key: 'position', label: '位置', value: getInputValue(node, 'position') || 'center' },
-      { key: 'animation', label: '动画', value: getInputValue(node, 'animation') || 'fade' },
+      { key: 'count', label: '修改 Slot', value: '0' },
+      { key: 'hint', label: '状态', value: '全部无修改' },
     ]
   }
 

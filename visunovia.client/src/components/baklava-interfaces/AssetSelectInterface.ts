@@ -1,5 +1,6 @@
 import { NodeInterface } from '@baklavajs/core'
 import { defineComponent, h, onMounted, ref } from 'vue'
+import NativeFreeSelect from '@/components/NativeFreeSelect.vue'
 import { getEntries, type DirEntry } from '@/api/fileBrowser'
 import { getCurrentProject } from '@/api/projectApi'
 import { resolveAssetUrl, toFolderRelativeAssetPath } from '@/utils/assetPaths'
@@ -199,21 +200,22 @@ const AssetSelectComponent = defineComponent({
       const config = ASSET_CONFIG[kind]
       const value = String(props.intf.value || '')
       const selectedName = options.value.find(option => option.path === value)?.name || value.split(/[\\/]/).pop() || ''
+      const selectOptions = [
+        { value: '', label: loading.value ? `读取${config.label}中...` : `未选择${config.label}` },
+        ...(value && !options.value.some(option => option.path === value) ? [{ value, label: selectedName }] : []),
+        ...options.value.map(option => ({ value: option.path, label: option.name })),
+      ]
 
       return h('div', { class: 'vn-asset-select' }, [
-        h('select', {
+        h(NativeFreeSelect, {
           class: 'vn-asset-select-control',
-          value,
+          modelValue: value,
+          options: selectOptions,
           disabled: loading.value,
           title: value,
-          onChange: (event: Event) => selectAsset((event.target as HTMLSelectElement).value),
-        }, [
-          h('option', { value: '' }, loading.value ? `读取${config.label}中...` : `未选择${config.label}`),
-          value && !options.value.some(option => option.path === value)
-            ? h('option', { value }, selectedName)
-            : null,
-          ...options.value.map(option => h('option', { value: option.path, key: option.path }, option.name)),
-        ]),
+          'onUpdate:modelValue': selectAsset,
+          onChange: selectAsset,
+        }),
         kind === 'background' && value && isPreviewableBackground(value)
           ? h('div', { class: 'vn-asset-select-preview vn-asset-select-preview-lite', title: value }, isVideoBackground(value) ? '视频背景' : '图片背景')
           : null,

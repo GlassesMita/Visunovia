@@ -23,6 +23,7 @@ function normalizePortName(portName: string | undefined, interfaces?: Record<str
   }
   if (name === 'exec_out') return interfaces?.execOut ? 'execOut' : 'execOut'
   if (name === 'exec_in') return interfaces?.execIn ? 'execIn' : 'execIn'
+  if (name === 'controlOut') return interfaces?.execOut ? 'execOut' : 'controlOut'
 
   const characterControlMatch = name.match(/(?:◆|characterControl)\s*(\d+)/i)
   if (characterControlMatch) {
@@ -78,6 +79,72 @@ function normalizeNodeType(nodeType: string | undefined): string {
 
 function getInterfaceValue(node: any, key: string): any {
   return node?.inputs?.[key]?.value
+}
+
+function parseCharacterControls(value: any): any[] {
+  if (Array.isArray(value)) return value
+  const raw = String(value || '').trim()
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function normalizeCharacterControl(control: any, fallbackSlot = '1') {
+  const slot = String(control?.slot || fallbackSlot || '1')
+  const action = String(control?.action || control?.mode || 'none').trim() || 'none'
+  return {
+    slot,
+    mode: action,
+    action,
+    character: slot === '6'
+      ? String(control?.unmanagedCharacter || control?.character || '').trim()
+      : String(control?.character || '').trim(),
+    unmanagedCharacter: String(control?.unmanagedCharacter || '').trim(),
+    sprite: slot === '6' ? '' : String(normalizeAssetProperties({ sprite: control?.sprite }).sprite ?? '').trim(),
+    sfx: String(normalizeAssetProperties({ sfx: control?.sfx }).sfx ?? '').trim(),
+    expression: String(control?.expression ?? 'default').trim() || 'default',
+    fromPosition: String(control?.fromPosition ?? '').trim(),
+    toPosition: String(control?.toPosition ?? 'none').trim() || 'none',
+    position: String(control?.position ?? 'center').trim() || 'center',
+    animation: String(control?.animation ?? 'fade').trim() || 'fade',
+    easing: String(control?.easing ?? 'easeOutCubic').trim() || 'easeOutCubic',
+    duration: Number(control?.duration ?? 0.3),
+  }
+}
+
+function getCharacterControlsFromNode(node: any, fallbackSlot = '1') {
+  const rawControls = parseCharacterControls(getInterfaceValue(node, 'characterControlsJson') ?? node?.data?.characterControlsJson ?? node?.data?.characterControls)
+  if (rawControls.length > 0) {
+    return rawControls
+      .map((control, index) => normalizeCharacterControl(control, String(index + 1)))
+      .filter(control => control.action !== 'none')
+  }
+
+  const selectedSlot = String(getInterfaceValue(node, 'slot') ?? fallbackSlot).trim() || fallbackSlot
+  const legacyAction = String(getInterfaceValue(node, 'action') ?? '').trim()
+  const legacyCharacter = getInterfaceValue(node, 'character')
+  const legacySprite = getInterfaceValue(node, 'sprite')
+  if (!legacyAction && !legacyCharacter && !legacySprite) return []
+
+  return [normalizeCharacterControl({
+    slot: selectedSlot,
+    character: legacyCharacter,
+    unmanagedCharacter: getInterfaceValue(node, 'unmanagedCharacter'),
+    action: legacyAction || 'show',
+    sprite: legacySprite,
+    sfx: getInterfaceValue(node, 'sfx'),
+    expression: getInterfaceValue(node, 'expression'),
+    fromPosition: getInterfaceValue(node, 'fromPosition'),
+    toPosition: getInterfaceValue(node, 'toPosition'),
+    position: getInterfaceValue(node, 'position'),
+    animation: getInterfaceValue(node, 'animation'),
+    easing: getInterfaceValue(node, 'easing'),
+    duration: getInterfaceValue(node, 'duration'),
+  }, selectedSlot)]
 }
 
 export interface GraphNode {
@@ -241,6 +308,12 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
       }
     })
 
+    if (normalizeNodeType(extractNodeType(node)) === 'CharacterControlNode') {
+      const controls = getCharacterControlsFromNode(node)
+      properties.characterControls = controls
+      properties.characterControlsJson = JSON.stringify(controls)
+    }
+
     if (normalizeNodeType(extractNodeType(node)) === 'DialogueNode') {
       const characterControls = buildCharacterControlsForDialogue(editorInstance, node)
       if (characterControls.length > 0) {
@@ -259,32 +332,20 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
         const controlNode = editorInstance.graph.nodes.find((node) => node.id === connection.from.nodeId) as any
         if (!controlNode || normalizeNodeType(extractNodeType(controlNode)) !== 'CharacterControlNode') return null
 
+        const sourcePort = normalizePortName(String(connection.from?.name || connection.from?.port || ''))
         const targetPort = findInterfaceKey(dialogueNode.inputs, connection.to, connection.to.name)
-        if (!targetPort.startsWith('characterControl')) return null
+        const isLegacyControlPort = targetPort.startsWith('characterControl')
+        const isExecutionControlLink = (sourcePort === 'execOut' || sourcePort === 'controlOut') && targetPort === 'execIn'
+        if (!isLegacyControlPort && !isExecutionControlLink) return null
 
         return { controlNode, targetPort }
       })
       .filter(Boolean)
-      .map((item) => {
-        const connectedSlot = item!.targetPort.replace('characterControl', '')
-        const selectedSlot = String(getInterfaceValue(item!.controlNode, 'slot') ?? '').trim()
-        const slot = selectedSlot || connectedSlot || '1'
-        return {
-          slot,
-          character: slot === '6'
-            ? String(getInterfaceValue(item!.controlNode, 'unmanagedCharacter') || getInterfaceValue(item!.controlNode, 'character') || '').trim()
-            : String(getInterfaceValue(item!.controlNode, 'character') ?? '').trim(),
-          action: String(getInterfaceValue(item!.controlNode, 'action') ?? 'show').trim() || 'show',
-          sprite: slot === '6' ? '' : String(normalizeAssetProperties({ sprite: getInterfaceValue(item!.controlNode, 'sprite') }).sprite ?? '').trim(),
-          sfx: String(normalizeAssetProperties({ sfx: getInterfaceValue(item!.controlNode, 'sfx') }).sfx ?? '').trim(),
-          expression: String(getInterfaceValue(item!.controlNode, 'expression') ?? '').trim(),
-          fromPosition: String(getInterfaceValue(item!.controlNode, 'fromPosition') ?? '').trim(),
-          toPosition: String(getInterfaceValue(item!.controlNode, 'toPosition') ?? 'none').trim() || 'none',
-          position: String(getInterfaceValue(item!.controlNode, 'position') ?? 'center').trim() || 'center',
-          animation: String(getInterfaceValue(item!.controlNode, 'animation') ?? 'fade').trim() || 'fade',
-          easing: String(getInterfaceValue(item!.controlNode, 'easing') ?? 'easeOutCubic').trim() || 'easeOutCubic',
-          duration: Number(getInterfaceValue(item!.controlNode, 'duration') ?? 0.3),
-        }
+      .flatMap((item) => {
+        const connectedSlot = item!.targetPort.startsWith('characterControl')
+          ? item!.targetPort.replace('characterControl', '')
+          : '1'
+        return getCharacterControlsFromNode(item!.controlNode, connectedSlot || '1')
       })
       .filter(Boolean)
       .sort((a: any, b: any) => Number(a.slot) - Number(b.slot))
@@ -298,7 +359,10 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
       type: node.type,
       subType: extractSubTypeFromNode(editor.value as Editor, node.id),
       position: { x: node.position.x, y: node.position.y },
-      data: normalizeAssetProperties(extractPropertiesFromNode(editor.value as Editor, node.id))
+      data: {
+        ...normalizeAssetProperties(extractPropertiesFromNode(editor.value as Editor, node.id)),
+        subType: extractSubTypeFromNode(editor.value as Editor, node.id),
+      }
     } as any))
   }
 
@@ -354,6 +418,41 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
     scheduleAutoSave()
   }
 
+  function alignNodesToGrid(gridSize = 40) {
+    if (!editor.value) return 0
+
+    const normalizedGridSize = Math.max(1, Number(gridSize) || 40)
+    const graph = editor.value.graph as any
+    const selectedNodes = Array.isArray(graph.selectedNodes) && graph.selectedNodes.length > 0
+      ? graph.selectedNodes
+      : graph.nodes
+
+    const targetNodes = selectedNodes.filter((node: any) => node?.position)
+    if (targetNodes.length === 0) return 0
+
+    const movedNodes = targetNodes.filter((node: any) => {
+      const x = Math.round(Number(node.position.x || 0) / normalizedGridSize) * normalizedGridSize
+      const y = Math.round(Number(node.position.y || 0) / normalizedGridSize) * normalizedGridSize
+      return x !== node.position.x || y !== node.position.y
+    })
+
+    if (movedNodes.length === 0) return 0
+
+    captureUndoState(movedNodes.length > 1 ? 'Align Nodes to Grid' : 'Align Node to Grid')
+
+    movedNodes.forEach((node: any) => {
+      node.position = {
+        x: Math.round(Number(node.position.x || 0) / normalizedGridSize) * normalizedGridSize,
+        y: Math.round(Number(node.position.y || 0) / normalizedGridSize) * normalizedGridSize,
+      }
+    })
+
+    syncNodes()
+    isDirty.value = true
+    scheduleAutoSave()
+    return movedNodes.length
+  }
+
   function serializeGraph() {
     if (!editor.value) return null
 
@@ -395,6 +494,11 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
               iface.value = value
             }
           })
+
+          ;(node as any).data = {
+            ...(node as any).data || {},
+            ...(nodeData.data || {}),
+          }
         }
       })
 
@@ -465,6 +569,7 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
     addNode,
     removeNode,
     updateNodeProperty,
+    alignNodesToGrid,
     serializeGraph,
     deserializeGraph,
     markClean,

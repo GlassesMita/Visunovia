@@ -533,13 +533,88 @@ msgid "nodes.event"
 msgstr "事件"
 
 msgid "nodes.logic"
-msgstr "逻辑"
+msgstr "邏輯"
 
 msgid "nodes.choice"
-msgstr "选择"
+msgstr "選擇"
 
 msgid "nodes.resources"
-msgstr "资源"
+msgstr "資源"
+
+msgid "nodes.characterControl"
+msgstr "角色控制"
+
+msgid "characterControl.characterControls"
+msgstr "角色控制"
+
+msgid "characterControl.preview"
+msgstr "舞台預覽"
+
+msgid "characterControl.modifiedSlots"
+msgstr "個已修改 Slot"
+
+msgid "characterControl.noPreview"
+msgstr "沒有可見角色修改"
+
+msgid "characterControl.noChange"
+msgstr "無修改"
+
+msgid "characterControl.unselected"
+msgstr "未選擇"
+
+msgid "characterControl.slot"
+msgstr "角色 Slot"
+
+msgid "characterControl.action"
+msgstr "動作"
+
+msgid "characterControl.show"
+msgstr "顯示角色"
+
+msgid "characterControl.hide"
+msgstr "隱藏角色"
+
+msgid "characterControl.update"
+msgstr "更新角色"
+
+msgid "characterControl.move"
+msgstr "移動角色"
+
+msgid "characterControl.sprite"
+msgstr "立繪"
+
+msgid "characterControl.sfx"
+msgstr "音效"
+
+msgid "characterControl.unmanagedCharacter"
+msgstr "Slot 6 角色名"
+
+msgid "characterControl.fromPosition"
+msgstr "移動起點"
+
+msgid "characterControl.toPosition"
+msgstr "移動目標"
+
+msgid "characterControl.currentPosition"
+msgstr "目前位置"
+
+msgid "characterControl.noMove"
+msgstr "不移動"
+
+msgid "characterControl.animation"
+msgstr "動畫"
+
+msgid "characterControl.animation.none"
+msgstr "無"
+
+msgid "characterControl.animation.pop"
+msgstr "彈出"
+
+msgid "characterControl.animation.move"
+msgstr "移動"
+
+msgid "characterControl.easing"
+msgstr "緩動曲線"
 
 
 msgid "nodes.conditional.placeholder"

@@ -1819,19 +1819,23 @@ public class EditorService
 
     private VNDialogue ConvertEventNode(NodeData node)
     {
-        var subType = node.SubType;
+        var subType = FirstNonEmpty(node.SubType, GetStringProperty(node, "subType"));
         if (string.IsNullOrWhiteSpace(subType))
         {
-            subType = GetStringProperty(node, "subType");
+            subType = GetStringProperty(node, "eventType");
         }
 
         var eventType = subType switch
         {
-            "playBgm" => VNEventType.ChangeBgm,
-            "changeBackground" => VNEventType.ChangeBackground,
-            "showCharacter" => VNEventType.ShowCharacter,
-            "hideCharacter" => VNEventType.HideCharacter,
-            "playSfx" => VNEventType.PlaySound,
+            "playBgm" or "playBGM" or "ChangeBGM" or "ChangeBgm" => VNEventType.ChangeBgm,
+            "stopBgm" or "stopBGM" or "StopBGM" or "StopBgm" => VNEventType.Custom,
+            "changeBackground" or "ChangeBackground" or "ChangeBG" => VNEventType.ChangeBackground,
+            "showCharacter" or "ShowCharacter" => VNEventType.ShowCharacter,
+            "hideCharacter" or "HideCharacter" => VNEventType.HideCharacter,
+            "playSfx" or "playSFX" or "PlaySFX" or "PlaySound" => VNEventType.PlaySound,
+            "playVoice" or "PlayVoice" => VNEventType.Custom,
+            "cameraShake" or "CameraShake" => VNEventType.Custom,
+            "fadeScreen" or "FadeScreen" => VNEventType.Custom,
             "customEvent" => VNEventType.SendSystemNotification,
             _ => ParseEnum(GetStringProperty(node, "eventName"), VNEventType.Custom)
         };
@@ -1840,23 +1844,27 @@ public class EditorService
         switch (eventType)
         {
             case VNEventType.ChangeBgm:
-                parameters["bgmFile"] = GetStringProperty(node, "bgmPath");
-                parameters["targetScene"] = GetStringProperty(node, "targetScene");
+                AddParameterIfNotEmpty(parameters, "bgmFile", GetFirstStringProperty(node, "bgmPath", "bgmFile", "bgm", "musicFile", "resource", "path", "file", "filePath"));
+                AddParameterIfNotEmpty(parameters, "targetScene", GetStringProperty(node, "targetScene"));
+                AddParameter(parameters, "volume", GetRawProperty(node, "volume"));
+                AddParameter(parameters, "loop", GetRawProperty(node, "loop"));
                 break;
             case VNEventType.ChangeBackground:
-                parameters["background"] = GetStringProperty(node, "imagePath");
+                AddParameterIfNotEmpty(parameters, "background", GetFirstStringProperty(node, "imagePath", "background", "bgFile", "bg", "resource", "path", "file", "filePath"));
+                AddParameterIfNotEmpty(parameters, "transition", GetStringProperty(node, "transition"));
+                AddParameter(parameters, "duration", GetRawProperty(node, "duration"));
                 break;
             case VNEventType.ShowCharacter:
-                parameters["character"] = GetStringProperty(node, "characterId");
-                parameters["position"] = GetStringProperty(node, "position");
-                parameters["expression"] = GetStringProperty(node, "expression");
+                AddParameterIfNotEmpty(parameters, "character", GetFirstStringProperty(node, "characterId", "character"));
+                AddParameterIfNotEmpty(parameters, "position", GetStringProperty(node, "position"));
+                AddParameterIfNotEmpty(parameters, "expression", GetStringProperty(node, "expression"));
                 break;
             case VNEventType.PlaySound:
-                parameters["soundFile"] = GetStringProperty(node, "sfxPath");
+                AddParameterIfNotEmpty(parameters, "soundFile", GetFirstStringProperty(node, "sfxPath", "soundFile", "sfx", "resource", "path", "file", "filePath"));
+                AddParameter(parameters, "volume", GetRawProperty(node, "volume"));
                 break;
             default:
-                parameters["eventName"] = GetStringProperty(node, "eventName");
-                parameters["params"] = GetRawProperty(node, "params") ?? string.Empty;
+                AddCustomEventParameters(node, subType, parameters);
                 break;
         }
 
@@ -1870,6 +1878,112 @@ public class EditorService
             PositionX = node.Position.X,
             PositionY = node.Position.Y
         };
+    }
+
+    private static void AddCustomEventParameters(NodeData node, string subType, Dictionary<string, object> parameters)
+    {
+        var eventName = FirstNonEmpty(GetStringProperty(node, "eventName"), subType);
+        AddParameterIfNotEmpty(parameters, "eventName", eventName);
+
+        switch (subType)
+        {
+            case "stopBgm":
+            case "stopBGM":
+            case "StopBGM":
+            case "StopBgm":
+                parameters["eventName"] = "StopBGM";
+                AddParameter(parameters, "fadeOutDuration", GetRawProperty(node, "fadeOutDuration"));
+                break;
+            case "playVoice":
+            case "PlayVoice":
+                parameters["eventName"] = "PlayVoice";
+                AddParameterIfNotEmpty(parameters, "voiceFile", GetFirstStringProperty(node, "voicePath", "voiceFile", "voice", "resource", "path", "file", "filePath"));
+                break;
+            case "cameraShake":
+            case "CameraShake":
+                parameters["eventName"] = "CameraShake";
+                AddParameter(parameters, "intensity", GetRawProperty(node, "intensity"));
+                AddParameter(parameters, "duration", GetRawProperty(node, "duration"));
+                AddParameterIfNotEmpty(parameters, "mode", GetStringProperty(node, "mode"));
+                break;
+            case "fadeScreen":
+            case "FadeScreen":
+                parameters["eventName"] = "FadeScreen";
+                AddParameter(parameters, "duration", GetRawProperty(node, "duration"));
+                AddParameterIfNotEmpty(parameters, "fadeType", GetStringProperty(node, "fadeType"));
+                AddParameterIfNotEmpty(parameters, "color", GetStringProperty(node, "color"));
+                break;
+            default:
+                AddParameter(parameters, "params", GetRawProperty(node, "params"));
+                foreach (var property in node.Properties)
+                {
+                    if (property.Key.Equals("subType", StringComparison.OrdinalIgnoreCase)
+                        || property.Key.Equals("eventName", StringComparison.OrdinalIgnoreCase)
+                        || property.Key.Equals("params", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    AddParameter(parameters, property.Key, property.Value);
+                }
+                break;
+        }
+    }
+
+    private static void AddParameterIfNotEmpty(Dictionary<string, object> parameters, string key, string value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            parameters[key] = value;
+        }
+    }
+
+    private static void AddParameter(Dictionary<string, object> parameters, string key, object? value)
+    {
+        var normalizedValue = NormalizeParameterValue(value);
+        if (normalizedValue != null)
+        {
+            parameters[key] = normalizedValue;
+        }
+    }
+
+    private static string GetFirstStringProperty(NodeData node, params string[] keys)
+    {
+        foreach (var key in keys)
+        {
+            var value = GetStringProperty(node, key);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private static object? NormalizeParameterValue(object? value)
+    {
+        if (value == null)
+        {
+            return null;
+        }
+
+        if (value is JsonElement element)
+        {
+            return element.ValueKind switch
+            {
+                JsonValueKind.String => element.GetString(),
+                JsonValueKind.Number when element.TryGetInt64(out var longValue) => longValue,
+                JsonValueKind.Number when element.TryGetDouble(out var doubleValue) => doubleValue,
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.Null => null,
+                JsonValueKind.Array or JsonValueKind.Object => JsonSerializer.Deserialize<object>(element.GetRawText()),
+                _ => element.ToString()
+            };
+        }
+
+        return value;
     }
 
     private VNDialogue ConvertBranchNode(NodeData node)
@@ -2333,6 +2447,142 @@ public class EditorService
     public List<string> GetSceneGraphList()
     {
         return _sceneGraphs.Keys.ToList();
+    }
+
+    public async Task CreateSceneAsync(string sceneId)
+    {
+        sceneId = NormalizeSceneId(sceneId);
+        if (CurrentProject == null || string.IsNullOrWhiteSpace(CurrentProjectPath))
+        {
+            throw new InvalidOperationException("当前没有打开的项目");
+        }
+
+        if (CurrentProject.Scenes.Any(scene => string.Equals(scene.Id, sceneId, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException("同名场景已存在");
+        }
+
+        var graph = new SceneGraphData
+        {
+            Id = sceneId,
+            Nodes = new List<NodeData>
+            {
+                new NodeData
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Type = "StartNode",
+                    Position = new PositionData { X = 300, Y = 200 },
+                    Properties = new Dictionary<string, object>(),
+                    NextNodeUuids = new List<string>()
+                }
+            },
+            Edges = new List<EdgeData>(),
+            SceneConfig = new SceneConfigData()
+        };
+
+        _sceneGraphs[sceneId] = graph;
+        UpdateCurrentProjectSceneFromGraph(sceneId, graph);
+        await PersistSceneGraphToProjectAsync(sceneId);
+        HasUnsavedChanges = true;
+        ProjectChanged?.Invoke();
+    }
+
+    public async Task RenameSceneAsync(string oldSceneId, string newSceneId)
+    {
+        oldSceneId = NormalizeSceneId(oldSceneId);
+        newSceneId = NormalizeSceneId(newSceneId);
+        if (CurrentProject == null || string.IsNullOrWhiteSpace(CurrentProjectPath))
+        {
+            throw new InvalidOperationException("当前没有打开的项目");
+        }
+
+        if (string.Equals(oldSceneId, newSceneId, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (CurrentProject.Scenes.Any(scene => string.Equals(scene.Id, newSceneId, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException("同名场景已存在");
+        }
+
+        var scene = CurrentProject.Scenes.FirstOrDefault(s => string.Equals(s.Id, oldSceneId, StringComparison.OrdinalIgnoreCase));
+        if (scene == null)
+        {
+            throw new InvalidOperationException("场景不存在");
+        }
+
+        var projectRoot = File.Exists(CurrentProjectPath) ? Path.GetDirectoryName(CurrentProjectPath) : CurrentProjectPath;
+        if (string.IsNullOrWhiteSpace(projectRoot))
+        {
+            throw new InvalidOperationException("无法解析项目根目录");
+        }
+
+        var oldScriptPath = Path.Combine(projectRoot, "Scripts", "Main", $"{oldSceneId}.lor");
+        var newScriptPath = Path.Combine(projectRoot, "Scripts", "Main", $"{newSceneId}.lor");
+        if (File.Exists(newScriptPath))
+        {
+            throw new InvalidOperationException("目标场景文件已存在");
+        }
+
+        scene.Id = newSceneId;
+        if (_sceneGraphs.Remove(oldSceneId, out var graph))
+        {
+            graph.Id = newSceneId;
+            _sceneGraphs[newSceneId] = graph;
+        }
+
+        if (File.Exists(oldScriptPath))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(newScriptPath)!);
+            File.Move(oldScriptPath, newScriptPath);
+        }
+
+        await PersistSceneGraphToProjectAsync(newSceneId);
+        if (File.Exists(oldScriptPath))
+        {
+            File.Delete(oldScriptPath);
+        }
+
+        HasUnsavedChanges = true;
+        ProjectChanged?.Invoke();
+    }
+
+    public async Task DeleteSceneAsync(string sceneId)
+    {
+        sceneId = NormalizeSceneId(sceneId);
+        if (CurrentProject == null || string.IsNullOrWhiteSpace(CurrentProjectPath))
+        {
+            throw new InvalidOperationException("当前没有打开的项目");
+        }
+
+        if (CurrentProject.Scenes.Count <= 1)
+        {
+            throw new InvalidOperationException("至少需要保留一个场景");
+        }
+
+        var removed = CurrentProject.Scenes.RemoveAll(scene => string.Equals(scene.Id, sceneId, StringComparison.OrdinalIgnoreCase));
+        if (removed == 0)
+        {
+            throw new InvalidOperationException("场景不存在");
+        }
+
+        _sceneGraphs.Remove(sceneId);
+
+        var projectRoot = File.Exists(CurrentProjectPath) ? Path.GetDirectoryName(CurrentProjectPath) : CurrentProjectPath;
+        if (!string.IsNullOrWhiteSpace(projectRoot))
+        {
+            var scriptPath = Path.Combine(projectRoot, "Scripts", "Main", $"{sceneId}.lor");
+            if (File.Exists(scriptPath))
+            {
+                File.Delete(scriptPath);
+            }
+
+            await SaveProjectFileAsync(Path.Combine(projectRoot, "Project.tlor"));
+        }
+
+        HasUnsavedChanges = true;
+        ProjectChanged?.Invoke();
     }
 }
 

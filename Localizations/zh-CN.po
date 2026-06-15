@@ -508,6 +508,81 @@ msgstr "选择"
 msgid "nodes.resources"
 msgstr "资源"
 
+msgid "nodes.characterControl"
+msgstr "角色控制"
+
+msgid "characterControl.characterControls"
+msgstr "角色控制"
+
+msgid "characterControl.preview"
+msgstr "舞台预览"
+
+msgid "characterControl.modifiedSlots"
+msgstr "个已修改 Slot"
+
+msgid "characterControl.noPreview"
+msgstr "没有可见角色修改"
+
+msgid "characterControl.noChange"
+msgstr "无修改"
+
+msgid "characterControl.unselected"
+msgstr "未选择"
+
+msgid "characterControl.slot"
+msgstr "角色 Slot"
+
+msgid "characterControl.action"
+msgstr "动作"
+
+msgid "characterControl.show"
+msgstr "显示角色"
+
+msgid "characterControl.hide"
+msgstr "隐藏角色"
+
+msgid "characterControl.update"
+msgstr "更新角色"
+
+msgid "characterControl.move"
+msgstr "移动角色"
+
+msgid "characterControl.sprite"
+msgstr "立绘"
+
+msgid "characterControl.sfx"
+msgstr "音效"
+
+msgid "characterControl.unmanagedCharacter"
+msgstr "Slot 6 角色名"
+
+msgid "characterControl.fromPosition"
+msgstr "移动起点"
+
+msgid "characterControl.toPosition"
+msgstr "移动目标"
+
+msgid "characterControl.currentPosition"
+msgstr "当前位置"
+
+msgid "characterControl.noMove"
+msgstr "不移动"
+
+msgid "characterControl.animation"
+msgstr "动画"
+
+msgid "characterControl.animation.none"
+msgstr "无"
+
+msgid "characterControl.animation.pop"
+msgstr "弹出"
+
+msgid "characterControl.animation.move"
+msgstr "移动"
+
+msgid "characterControl.easing"
+msgstr "缓动曲线"
+
 msgid "nodes.changeBackground"
 msgstr "切换背景"
 

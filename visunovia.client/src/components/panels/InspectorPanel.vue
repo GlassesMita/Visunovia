@@ -62,7 +62,141 @@
       <div class="properties-section">
         <div class="section-title">{{ t('properties.title') || 'Properties' }}</div>
 
-        <div v-if="selectedNode.type === 'DialogueNode'" class="dialogue-preview-toolbar">
+        <div v-if="selectedNode.type === 'CharacterControlNode'" class="character-control-editor">
+          <div class="character-control-summary">
+            <div>
+              <strong>{{ t('characterControl.preview') || 'Stage Preview' }}</strong>
+              <span>{{ modifiedCharacterControls.length }} {{ t('characterControl.modifiedSlots') || 'modified slots' }}</span>
+            </div>
+            <button type="button" class="character-manager-btn" title="打开角色管理器" @click="uiStore.openCharacterManager()">👥</button>
+          </div>
+
+          <div class="character-stage-preview" aria-label="角色控制预览">
+            <div class="character-stage-grid"></div>
+            <img
+              v-for="character in characterControlPreviewCharacters"
+              :key="character.slot"
+              class="character-stage-sprite"
+              :style="getCharacterPreviewStyle(character)"
+              :src="character.spriteUrl"
+              :alt="character.character || `slot-${character.slot}`"
+            />
+            <div v-if="characterControlPreviewCharacters.length === 0" class="character-stage-empty">
+              {{ t('characterControl.noPreview') || 'No visible character changes' }}
+            </div>
+          </div>
+
+          <div class="character-slot-tabs" role="tablist" aria-label="角色 Slot">
+            <button
+              v-for="slot in characterControlSlots"
+              :key="slot"
+              type="button"
+              class="character-slot-tab"
+              :class="{ active: activeCharacterSlot === slot, modified: isCharacterSlotModified(slot) }"
+              @click="activeCharacterSlot = slot"
+            >
+              Slot {{ slot }}
+            </button>
+          </div>
+
+          <div class="character-slot-form">
+            <div class="property-group">
+              <label>{{ t('characterControl.action') || 'Action' }}</label>
+              <select class="prop-input prop-select" :value="activeCharacterControl.mode" @change="updateCharacterControlField('mode', ($event.target as HTMLSelectElement).value)">
+                <option value="none">{{ t('characterControl.noChange') || 'No Change' }}</option>
+                <option value="show">{{ t('characterControl.show') || 'Show Character' }}</option>
+                <option value="hide">{{ t('characterControl.hide') || 'Hide Character' }}</option>
+                <option value="update">{{ t('characterControl.update') || 'Update Character' }}</option>
+                <option value="move">{{ t('characterControl.move') || 'Move Character' }}</option>
+              </select>
+            </div>
+
+            <template v-if="activeCharacterControl.mode !== 'none'">
+              <div v-if="activeCharacterSlot === '6'" class="property-group">
+                <label>{{ t('characterControl.unmanagedCharacter') || 'Slot 6 Character Name' }}</label>
+                <input class="prop-input" type="text" :value="activeCharacterControl.unmanagedCharacter" @input="updateCharacterControlField('unmanagedCharacter', ($event.target as HTMLInputElement).value)" />
+              </div>
+
+              <div v-else class="property-group">
+                <label>{{ t('eventProps.characterId') || 'Character' }}</label>
+                <div class="character-select-wrapper">
+                  <select class="prop-input prop-select" :value="activeCharacterControl.character" @change="updateCharacterControlField('character', ($event.target as HTMLSelectElement).value)">
+                    <option value="">{{ t('characterControl.unselected') || 'Unselected' }}</option>
+                    <option v-for="character in characterStore.sortedCharacters" :key="character.id" :value="character.id">
+                      {{ character.name }} ({{ character.displayId || character.id }})
+                    </option>
+                  </select>
+                  <button class="character-manager-btn" type="button" title="打开角色管理器" @click="uiStore.openCharacterManager()">👥</button>
+                </div>
+              </div>
+
+              <div v-if="activeCharacterSlot !== '6' && activeCharacterControl.mode !== 'hide'" class="property-group">
+                <label>{{ t('characterControl.sprite') || 'Sprite' }}</label>
+                <div class="resource-input-wrapper">
+                  <input class="prop-input prop-resource prop-readonly" type="text" readonly :value="activeCharacterControl.sprite" @click="handleCharacterControlResourceBrowse('sprite')" />
+                  <button class="browse-btn" type="button" @click="handleCharacterControlResourceBrowse('sprite')">📂</button>
+                </div>
+              </div>
+
+              <div v-if="activeCharacterControl.mode !== 'hide'" class="property-group">
+                <label>{{ t('eventProps.position') || 'Position' }}</label>
+                <select class="prop-input prop-select" :value="activeCharacterControl.position" @change="updateCharacterControlField('position', ($event.target as HTMLSelectElement).value)">
+                  <option value="left">{{ t('eventOptions.left') || 'Left' }}</option>
+                  <option value="center">{{ t('eventOptions.center') || 'Center' }}</option>
+                  <option value="right">{{ t('eventOptions.right') || 'Right' }}</option>
+                </select>
+              </div>
+
+              <div v-if="activeCharacterControl.mode === 'move'" class="character-control-grid">
+                <div class="property-group">
+                  <label>{{ t('characterControl.fromPosition') || 'From Position' }}</label>
+                  <select class="prop-input prop-select" :value="activeCharacterControl.fromPosition" @change="updateCharacterControlField('fromPosition', ($event.target as HTMLSelectElement).value)">
+                    <option value="">{{ t('characterControl.currentPosition') || 'Current Position' }}</option>
+                    <option value="left">{{ t('eventOptions.left') || 'Left' }}</option>
+                    <option value="center">{{ t('eventOptions.center') || 'Center' }}</option>
+                    <option value="right">{{ t('eventOptions.right') || 'Right' }}</option>
+                  </select>
+                </div>
+                <div class="property-group">
+                  <label>{{ t('characterControl.toPosition') || 'To Position' }}</label>
+                  <select class="prop-input prop-select" :value="activeCharacterControl.toPosition" @change="updateCharacterControlField('toPosition', ($event.target as HTMLSelectElement).value)">
+                    <option value="none">{{ t('characterControl.noMove') || 'No Move' }}</option>
+                    <option value="left">{{ t('eventOptions.left') || 'Left' }}</option>
+                    <option value="center">{{ t('eventOptions.center') || 'Center' }}</option>
+                    <option value="right">{{ t('eventOptions.right') || 'Right' }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div v-if="activeCharacterControl.mode !== 'hide'" class="character-control-grid">
+                <div class="property-group">
+                  <label>{{ t('characterControl.animation') || 'Animation' }}</label>
+                  <select class="prop-input prop-select" :value="activeCharacterControl.animation" @change="updateCharacterControlField('animation', ($event.target as HTMLSelectElement).value)">
+                    <option value="none">{{ t('characterControl.animation.none') || 'None' }}</option>
+                    <option value="fade">{{ t('eventOptions.fade') || 'Fade' }}</option>
+                    <option value="slide">{{ t('eventOptions.slide') || 'Slide' }}</option>
+                    <option value="pop">{{ t('characterControl.animation.pop') || 'Pop' }}</option>
+                    <option value="move">{{ t('characterControl.animation.move') || 'Move' }}</option>
+                  </select>
+                </div>
+                <div class="property-group">
+                  <label>{{ t('eventProps.duration') || 'Duration' }}</label>
+                  <input class="prop-input prop-number" type="number" step="0.05" min="0" :value="activeCharacterControl.duration" @input="updateCharacterControlField('duration', normalizeNumberProperty('duration', parseFloat(($event.target as HTMLInputElement).value)))" />
+                </div>
+              </div>
+
+              <div class="property-group">
+                <label>{{ t('characterControl.sfx') || 'Sound Effect' }}</label>
+                <div class="resource-input-wrapper">
+                  <input class="prop-input prop-resource prop-readonly" type="text" readonly :value="activeCharacterControl.sfx" @click="handleCharacterControlResourceBrowse('sfx')" />
+                  <button class="browse-btn" type="button" @click="handleCharacterControlResourceBrowse('sfx')">📂</button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div v-else-if="selectedNode.type === 'DialogueNode'" class="dialogue-preview-toolbar">
           <div class="dialogue-preview-title">文本预览</div>
           <div class="dialogue-preview-box">
             <span v-if="dialoguePreviewSpeaker" class="dialogue-preview-speaker">{{ dialoguePreviewSpeaker }}</span>
@@ -74,7 +208,7 @@
           v-for="prop in dynamicProperties" 
           :key="prop.name"
           class="property-group"
-          v-show="shouldShowProperty(prop.name)"
+          v-show="selectedNode.type !== 'CharacterControlNode' && shouldShowProperty(prop.name)"
         >
           <label :title="getPropertyDescription(prop.name)">
             {{ getPropertyLabel(prop.name) }}
@@ -228,6 +362,26 @@ import { RESOURCE_TYPE_EXTENSIONS, type ResourceType } from '@/stores/useResourc
 import { getEntries, type DirEntry } from '@/api/fileBrowser'
 import { getCurrentProject } from '@/api/projectApi'
 import { renderDialogueMarkdown } from '@/utils/dialogueMarkdown'
+import { resolveAssetUrl } from '@/utils/assetPaths'
+
+type CharacterControlMode = 'none' | 'show' | 'hide' | 'update' | 'move'
+
+type CharacterControlEntry = {
+  slot: string
+  mode: CharacterControlMode
+  action?: string
+  character: string
+  unmanagedCharacter: string
+  sprite: string
+  sfx: string
+  expression: string
+  fromPosition: string
+  toPosition: string
+  position: string
+  animation: string
+  easing: string
+  duration: number
+}
 
 const { t } = useLocalization()
 const editorStore = useEditorStore()
@@ -239,11 +393,14 @@ const showResourcePicker = ref(false)
 const currentResourcePropName = ref('')
 const currentResourceType = ref<ResourceType>('image')
 const currentResourceFiles = ref<Array<{ name: string; path?: string }>>([])
+const currentCharacterControlResourceSlot = ref('')
 
 const selectedNode = computed(() => editorStore.selectedNode)
 
 const eventSubType = ref<EventType>(EventType.PlayBGM)
 const logicSubType = ref<LogicType>(LogicType.SetVariable)
+const activeCharacterSlot = ref('1')
+const characterControlSlots = ['1', '2', '3', '4', '5', '6']
 
 onMounted(() => {
   characterStore.load().catch(error => {
@@ -262,15 +419,17 @@ watch(selectedNode, (node) => {
   if (!node) return
   
   if (node.type === 'EventNode') {
-    eventSubType.value = node.data?.subType || EventType.PlayBGM
+    eventSubType.value = node.subType || node.data?.subType || EventType.PlayBGM
   } else if (node.type === 'LogicNode') {
-    logicSubType.value = node.data?.subType || LogicType.SetVariable
+    logicSubType.value = node.subType || node.data?.subType || LogicType.SetVariable
   }
 }, { immediate: true })
 
 // 动态计算当前节点应显示的属性列表
 const dynamicProperties = computed((): PropertyConfig[] => {
   if (!selectedNode.value) return []
+
+  if (selectedNode.value.type === 'CharacterControlNode') return []
   
   // EventNode 根据子类型返回对应属性
   if (selectedNode.value.type === 'EventNode') {
@@ -430,6 +589,146 @@ const dynamicProperties = computed((): PropertyConfig[] => {
   return defaultProps[selectedNode.value.type] || []
 })
 
+function createDefaultCharacterControl(slot: string): CharacterControlEntry {
+  return {
+    slot,
+    mode: 'none',
+    action: 'none',
+    character: '',
+    unmanagedCharacter: '',
+    sprite: '',
+    sfx: '',
+    expression: 'default',
+    fromPosition: '',
+    toPosition: 'none',
+    position: 'center',
+    animation: 'fade',
+    easing: 'easeOutCubic',
+    duration: 0.3,
+  }
+}
+
+function normalizeCharacterControlEntry(value: any, fallbackSlot: string): CharacterControlEntry {
+  const slot = String(value?.slot || fallbackSlot || '1')
+  const rawMode = String(value?.mode || value?.action || 'none').toLowerCase()
+  const mode = ['show', 'hide', 'update', 'move'].includes(rawMode) ? rawMode as CharacterControlMode : 'none'
+  return {
+    ...createDefaultCharacterControl(slot),
+    ...value,
+    slot,
+    mode,
+    action: mode,
+    character: String(value?.character || ''),
+    unmanagedCharacter: String(value?.unmanagedCharacter || ''),
+    sprite: slot === '6' ? '' : String(value?.sprite || ''),
+    sfx: String(value?.sfx || ''),
+    expression: String(value?.expression || 'default'),
+    fromPosition: String(value?.fromPosition || ''),
+    toPosition: String(value?.toPosition || 'none'),
+    position: String(value?.position || 'center'),
+    animation: String(value?.animation || 'fade'),
+    easing: String(value?.easing || 'easeOutCubic'),
+    duration: Number(value?.duration ?? 0.3) || 0.3,
+  }
+}
+
+function parseCharacterControlsJson(value: any): CharacterControlEntry[] {
+  if (Array.isArray(value)) return value.map((entry, index) => normalizeCharacterControlEntry(entry, String(index + 1)))
+  const raw = String(value || '').trim()
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.map((entry, index) => normalizeCharacterControlEntry(entry, String(index + 1))) : []
+  } catch {
+    return []
+  }
+}
+
+function getLegacyCharacterControl(): CharacterControlEntry | null {
+  if (!selectedNode.value?.data) return null
+  const data = selectedNode.value.data
+  if (!data.slot && !data.action && !data.character && !data.sprite) return null
+  return normalizeCharacterControlEntry(data, String(data.slot || '1'))
+}
+
+const characterControls = computed(() => {
+  const controls = parseCharacterControlsJson(getPropertyValue('characterControlsJson') || getPropertyValue('characterControls'))
+  const legacy = controls.length === 0 ? getLegacyCharacterControl() : null
+  return legacy ? [legacy] : controls
+})
+
+const activeCharacterControl = computed(() => {
+  return characterControls.value.find(control => control.slot === activeCharacterSlot.value) || createDefaultCharacterControl(activeCharacterSlot.value)
+})
+
+const BACKGROUND_VIDEO_EXTENSIONS = ['.mp4', '.webm', '.m4v', '.mov', '.ogv', '.avi', '.mkv']
+
+const modifiedCharacterControls = computed(() => characterControls.value.filter(control => control.mode !== 'none'))
+
+const characterControlPreviewCharacters = computed(() => modifiedCharacterControls.value
+  .filter(control => control.slot !== '6' && control.mode !== 'hide' && Boolean(control.sprite))
+  .map(control => ({
+    ...control,
+    spriteUrl: resolveAssetUrl(control.sprite, 'Characters'),
+  }))
+  .filter(control => Boolean(control.spriteUrl))
+)
+
+function serializeCharacterControls(controls: CharacterControlEntry[]) {
+  return JSON.stringify(controls
+    .map(control => normalizeCharacterControlEntry(control, control.slot))
+    .filter(control => control.mode !== 'none')
+    .sort((a, b) => Number(a.slot) - Number(b.slot))
+  )
+}
+
+function setCharacterControls(controls: CharacterControlEntry[]) {
+  const serialized = serializeCharacterControls(controls)
+  updateProperty('characterControlsJson', serialized)
+  if (selectedNode.value?.data) {
+    selectedNode.value.data.characterControls = parseCharacterControlsJson(serialized)
+    selectedNode.value.data.characterControlsJson = serialized
+    selectedNode.value.data.tlorFormatVersion = '1.1'
+  }
+
+  const editorNode = nodeGraphStore.editor?.graph.nodes.find(node => node.id === selectedNode.value?.id) as any
+  if (editorNode) {
+    editorNode.data = {
+      ...(editorNode.data || {}),
+      characterControls: parseCharacterControlsJson(serialized),
+      characterControlsJson: serialized,
+      tlorFormatVersion: '1.1',
+    }
+  }
+}
+
+function updateCharacterControlField(field: keyof CharacterControlEntry, value: any) {
+  const next = characterControlSlots.map(slot => {
+    const existing = characterControls.value.find(control => control.slot === slot) || createDefaultCharacterControl(slot)
+    if (slot !== activeCharacterSlot.value) return existing
+    const updated = normalizeCharacterControlEntry({ ...existing, [field]: value }, slot)
+    if (field === 'mode') updated.action = updated.mode
+    if (updated.mode === 'hide') updated.sprite = ''
+    if (updated.slot === '6') updated.sprite = ''
+    return updated
+  })
+  setCharacterControls(next)
+}
+
+function isCharacterSlotModified(slot: string) {
+  return characterControls.value.some(control => control.slot === slot && control.mode !== 'none')
+}
+
+function getCharacterPreviewStyle(character: CharacterControlEntry & { spriteUrl: string }) {
+  const left: Record<string, string> = { left: '15%', center: '50%', right: '85%' }
+  const transform: Record<string, string> = { left: 'translateX(0)', center: 'translateX(-50%)', right: 'translateX(-100%)' }
+  const position = character.toPosition && character.toPosition !== 'none' ? character.toPosition : character.position
+  return {
+    left: left[position] || left.center,
+    transform: transform[position] || transform.center,
+  }
+}
+
 function getNodeTitle(type: string): string {
   const titleKeys: Record<string, string> = {
     StartNode: 'nodes.start',
@@ -481,6 +780,10 @@ function getPlaceholder(name: string): string {
 }
 
 function getPropertyValue(name: string): any {
+  const editorNode = nodeGraphStore.editor?.graph.nodes.find(node => node.id === selectedNode.value?.id) as any
+  const interfaceValue = editorNode?.inputs?.[name]?.value
+  if (interfaceValue !== undefined) return interfaceValue
+  if (name === 'subType') return selectedNode.value?.subType
   if (!selectedNode.value?.data) return undefined
   return selectedNode.value.data[name]
 }
@@ -531,6 +834,13 @@ function updateProperty(name: string, value: any) {
       iface.value = value
     }
   }
+
+  if (editorNode) {
+    editorNode.data = {
+      ...(editorNode.data || {}),
+      [name]: value,
+    }
+  }
   
   // 同步到 store（标记为已修改）
   nodeGraphStore.isDirty = true
@@ -560,21 +870,59 @@ function renderSafeMarkdown(value: any): string {
 }
 
 function onEventSubTypeChange() {
-  if (selectedNode.value && selectedNode.value.data) {
+  if (!selectedNode.value) return
+
+  if (selectedNode.value.data) {
     selectedNode.value.data.subType = eventSubType.value
-    nodeGraphStore.isDirty = true
   }
+
+  const editorNode = nodeGraphStore.editor?.graph.nodes.find(node => node.id === selectedNode.value?.id) as any
+  const subTypeInput = editorNode?.inputs?.subType
+  if (subTypeInput) {
+    if (typeof subTypeInput.setValue === 'function') {
+      subTypeInput.setValue(eventSubType.value)
+    } else {
+      subTypeInput.value = eventSubType.value
+    }
+    editorNode.data = {
+      ...(editorNode.data || {}),
+      subType: eventSubType.value,
+    }
+  }
+
+  nodeGraphStore.syncNodes()
+  nodeGraphStore.isDirty = true
 }
 
 function onLogicSubTypeChange() {
-  if (selectedNode.value && selectedNode.value.data) {
+  if (!selectedNode.value) return
+
+  if (selectedNode.value.data) {
     selectedNode.value.data.subType = logicSubType.value
-    nodeGraphStore.isDirty = true
   }
+
+  const editorNode = nodeGraphStore.editor?.graph.nodes.find(node => node.id === selectedNode.value?.id) as any
+  const subTypeInput = editorNode?.inputs?.subType
+  if (subTypeInput) {
+    if (typeof subTypeInput.setValue === 'function') {
+      subTypeInput.setValue(logicSubType.value)
+    } else {
+      subTypeInput.value = logicSubType.value
+    }
+    editorNode.data = {
+      ...(editorNode.data || {}),
+      subType: logicSubType.value,
+    }
+  }
+
+  nodeGraphStore.syncNodes()
+  nodeGraphStore.isDirty = true
 }
 
 function getSelectedCharacterProfile() {
-  const selectedCharacterName = String(getPropertyValue('character') || '').trim()
+  const selectedCharacterName = selectedNode.value?.type === 'CharacterControlNode'
+    ? String(activeCharacterControl.value.character || '').trim()
+    : String(getPropertyValue('character') || '').trim()
   if (!selectedCharacterName) return null
 
   return characterStore.sortedCharacters.find(character => character.id === selectedCharacterName) || null
@@ -606,11 +954,77 @@ function toResourcePickerFiles(entries: DirEntry[]) {
     .map(entry => ({ name: entry.name, path: entry.path }))
 }
 
+function getAssetFolderForResource(propName: string, resourceType: ResourceType): string {
+  const propFolderMap: Record<string, string> = {
+    imagePath: 'Backgrounds',
+    background: 'Backgrounds',
+    bg: 'Backgrounds',
+    bgFile: 'Backgrounds',
+    sprite: 'Characters',
+    sprite1: 'Characters',
+    sprite2: 'Characters',
+    sprite3: 'Characters',
+    sprite4: 'Characters',
+    sprite5: 'Characters',
+    bgm: 'Musics',
+    bgmPath: 'Musics',
+    bgmFile: 'Musics',
+    musicFile: 'Musics',
+    sfx: 'Sfx',
+    sfxPath: 'Sfx',
+    soundFile: 'Sfx',
+    voice: 'Voices',
+    voicePath: 'Voices',
+    voiceFile: 'Voices',
+  }
+
+  if (propFolderMap[propName]) return propFolderMap[propName]
+
+  const typeFolderMap: Partial<Record<ResourceType, string>> = {
+    image: 'Backgrounds',
+    audio: 'Sfx',
+    bgm: 'Musics',
+    voice: 'Voices',
+  }
+
+  return typeFolderMap[resourceType] || ''
+}
+
+async function loadProjectAssetFiles(propName: string, resourceType: ResourceType) {
+  const currentProject = await getCurrentProject()
+  const root = currentProject.data?.projectPath
+  const folder = getAssetFolderForResource(propName, resourceType)
+  if (!root || !folder) {
+    currentResourceFiles.value = []
+    return
+  }
+
+  try {
+    const result = await getEntries(`${root}\\Assets\\${folder}`)
+    const exts = folder === 'Backgrounds' && resourceType === 'image'
+      ? Array.from(new Set([...(RESOURCE_TYPE_EXTENSIONS.image || []), ...BACKGROUND_VIDEO_EXTENSIONS]))
+      : RESOURCE_TYPE_EXTENSIONS[resourceType] || []
+    currentResourceFiles.value = toResourcePickerFiles(result.entries)
+      .filter(file => exts.includes(file.name.slice(file.name.lastIndexOf('.')).toLowerCase()))
+  } catch (error) {
+    console.warn(`[InspectorPanel] Failed to load project asset folder: ${folder}`, error)
+    currentResourceFiles.value = []
+  }
+}
+
 async function loadCharacterSpriteFiles() {
   const character = getSelectedCharacterProfile()
   const spriteFolder = character?.spriteFolder?.trim()
-  if (!spriteFolder) {
+  if (!character || !spriteFolder) {
     currentResourceFiles.value = []
+    return
+  }
+
+  if (character.sprites.length > 0) {
+    currentResourceFiles.value = character.sprites.map(path => ({
+      name: path.replace(/\\/g, '/').split('/').pop() || path,
+      path,
+    }))
     return
   }
 
@@ -620,6 +1034,11 @@ async function loadCharacterSpriteFiles() {
     currentResourceFiles.value = toResourcePickerFiles(result.entries)
       .filter(file => imageExts.includes(file.name.slice(file.name.lastIndexOf('.')).toLowerCase()))
       .filter(file => !/[\\/]Avatars[\\/]/i.test(file.path || ''))
+    if (currentResourceFiles.value.length > 0) {
+      await characterStore.updateCharacter(character.id, {
+        sprites: currentResourceFiles.value.map(file => file.path || file.name),
+      })
+    }
   } catch (error) {
     console.warn('[InspectorPanel] Failed to load character sprite folder:', error)
     currentResourceFiles.value = []
@@ -653,6 +1072,7 @@ async function loadDialogueVoiceFiles(propName: string) {
 
 async function handleResourceBrowse(propName: string) {
   currentResourcePropName.value = propName
+  currentCharacterControlResourceSlot.value = ''
   currentResourceFiles.value = []
 
   if (selectedNode.value?.type === 'ResourceNode') {
@@ -663,6 +1083,7 @@ async function handleResourceBrowse(propName: string) {
   } else {
     const typeMap: Partial<Record<string, ResourceType>> = {
       voice: 'voice',
+      voicePath: 'voice',
       voice1: 'voice',
       voice2: 'voice',
       voice3: 'voice',
@@ -670,7 +1091,9 @@ async function handleResourceBrowse(propName: string) {
       voice5: 'voice',
       voice6: 'voice',
       sfx: 'audio',
+      sfxPath: 'audio',
       bgm: 'bgm',
+      bgmPath: 'bgm',
       imagePath: 'image',
       background: 'image',
       sprite1: 'image',
@@ -685,16 +1108,38 @@ async function handleResourceBrowse(propName: string) {
 
   if (selectedNode.value?.type === 'CharacterControlNode' && propName === 'sprite') {
     await loadCharacterSpriteFiles()
+  } else if (selectedNode.value?.type === 'DialogueNode' && /^voice\d$/.test(propName)) {
+    await loadDialogueVoiceFiles(propName)
+  } else {
+    await loadProjectAssetFiles(propName, currentResourceType.value)
   }
 
-  if (selectedNode.value?.type === 'DialogueNode' && /^voice\d$/.test(propName)) {
-    await loadDialogueVoiceFiles(propName)
+  showResourcePicker.value = true
+}
+
+async function handleCharacterControlResourceBrowse(propName: 'sprite' | 'sfx') {
+  currentResourcePropName.value = propName
+  currentCharacterControlResourceSlot.value = activeCharacterSlot.value
+  currentResourceFiles.value = []
+  currentResourceType.value = propName === 'sfx' ? 'audio' : 'image'
+
+  if (propName === 'sprite') {
+    await loadCharacterSpriteFiles()
+  } else {
+    await loadProjectAssetFiles(propName, currentResourceType.value)
   }
 
   showResourcePicker.value = true
 }
 
 function onResourcePicked(path: string) {
+  if (selectedNode.value?.type === 'CharacterControlNode' && currentCharacterControlResourceSlot.value) {
+    updateCharacterControlField(currentResourcePropName.value as keyof CharacterControlEntry, path)
+    currentCharacterControlResourceSlot.value = ''
+    showResourcePicker.value = false
+    return
+  }
+
   if (currentResourcePropName.value) {
     updateProperty(currentResourcePropName.value, path)
   }
@@ -948,6 +1393,126 @@ function onResourcePicked(path: string) {
 
 .dialogue-preview-box :deep(a) {
   color: #93c5fd;
+}
+
+.character-control-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.character-control-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(88, 28, 135, 0.42), rgba(30, 41, 59, 0.82));
+}
+
+.character-control-summary div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.character-control-summary strong {
+  color: #e9d5ff;
+  font-size: 12px;
+}
+
+.character-control-summary span {
+  color: #c4b5fd;
+  font-size: 11px;
+}
+
+.character-stage-preview {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid #3e3e42;
+  border-radius: 8px;
+  background: radial-gradient(circle at center, #263044 0%, #111827 72%);
+}
+
+.character-stage-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.character-stage-sprite {
+  position: absolute;
+  bottom: -4%;
+  z-index: 2;
+  max-width: 44%;
+  max-height: 104%;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.48));
+}
+
+.character-stage-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.character-slot-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.character-slot-tab {
+  padding: 7px 6px;
+  border: 1px solid #3e3e42;
+  border-radius: 6px;
+  color: #cbd5e1;
+  background: #2d2d30;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.character-slot-tab:hover {
+  border-color: #7c3aed;
+  background: #35313d;
+}
+
+.character-slot-tab.active {
+  border-color: #a855f7;
+  color: #ffffff;
+  background: #6d28d9;
+}
+
+.character-slot-tab.modified::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 5px;
+  border-radius: 999px;
+  background: #22c55e;
+  vertical-align: middle;
+}
+
+.character-slot-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.character-control-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
 }
 
 .section-title {

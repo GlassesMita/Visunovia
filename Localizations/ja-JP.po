@@ -530,16 +530,91 @@ msgid "nodes.delay"
 msgstr "遅延"
 
 msgid "nodes.event"
-msgstr "事件"
+msgstr "イベント"
 
 msgid "nodes.logic"
-msgstr "逻辑"
+msgstr "ロジック"
 
 msgid "nodes.choice"
-msgstr "选择"
+msgstr "選択"
 
 msgid "nodes.resources"
-msgstr "资源"
+msgstr "リソース"
+
+msgid "nodes.characterControl"
+msgstr "キャラクター制御"
+
+msgid "characterControl.characterControls"
+msgstr "キャラクター制御"
+
+msgid "characterControl.preview"
+msgstr "ステージプレビュー"
+
+msgid "characterControl.modifiedSlots"
+msgstr "変更済みスロット"
+
+msgid "characterControl.noPreview"
+msgstr "表示可能なキャラクター変更はありません"
+
+msgid "characterControl.noChange"
+msgstr "変更なし"
+
+msgid "characterControl.unselected"
+msgstr "未選択"
+
+msgid "characterControl.slot"
+msgstr "キャラクタースロット"
+
+msgid "characterControl.action"
+msgstr "アクション"
+
+msgid "characterControl.show"
+msgstr "キャラクター表示"
+
+msgid "characterControl.hide"
+msgstr "キャラクター非表示"
+
+msgid "characterControl.update"
+msgstr "キャラクター更新"
+
+msgid "characterControl.move"
+msgstr "キャラクター移動"
+
+msgid "characterControl.sprite"
+msgstr "立ち絵"
+
+msgid "characterControl.sfx"
+msgstr "効果音"
+
+msgid "characterControl.unmanagedCharacter"
+msgstr "Slot 6 キャラクター名"
+
+msgid "characterControl.fromPosition"
+msgstr "開始位置"
+
+msgid "characterControl.toPosition"
+msgstr "移動先"
+
+msgid "characterControl.currentPosition"
+msgstr "現在位置"
+
+msgid "characterControl.noMove"
+msgstr "移動なし"
+
+msgid "characterControl.animation"
+msgstr "アニメーション"
+
+msgid "characterControl.animation.none"
+msgstr "なし"
+
+msgid "characterControl.animation.pop"
+msgstr "ポップ"
+
+msgid "characterControl.animation.move"
+msgstr "移動"
+
+msgid "characterControl.easing"
+msgstr "イージング"
 
 
 msgid "nodes.conditional.placeholder"

@@ -28,15 +28,20 @@
         </div>
       </div>
     </div>
+    <div class="menu-title" :title="windowTitle">
+      {{ windowTitle }}
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useUIStore } from '@/stores/useUIStore'
 import { useEditorStore } from '@/stores/useEditorStore'
+import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
 import { useNodeOperations } from '@/composables/useNodeOperations'
+import { getCurrentProject } from '@/api/projectApi'
 import { quitApplication } from '@/api/systemApi'
 
 interface MenuItem {
@@ -58,9 +63,13 @@ interface Menu {
 const { t } = useLocalization()
 const uiStore = useUIStore()
 const editorStore = useEditorStore()
+const nodeGraphStore = useNodeGraphStore()
 const { saveSceneGraph, loadSceneGraph, newGraph } = useNodeOperations()
 
 const activeMenu = ref<string | null>(null)
+const projectName = ref('Visunovia')
+const sceneName = computed(() => nodeGraphStore.currentSceneId || editorStore.currentFileName.replace(/\.lor$/i, '') || 'Untitled')
+const windowTitle = computed(() => `${projectName.value} - ${sceneName.value}`)
 
 const menus = computed<Menu[]>(() => [
   {
@@ -73,6 +82,7 @@ const menus = computed<Menu[]>(() => [
       { key: 'saveAs', labelKey: 'menu.saveAs', action: 'saveFileAs', shortcut: 'Ctrl+Shift+S' },
       { key: 'divider1', labelKey: '', divider: true },
       { key: 'projectPreferences', labelKey: 'Menu.ProjectPreferences', action: 'openProjectPreferences' },
+      { key: 'sceneManager', labelKey: '场景管理', action: 'openSceneManager' },
       { key: 'divider2', labelKey: '', divider: true },
       { key: 'exit', labelKey: 'menu.exit', action: 'exitApp' },
     ],
@@ -171,6 +181,9 @@ function executeAction(action: string) {
     case 'openProjectPreferences':
       uiStore.openProjectPreferences()
       break
+    case 'openSceneManager':
+      uiStore.openSceneManager()
+      break
     case 'toggleConsole':
       uiStore.togglePanel('console')
       break
@@ -207,8 +220,25 @@ function handleClickOutside(event: MouseEvent) {
   }
 }
 
+async function refreshProjectName() {
+  try {
+    const currentProject = await getCurrentProject()
+    projectName.value = currentProject.data?.projectName || 'Visunovia'
+  } catch {
+    projectName.value = 'Visunovia'
+  }
+}
+
+watch(
+  () => nodeGraphStore.currentSceneId,
+  () => {
+    refreshProjectName()
+  }
+)
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  refreshProjectName()
 })
 
 onUnmounted(() => {
@@ -218,11 +248,28 @@ onUnmounted(() => {
 
 <style scoped>
 .menu-bar {
+  position: relative;
   display: flex;
   align-items: center;
   height: 100%;
   padding: 0 8px;
   user-select: none;
+}
+
+.menu-title {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  max-width: 52vw;
+  transform: translate(-50%, -50%);
+  color: #d6d6d6;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
 
 .menu-items {

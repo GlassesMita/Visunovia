@@ -101,6 +101,47 @@ const NODE_TYPE_MAP: Record<string, string> = {
 }
 
 const END_EVENT_NAMES = new Set(['end_game', 'return_to_menu', 'jump_to_scene'])
+const LOR_FORMAT_VERSION = '1.1'
+
+function normalizeCharacterControl(control: any, fallbackSlot = '1') {
+  const slot = String(control?.slot || fallbackSlot || '1')
+  const action = String(control?.action || control?.mode || 'show').trim() || 'show'
+  return {
+    slot,
+    mode: action,
+    action,
+    character: slot === '6'
+      ? String(control?.unmanagedCharacter || control?.character || '').trim()
+      : String(control?.character || '').trim(),
+    unmanagedCharacter: String(control?.unmanagedCharacter || '').trim(),
+    sprite: slot === '6' ? '' : String(control?.sprite || '').trim(),
+    sfx: String(control?.sfx || '').trim(),
+    expression: String(control?.expression || 'default').trim() || 'default',
+    fromPosition: String(control?.fromPosition || '').trim(),
+    toPosition: String(control?.toPosition || 'none').trim() || 'none',
+    position: String(control?.position || 'center').trim() || 'center',
+    animation: String(control?.animation || 'fade').trim() || 'fade',
+    easing: String(control?.easing || 'easeOutCubic').trim() || 'easeOutCubic',
+    duration: Number(control?.duration ?? 0.3) || 0.3,
+  }
+}
+
+function parseCharacterControls(value: unknown) {
+  if (Array.isArray(value)) return value.map((control, index) => normalizeCharacterControl(control, String(index + 1)))
+  if (typeof value !== 'string') return []
+  const trimmed = value.trim()
+  if (!trimmed) return []
+  try {
+    const parsed = JSON.parse(trimmed)
+    return Array.isArray(parsed) ? parsed.map((control, index) => normalizeCharacterControl(control, String(index + 1))) : []
+  } catch {
+    return []
+  }
+}
+
+function serializeCharacterControls(controls: any[]) {
+  return JSON.stringify(controls.map((control, index) => normalizeCharacterControl(control, String(index + 1))))
+}
 
 /**
  * 生成 UUID v4
@@ -369,12 +410,14 @@ export function useLorToBlueprint() {
         nextNodeUuids: node.nextNodeUuids || [],
       }))
       const nodeIds = new Set(nodes.map(node => node.id))
+      const nodesById = new Map(nodes.map(node => [node.id, node]))
       const repairedDialogueId = nodes.find(node => node.nodeType === 'DialogueNode')?.id
         || scene.dialogues.find(dialogue => dialogue.type === 'Dialogue')?.uuid
       const repairedStartId = nodes.find(node => node.nodeType === 'StartNode')?.id
       const repairedEndId = nodes.find(node => node.nodeType === 'EndNode')?.id
       const normalizePort = (port: string, direction: 'source' | 'target') => {
         if (port === '→') return direction === 'source' ? 'execOut' : 'execIn'
+        if (port === 'controlOut') return 'execOut'
         const match = String(port || '').match(/(?:◆|characterControl)\s*(\d+)/i)
         return match ? `characterControl${match[1]}` : port
       }
@@ -386,22 +429,40 @@ export function useLorToBlueprint() {
         return nodeId
       }
 
+      const connections = Array.isArray(scene.connections)
+        ? scene.connections.map((connection) => ({
+            ...connection,
+            uuid: connection.uuid || connection.id,
+            id: connection.id || connection.uuid,
+            sourcePort: normalizePort(connection.sourcePort, 'source'),
+            targetPort: normalizePort(connection.targetPort, 'target'),
+            sourceNodeUuid: repairNodeId(connection.sourceNodeUuid || connection.source, connection.sourcePort, 'source'),
+            source: repairNodeId(connection.source || connection.sourceNodeUuid, connection.sourcePort, 'source'),
+            targetNodeUuid: repairNodeId(connection.targetNodeUuid || connection.target, connection.targetPort, 'target'),
+            target: repairNodeId(connection.target || connection.targetNodeUuid, connection.targetPort, 'target'),
+          })).filter(connection => nodeIds.has(connection.sourceNodeUuid) && nodeIds.has(connection.targetNodeUuid))
+        : []
+
+      connections.forEach((connection) => {
+        const controlNode = nodesById.get(connection.sourceNodeUuid)
+        const dialogue = dialogueById.get(connection.targetNodeUuid)
+        if (!controlNode || controlNode.nodeType !== 'CharacterControlNode' || !dialogue) return
+        const legacyControls = parseCharacterControls((dialogue as any).characterControls)
+        const existingControls = parseCharacterControls(controlNode.properties?.characterControls || controlNode.properties?.characterControlsJson)
+        const mergedControls = existingControls.length > 0 ? existingControls : legacyControls
+        if (mergedControls.length === 0) return
+        controlNode.properties = {
+          ...(controlNode.properties || {}),
+          characterControls: mergedControls,
+          characterControlsJson: serializeCharacterControls(mergedControls),
+          tlorFormatVersion: LOR_FORMAT_VERSION,
+        }
+      })
+
       return {
         id: scene.id,
         nodes,
-        connections: Array.isArray(scene.connections)
-          ? scene.connections.map((connection) => ({
-              ...connection,
-              uuid: connection.uuid || connection.id,
-              id: connection.id || connection.uuid,
-              sourcePort: normalizePort(connection.sourcePort, 'source'),
-              targetPort: normalizePort(connection.targetPort, 'target'),
-              sourceNodeUuid: repairNodeId(connection.sourceNodeUuid || connection.source, connection.sourcePort, 'source'),
-              source: repairNodeId(connection.source || connection.sourceNodeUuid, connection.sourcePort, 'source'),
-              targetNodeUuid: repairNodeId(connection.targetNodeUuid || connection.target, connection.targetPort, 'target'),
-              target: repairNodeId(connection.target || connection.targetNodeUuid, connection.targetPort, 'target'),
-            })).filter(connection => nodeIds.has(connection.sourceNodeUuid) && nodeIds.has(connection.targetNodeUuid))
-          : [],
+        connections,
       }
     }
 
@@ -432,10 +493,16 @@ export function useLorToBlueprint() {
       }
 
       if (node.nodeType === 'CharacterControlNode') {
-        const slot = String(properties.slot || '')
-        if (slot === '6') {
-          properties.unmanagedCharacter = properties.unmanagedCharacter || properties.character || ''
-          properties.character = ''
+        const controls = parseCharacterControls(properties.characterControls || properties.characterControlsJson)
+        if (controls.length > 0) {
+          properties.characterControls = controls
+          properties.characterControlsJson = serializeCharacterControls(controls)
+        } else {
+          const slot = String(properties.slot || '')
+          if (slot === '6') {
+            properties.unmanagedCharacter = properties.unmanagedCharacter || properties.character || ''
+            properties.character = ''
+          }
         }
       }
 
@@ -514,6 +581,30 @@ export function useLorToBlueprint() {
     
     // 转换对话列表，使用 UUID 进行连线
     scene.dialogues.forEach((dialogue, index) => {
+      const dialogueControls = asArray((dialogue as any).characterControls)
+        .map((control, controlIndex) => normalizeCharacterControl(control, String(controlIndex + 1)))
+        .filter(control => control.action !== 'none')
+
+      if (dialogueControls.length > 0) {
+        const controlUuid = `${dialogue.uuid}-character-control`
+        nodes.push({
+          uuid: controlUuid,
+          id: controlUuid,
+          nodeType: 'CharacterControlNode',
+          position: normalizeBlueprintPosition({ x: (dialogue.positionX ?? 300) - 220, y: (dialogue.positionY ?? 100 + index * 150) }),
+          properties: {
+            characterControls: dialogueControls,
+            characterControlsJson: serializeCharacterControls(dialogueControls),
+            tlorFormatVersion: LOR_FORMAT_VERSION,
+          },
+          nextNodeUuids: [dialogue.uuid],
+        })
+        if (previousUuid && !branchTargetUuids.has(controlUuid)) {
+          connections.push(createConnection(previousUuid, controlUuid))
+        }
+        previousUuid = controlUuid
+      }
+
       const node = convertDialogueToNode(dialogue, index, dialogue.uuid)
       if (node) {
         nodes.push(node)

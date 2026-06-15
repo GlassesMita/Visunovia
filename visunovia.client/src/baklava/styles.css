@@ -97,6 +97,14 @@
   background: #1f1f2b;
   color: #e5e7eb;
   font-size: 12px;
+}
+
+.vn-sprite-slot6-name {
+  padding: 3px 6px;
+}
+
+.vn-sprite-select-control .native-free-select__value {
+  min-height: 24px;
   padding: 3px 6px;
 }
 
@@ -112,7 +120,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
-  max-height: 132px;
+  max-height: 220px;
   overflow-y: auto;
 }
 
@@ -133,8 +141,9 @@
 
 .vn-sprite-select-option img {
   width: 100%;
-  height: 42px;
-  object-fit: cover;
+  height: 72px;
+  object-fit: contain;
+  object-position: center center;
   border-radius: 3px;
   background: #111827;
 }
@@ -175,6 +184,10 @@
   background: #1f1f2b;
   color: #e5e7eb;
   font-size: 12px;
+}
+
+.vn-asset-select-control .native-free-select__value {
+  min-height: 24px;
   padding: 3px 6px;
 }
 

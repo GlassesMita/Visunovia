@@ -1,5 +1,6 @@
 import { NodeInterface } from '@baklavajs/core'
 import { defineComponent, h, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import NativeFreeSelect from '@/components/NativeFreeSelect.vue'
 import { getEntries } from '@/api/fileBrowser'
 import { useCharacterStore } from '@/stores/useCharacterStore'
 import { resolveAssetUrl } from '@/utils/assetPaths'
@@ -142,6 +143,10 @@ const SpriteSelectComponent = defineComponent({
       const slot = String(selectedSlot.value || '').trim()
       const isSlot6 = slot === '6'
       const unmanagedName = String(getInterfaceValue(props.intf, 'unmanagedCharacter') || '').trim()
+      const spriteOptions = [
+        { value: '', label: loading.value ? '读取立绘中...' : '未选择立绘' },
+        ...options.value.map(option => ({ value: option.path, label: option.name })),
+      ]
 
       return h('div', { class: 'vn-sprite-select' }, [
         isSlot6
@@ -154,15 +159,14 @@ const SpriteSelectComponent = defineComponent({
                 onInput: (event: Event) => setInterfaceValue(props.intf, 'unmanagedCharacter', (event.target as HTMLInputElement).value),
               }),
             ])
-          : h('select', {
+          : h(NativeFreeSelect, {
               class: 'vn-sprite-select-control',
-              value: props.intf.value || '',
+              modelValue: props.intf.value || '',
+              options: spriteOptions,
               disabled: loading.value || options.value.length === 0,
-              onChange: (event: Event) => selectSprite((event.target as HTMLSelectElement).value),
-            }, [
-              h('option', { value: '' }, loading.value ? '读取立绘中...' : '未选择立绘'),
-              ...options.value.map(option => h('option', { value: option.path, key: option.path }, option.name)),
-            ]),
+              'onUpdate:modelValue': selectSprite,
+              onChange: selectSprite,
+            }),
         !isSlot6 && props.intf.value
           ? h('img', {
               class: 'vn-sprite-select-preview',

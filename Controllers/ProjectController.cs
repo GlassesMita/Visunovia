@@ -13,6 +13,8 @@ namespace Visunovia.Controllers;
 public class ProjectController : ControllerBase
 {
     private const string DefaultSceneId = "start";
+    private const string ProjectFileFormatVersion = "1.1";
+    private const string CharacterControlSchemaVersion = "2";
     private readonly ILogger<ProjectController> _logger;
     private readonly EditorSessionService _sessionService;
     private readonly SettingsService _settingsService;
@@ -409,8 +411,8 @@ public class ProjectController : ControllerBase
     }
 
     /// <summary>
-    /// 读取当前项目 Assets/Characters/Characters.json 角色附加配置。
-    /// 角色目录本身仍以 Assets/Characters 下的文件夹为准，此配置仅保存头像、颜色、备注等可编辑属性。
+    /// 读取当前项目 Assets/Characters/Manifest.resona 角色附加配置。
+    /// 角色目录本身仍以 Assets/Characters 下的文件夹为准，此配置保存头像、颜色、备注和立绘清单。
     /// </summary>
     [HttpGet("characters/config")]
     public async Task<IActionResult> GetCharacterConfig()
@@ -424,7 +426,12 @@ public class ProjectController : ControllerBase
         {
             if (!System.IO.File.Exists(configPath))
             {
-                return Ok(new { success = true, data = new CharacterConfigResponse() });
+                var legacyPath = Path.Combine(Path.GetDirectoryName(configPath)!, "Characters.json");
+                if (!System.IO.File.Exists(legacyPath))
+                {
+                    return Ok(new { success = true, data = new CharacterConfigResponse() });
+                }
+                configPath = legacyPath;
             }
 
             var json = await System.IO.File.ReadAllTextAsync(configPath);
@@ -448,7 +455,7 @@ public class ProjectController : ControllerBase
     }
 
     /// <summary>
-    /// 写入当前项目 Assets/Characters/Characters.json 角色附加配置。
+    /// 写入当前项目 Assets/Characters/Manifest.resona 角色附加配置。
     /// </summary>
     [HttpPut("characters/config")]
     public async Task<IActionResult> SaveCharacterConfig([FromBody] CharacterConfigResponse request)
@@ -474,6 +481,11 @@ public class ProjectController : ControllerBase
                         Affiliation = character.Affiliation?.Trim() ?? string.Empty,
                         Color = character.Color?.Trim() ?? string.Empty,
                         Avatar = character.Avatar?.Trim() ?? string.Empty,
+                        Sprites = (character.Sprites ?? new List<string>())
+                            .Where(sprite => !string.IsNullOrWhiteSpace(sprite))
+                            .Select(sprite => sprite.Trim())
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .ToList(),
                         Note = character.Note?.Trim() ?? string.Empty
                     })
                     .Where(character => !string.IsNullOrWhiteSpace(character.Id))
@@ -738,7 +750,7 @@ public class ProjectController : ControllerBase
         var projectRoot = Path.GetFullPath(Path.GetDirectoryName(editor.CurrentProjectPath) ?? editor.CurrentProjectPath);
         var assetsRoot = Path.GetFullPath(Path.Combine(projectRoot, "Assets"));
         var charactersRoot = Path.GetFullPath(Path.Combine(assetsRoot, "Characters"));
-        configPath = Path.GetFullPath(Path.Combine(charactersRoot, "Characters.json"));
+        configPath = Path.GetFullPath(Path.Combine(charactersRoot, "Manifest.resona"));
 
         if (!IsPathInside(assetsRoot, configPath))
         {
@@ -868,12 +880,14 @@ public class ProjectController : ControllerBase
         // 创建主项目 XML 文件 (.tlor)
         var tlorPath = Path.Combine(projectDir, "Project.tlor");
         var tlorContent = $@"<?xml version=""1.0"" encoding=""utf-8""?>
-<project version=""1.0"">
+    <project version=""{ProjectFileFormatVersion}"">
   <metadata>
     <title>{name}</title>
     <author></author>
     <version>{version}</version>
     <versionCode>{versionCode}</versionCode>
+        <projectFormatVersion>{ProjectFileFormatVersion}</projectFormatVersion>
+        <characterControlSchemaVersion>{CharacterControlSchemaVersion}</characterControlSchemaVersion>
     <companyName>{companyName}</companyName>
     <ratingSystem>CADPA</ratingSystem>
     <ratingValue>12+</ratingValue>
@@ -1123,6 +1137,13 @@ public class ProjectController : ControllerBase
                 throw new XmlException("Project.tlor 缺少 project 根元素");
             }
 
+            var versionAttribute = root.Attribute("version");
+            if (versionAttribute == null || !string.Equals(versionAttribute.Value, ProjectFileFormatVersion, StringComparison.Ordinal))
+            {
+                root.SetAttributeValue("version", ProjectFileFormatVersion);
+                changed = true;
+            }
+
             if (metadata == null)
             {
                 metadata = new XElement("metadata");
@@ -1134,6 +1155,8 @@ public class ProjectController : ControllerBase
             changed |= EnsureMetadataElement(metadata, "author", string.Empty);
             changed |= EnsureMetadataElement(metadata, "version", "1.0");
             changed |= EnsureMetadataElement(metadata, "versionCode", "1");
+            changed |= EnsureMetadataElement(metadata, "projectFormatVersion", ProjectFileFormatVersion);
+            changed |= EnsureMetadataElement(metadata, "characterControlSchemaVersion", CharacterControlSchemaVersion);
             changed |= EnsureMetadataElement(metadata, "companyName", string.Empty);
             changed |= EnsureMetadataElement(metadata, "ratingSystem", "CADPA");
             changed |= EnsureMetadataElement(metadata, "ratingValue", "12+");
@@ -1272,12 +1295,14 @@ public class ProjectController : ControllerBase
     {
         return new XDocument(
             new XElement("project",
-                new XAttribute("version", "1.0"),
+                new XAttribute("version", ProjectFileFormatVersion),
                 new XElement("metadata",
                     new XElement("title", ExtractXmlLikeTagValue(oldContent, "title") ?? new DirectoryInfo(projectRoot).Name),
                     new XElement("author", ExtractXmlLikeTagValue(oldContent, "author") ?? string.Empty),
                     new XElement("version", ExtractXmlLikeTagValue(oldContent, "version") ?? "1.0"),
                     new XElement("versionCode", ExtractXmlLikeTagValue(oldContent, "versionCode") ?? "1"),
+                    new XElement("projectFormatVersion", ProjectFileFormatVersion),
+                    new XElement("characterControlSchemaVersion", CharacterControlSchemaVersion),
                     new XElement("companyName", ExtractXmlLikeTagValue(oldContent, "companyName") ?? string.Empty),
                     new XElement("ratingSystem", ExtractXmlLikeTagValue(oldContent, "ratingSystem") ?? "CADPA"),
                     new XElement("ratingValue", ExtractXmlLikeTagValue(oldContent, "ratingValue") ?? "12+")
@@ -1309,13 +1334,10 @@ public class ProjectController : ControllerBase
 
     private async Task WriteRepairedProjectFileAsync(string tlorPath, XDocument doc, string reason)
     {
-        var backupPath = $"{tlorPath}.bak-{DateTime.Now:yyyyMMddHHmmss}";
-        System.IO.File.Copy(tlorPath, backupPath, overwrite: false);
         await System.IO.File.WriteAllTextAsync(tlorPath, doc.ToString());
         LogProjectStep("repair", "Project.tlor 已自动修复", new Dictionary<string, object?>
         {
             ["tlorPath"] = tlorPath,
-            ["backupPath"] = backupPath,
             ["reason"] = reason
         });
     }
@@ -1363,8 +1385,8 @@ public class ProjectController : ControllerBase
             {
                 ["tlorFile"] = tlorFile
             });
-            var scene = await ParseTlorFileAsync(tlorFile);
-            if (scene != null)
+            var scenes = await ParseTlorFileScenesAsync(tlorFile);
+            foreach (var scene in scenes)
             {
                 result.Scenes.Add(scene);
                 LogProjectStep("parse", "从 .tlor 解析到场景", new Dictionary<string, object?>
@@ -1411,8 +1433,9 @@ public class ProjectController : ControllerBase
     /// <summary>
     /// 解析单个 .tlor XML 文件
     /// </summary>
-    private async Task<SceneInfo?> ParseTlorFileAsync(string tlorFilePath)
+    private async Task<List<SceneInfo>> ParseTlorFileScenesAsync(string tlorFilePath)
     {
+        var result = new List<SceneInfo>();
         var xml = await System.IO.File.ReadAllTextAsync(tlorFilePath);
         XDocument doc;
         try
@@ -1426,12 +1449,12 @@ public class ProjectController : ControllerBase
                 ["tlorFile"] = tlorFilePath,
                 ["error"] = ex.Message
             });
-            return null;
+            return result;
         }
 
         // 尝试多种可能的 XML 命名空间和元素名称
         var projectElement = doc.Root;
-        if (projectElement == null) return null;
+        if (projectElement == null) return result;
 
         // 尝试查找场景列表
         XElement? scenesElement = null;
@@ -1456,16 +1479,16 @@ public class ProjectController : ControllerBase
                 var lorPath = Path.Combine(Path.GetDirectoryName(tlorFilePath)!, firstScenePath);
                 if (System.IO.File.Exists(lorPath))
                 {
-                    return new SceneInfo
+                    result.Add(new SceneInfo
                     {
                         Id = Path.GetFileNameWithoutExtension(lorPath),
                         LorFilePath = lorPath,
                         Content = await System.IO.File.ReadAllTextAsync(lorPath)
-                    };
+                    });
                 }
             }
 
-            return null;
+            return result;
         }
 
         // 解析场景列表
@@ -1475,78 +1498,72 @@ public class ProjectController : ControllerBase
 
         if (sceneElements.Count == 0)
         {
-            return null;
+            return result;
         }
 
-        // 返回第一个场景（或配置中指定的默认场景）
-        var defaultScene = sceneElements.FirstOrDefault(s => 
-            s.Attribute("default")?.Value == "true" ||
-            s.Attribute("Default")?.Value == "true");
-
-        var targetScene = defaultScene ?? sceneElements.First();
-
-        var lorPathElement = targetScene.Element("path") ?? targetScene.Element("Path");
-        var lorFileName = targetScene.Attribute("id")?.Value ?? targetScene.Attribute("Id")?.Value;
-
-        if (lorPathElement == null && lorFileName == null)
+        foreach (var targetScene in sceneElements)
         {
-            return null;
-        }
+            var lorPathElement = targetScene.Element("path") ?? targetScene.Element("Path");
+            var lorFileName = targetScene.Attribute("id")?.Value ?? targetScene.Attribute("Id")?.Value;
 
-        string? lorFilePath = null;
-        string? content = null;
-
-        if (lorPathElement != null)
-        {
-            lorFilePath = Path.Combine(Path.GetDirectoryName(tlorFilePath)!, lorPathElement.Value);
-        }
-        else if (lorFileName != null)
-        {
-            // 尝试从 Scripts/Main 目录查找
-            var scriptsMainPath = Path.Combine(Path.GetDirectoryName(tlorFilePath)!, "Scripts", "Main");
-            var potentialPath = Path.Combine(scriptsMainPath, $"{lorFileName}.lor");
-            
-            if (System.IO.File.Exists(potentialPath))
+            if (lorPathElement == null && lorFileName == null)
             {
-                lorFilePath = potentialPath;
+                continue;
             }
-            else
+
+            string? lorFilePath = null;
+
+            if (lorPathElement != null)
             {
-                // 尝试在项目根目录查找
-                potentialPath = Path.Combine(Path.GetDirectoryName(tlorFilePath)!, $"{lorFileName}.lor");
+                lorFilePath = Path.Combine(Path.GetDirectoryName(tlorFilePath)!, lorPathElement.Value);
+            }
+            else if (lorFileName != null)
+            {
+                // 尝试从 Scripts/Main 目录查找
+                var scriptsMainPath = Path.Combine(Path.GetDirectoryName(tlorFilePath)!, "Scripts", "Main");
+                var potentialPath = Path.Combine(scriptsMainPath, $"{lorFileName}.lor");
+                
                 if (System.IO.File.Exists(potentialPath))
                 {
                     lorFilePath = potentialPath;
                 }
+                else
+                {
+                    // 尝试在项目根目录查找
+                    potentialPath = Path.Combine(Path.GetDirectoryName(tlorFilePath)!, $"{lorFileName}.lor");
+                    if (System.IO.File.Exists(potentialPath))
+                    {
+                        lorFilePath = potentialPath;
+                    }
+                }
+            }
+
+            if (lorFilePath != null && System.IO.File.Exists(lorFilePath))
+            {
+                var sceneId = targetScene.Attribute("id")?.Value 
+                    ?? targetScene.Attribute("Id")?.Value
+                    ?? lorFileName
+                    ?? Path.GetFileNameWithoutExtension(lorFilePath);
+
+                result.Add(new SceneInfo
+                {
+                    Id = sceneId,
+                    LorFilePath = lorFilePath,
+                    Content = await System.IO.File.ReadAllTextAsync(lorFilePath)
+                });
+            }
+            else
+            {
+                LogProjectStep("parse", "跳过不存在的场景脚本引用", new Dictionary<string, object?>
+                {
+                    ["tlorFile"] = tlorFilePath,
+                    ["sceneId"] = lorFileName,
+                    ["resolvedPath"] = lorFilePath
+                });
             }
         }
 
-        if (lorFilePath != null && System.IO.File.Exists(lorFilePath))
-        {
-            content = await System.IO.File.ReadAllTextAsync(lorFilePath);
-        }
-        else
-        {
-            LogProjectStep("parse", "跳过不存在的场景脚本引用，将回退扫描 .lor 文件", new Dictionary<string, object?>
-            {
-                ["tlorFile"] = tlorFilePath,
-                ["sceneId"] = lorFileName,
-                ["resolvedPath"] = lorFilePath
-            });
-            return null;
-        }
-
-        var sceneId = targetScene.Attribute("id")?.Value 
-            ?? targetScene.Attribute("Id")?.Value
-            ?? lorFileName
-            ?? Path.GetFileNameWithoutExtension(tlorFilePath);
-
-        return new SceneInfo
-        {
-            Id = sceneId,
-            LorFilePath = lorFilePath ?? string.Empty,
-            Content = content ?? string.Empty
-        };
+        return result;
     }
 
     /// <summary>
@@ -1576,6 +1593,120 @@ public class ProjectController : ControllerBase
             _logger.LogError(ex, "获取场景列表失败: {Path}", projectPath);
             return StatusCode(500, new { success = false, error = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// 在当前项目中新建场景。
+    /// </summary>
+    [HttpPost("scenes")]
+    public async Task<IActionResult> CreateScene([FromBody] ProjectCreateSceneRequest request)
+    {
+        if (!TryValidateSceneId(request.SceneId, out var error))
+        {
+            return BadRequest(new { success = false, error });
+        }
+
+        try
+        {
+            var editor = _sessionService.GetEditor();
+            await editor.CreateSceneAsync(request.SceneId);
+            return Ok(new { success = true });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "新建场景失败: {SceneId}", request.SceneId);
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 重命名当前项目中的场景。
+    /// </summary>
+    [HttpPut("scenes/{sceneId}/rename")]
+    public async Task<IActionResult> RenameScene(string sceneId, [FromBody] ProjectRenameSceneRequest request)
+    {
+        if (!TryValidateSceneId(sceneId, out var oldError))
+        {
+            return BadRequest(new { success = false, error = oldError });
+        }
+
+        if (!TryValidateSceneId(request.NewSceneId, out var newError))
+        {
+            return BadRequest(new { success = false, error = newError });
+        }
+
+        try
+        {
+            var editor = _sessionService.GetEditor();
+            await editor.RenameSceneAsync(sceneId, request.NewSceneId);
+            return Ok(new { success = true });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "重命名场景失败: {OldSceneId} -> {NewSceneId}", sceneId, request.NewSceneId);
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 删除当前项目中的场景。
+    /// </summary>
+    [HttpDelete("scenes/{sceneId}")]
+    public async Task<IActionResult> DeleteScene(string sceneId)
+    {
+        if (!TryValidateSceneId(sceneId, out var error))
+        {
+            return BadRequest(new { success = false, error });
+        }
+
+        try
+        {
+            var editor = _sessionService.GetEditor();
+            await editor.DeleteSceneAsync(sceneId);
+            return Ok(new { success = true });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "删除场景失败: {SceneId}", sceneId);
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    private static bool TryValidateSceneId(string? sceneId, out string error)
+    {
+        error = string.Empty;
+        if (string.IsNullOrWhiteSpace(sceneId))
+        {
+            error = "场景名称不能为空";
+            return false;
+        }
+
+        var trimmed = sceneId.Trim();
+        if (!string.Equals(trimmed, Path.GetFileName(trimmed), StringComparison.Ordinal) || Path.GetInvalidFileNameChars().Any(trimmed.Contains))
+        {
+            error = "场景名称不能包含路径分隔符或非法文件名字符";
+            return false;
+        }
+
+        if (!System.Text.RegularExpressions.Regex.IsMatch(trimmed, @"^[\p{L}\p{N}_\-\s]+$"))
+        {
+            error = "场景名称只能包含文字、数字、空格、下划线和连字符";
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -1643,6 +1774,22 @@ public class ImportProjectRequest
 }
 
 /// <summary>
+/// 新建场景请求。
+/// </summary>
+public class ProjectCreateSceneRequest
+{
+    public string SceneId { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// 重命名场景请求。
+/// </summary>
+public class ProjectRenameSceneRequest
+{
+    public string NewSceneId { get; set; } = string.Empty;
+}
+
+/// <summary>
 /// 重命名资产请求
 /// </summary>
 public class RenameAssetRequest
@@ -1669,6 +1816,7 @@ public class CharacterConfigEntry
     public string Affiliation { get; set; } = string.Empty;
     public string Color { get; set; } = string.Empty;
     public string Avatar { get; set; } = string.Empty;
+    public List<string> Sprites { get; set; } = new();
     public string Note { get; set; } = string.Empty;
 }
 

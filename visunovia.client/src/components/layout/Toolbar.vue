@@ -36,6 +36,16 @@
       >
         <Save :size="18" />
       </button>
+      <label class="scene-quick-open" title="快速打开场景">
+        <span>场景</span>
+        <NativeFreeSelect
+          v-model="selectedSceneId"
+          class="scene-quick-open-control"
+          :options="sceneQuickOpenOptions"
+          :disabled="scenesLoading || sceneOptions.length === 0 || editorStore.isLoading"
+          @change="handleSceneSelected"
+        />
+      </label>
       <button
         class="toolbar-button"
         title="预览项目"
@@ -48,6 +58,14 @@
     <div class="toolbar-divider"></div>
 
     <div class="toolbar-group">
+      <button
+        class="toolbar-button"
+        title="将选中节点对齐到网格；未选中时对齐全部节点"
+        :disabled="nodeGraphStore.nodeCount === 0"
+        @click="handleAlignNodesToGrid"
+      >
+        <Grid3X3 :size="18" />
+      </button>
       <button
         class="toolbar-button"
         :title="`${t('menu.undo')} (${undoDescription || 'Ctrl+Z'})`"
@@ -72,22 +90,45 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { FilePlus, FolderOpen, RefreshCw, Save, Undo2, Redo2, Users, Play } from 'lucide-vue-next'
+import { computed, ref, watch, onMounted } from 'vue'
+import { FilePlus, FolderOpen, RefreshCw, Save, Undo2, Redo2, Users, Play, Grid3X3 } from 'lucide-vue-next'
+import NativeFreeSelect from '@/components/NativeFreeSelect.vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useUIStore } from '@/stores/useUIStore'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useUndoRedoStore } from '@/stores/useUndoRedoStore'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
+import { useNodeOperations } from '@/composables/useNodeOperations'
+import { getCurrentProject, getProjectScenes, type SceneListItem } from '@/api/projectApi'
 
 const { t } = useLocalization()
 const uiStore = useUIStore()
 const editorStore = useEditorStore()
 const undoRedoStore = useUndoRedoStore()
 const nodeGraphStore = useNodeGraphStore()
+const { loadSceneGraph } = useNodeOperations()
 
 const undoDescription = computed(() => undoRedoStore.getUndoDescription())
 const redoDescription = computed(() => undoRedoStore.getRedoDescription())
+const sceneOptions = ref<SceneListItem[]>([])
+const selectedSceneId = ref('')
+const scenesLoading = ref(false)
+const sceneQuickOpenOptions = computed(() => sceneOptions.value.length === 0
+  ? [{ value: '', label: '无场景', disabled: true }]
+  : sceneOptions.value.map(scene => ({ value: scene.id, label: scene.id }))
+)
+
+onMounted(() => {
+  refreshSceneOptions()
+})
+
+watch(
+  () => nodeGraphStore.currentSceneId,
+  (sceneId) => {
+    selectedSceneId.value = sceneId || ''
+    refreshSceneOptions()
+  }
+)
 
 function handleNew() {
   uiStore.openNewProjectModal()
@@ -97,9 +138,60 @@ function handleSave() {
   editorStore.save()
 }
 
-function handleRefreshProjectTree() {
+async function handleRefreshProjectTree() {
   uiStore.openProjectPopup()
   uiStore.refreshProjectTree()
+  await refreshSceneOptions()
+}
+
+async function refreshSceneOptions() {
+  scenesLoading.value = true
+  try {
+    const currentProject = await getCurrentProject()
+    if (!currentProject.data?.projectPath) {
+      sceneOptions.value = []
+      selectedSceneId.value = ''
+      return
+    }
+
+    sceneOptions.value = await getProjectScenes(currentProject.data.projectPath)
+    selectedSceneId.value = nodeGraphStore.currentSceneId || sceneOptions.value[0]?.id || ''
+  } catch (error) {
+    console.warn('[Toolbar] 获取场景列表失败:', error)
+    sceneOptions.value = []
+  } finally {
+    scenesLoading.value = false
+  }
+}
+
+async function handleSceneSelected() {
+  const targetSceneId = selectedSceneId.value
+  const currentSceneId = nodeGraphStore.currentSceneId
+
+  if (!targetSceneId || targetSceneId === currentSceneId) return
+
+  editorStore.isLoading = true
+  try {
+    if (currentSceneId) {
+      await editorStore.save()
+      if (editorStore.error) {
+        selectedSceneId.value = currentSceneId
+        return
+      }
+    }
+
+    const loaded = await loadSceneGraph(targetSceneId)
+    if (!loaded) {
+      selectedSceneId.value = currentSceneId || ''
+    }
+  } finally {
+    editorStore.isLoading = false
+  }
+}
+
+function handleAlignNodesToGrid() {
+  nodeGraphStore.alignNodesToGrid()
+  ;(window as any).__baklavaViewModel?.editor?.hooks?.load?.execute?.({})
 }
 
 function handleUndo() {
@@ -164,6 +256,34 @@ function handleRedo() {
 .toolbar-button:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+.scene-quick-open {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 6px;
+  color: #cccccc;
+  font-size: 12px;
+}
+
+.scene-quick-open-control {
+  min-width: 140px;
+  height: 26px;
+  background: #1e1e1e;
+  border: 1px solid #3e3e42;
+  border-radius: 4px;
+  color: #eeeeee;
+}
+
+:deep(.scene-quick-open-control .native-free-select__value) {
+  min-height: 24px;
+  padding: 0 8px;
+}
+
+.scene-quick-open-control.disabled {
+  opacity: 0.5;
 }
 
 .toolbar-divider {
