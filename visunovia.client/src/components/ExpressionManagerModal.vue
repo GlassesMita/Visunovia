@@ -4,17 +4,17 @@
       <section class="expression-manager" role="dialog" aria-modal="true" aria-labelledby="expression-manager-title">
         <header class="expression-manager-header">
           <div>
-            <h2 id="expression-manager-title">表情管理器</h2>
-            <p>通过画布拖拽和 10 秒内时间轴制作可复用表情，资源读取自 <code>Assets/Emoji/Resources</code>，成品保存到 <code>Assets/Emoji/Manifest.resona</code>。</p>
+            <h2 id="expression-manager-title">{{ t('expressionManager.title', 'Expression Manager') }}</h2>
+            <p>{{ t('expressionManager.descriptionPrefix', 'Create reusable expressions by dragging on the canvas and editing a timeline up to 10 seconds. Assets are read from') }} <code>Assets/Emoji/Resources</code>{{ t('expressionManager.descriptionMiddle', ', and results are saved to') }} <code>Assets/Emoji/Manifest.resona</code>.</p>
           </div>
-          <button class="icon-button" type="button" aria-label="关闭表情管理器" @click="uiStore.closeExpressionManager()">✕</button>
+          <button class="icon-button" type="button" :aria-label="t('expressionManager.closeAria', 'Close expression manager')" @click="uiStore.closeExpressionManager()">✕</button>
         </header>
 
         <div class="expression-manager-body">
           <aside class="expression-sidebar">
             <div class="sidebar-actions">
-              <button class="primary-button" type="button" @click="addExpression">新建表情</button>
-              <button type="button" :disabled="isLoading" @click="loadExpressions">刷新</button>
+              <button class="primary-button" type="button" @click="addExpression">{{ t('expressionManager.newExpression', 'New Expression') }}</button>
+              <button type="button" :disabled="isLoading" @click="loadExpressions">{{ t('common.refresh', 'Refresh') }}</button>
             </div>
             <div v-if="message" class="manager-message">{{ message }}</div>
             <button
@@ -26,7 +26,7 @@
               @click="selectExpression(expression.id)"
             >
               <strong>{{ expression.name || expression.id }}</strong>
-              <span>{{ expression.layers.length }} 层 · {{ expression.duration }}s</span>
+              <span>{{ formatLayerCount(expression.layers.length) }} · {{ expression.duration }}s</span>
             </button>
           </aside>
 
@@ -37,16 +37,16 @@
                 <input :value="selectedExpression.id" @input="updateExpression({ id: sanitizeId(($event.target as HTMLInputElement).value) })" />
               </label>
               <label>
-                <span>名称</span>
+                <span>{{ t('common.name', 'Name') }}</span>
                 <input :value="selectedExpression.name" @input="updateExpression({ name: ($event.target as HTMLInputElement).value })" />
               </label>
               <label>
-                <span>时长</span>
+                <span>{{ t('expressionManager.duration', 'Duration') }}</span>
                 <input type="number" min="0.1" max="10" step="0.1" :value="selectedExpression.duration" @input="updateExpression({ duration: normalizeNumber(($event.target as HTMLInputElement).value, selectedExpression.duration, 0.1, 10) })" />
               </label>
-              <button type="button" @click="duplicateExpression">复制成品</button>
-              <button type="button" class="danger-button" @click="removeExpression">删除</button>
-              <button type="button" class="primary-button" @click="saveExpressions">保存</button>
+              <button type="button" @click="duplicateExpression">{{ t('expressionManager.duplicate', 'Duplicate Result') }}</button>
+              <button type="button" class="danger-button" @click="removeExpression">{{ t('common.delete', 'Delete') }}</button>
+              <button type="button" class="primary-button" @click="saveExpressions">{{ t('common.save', 'Save') }}</button>
             </div>
 
             <div class="expression-editor-grid">
@@ -70,15 +70,15 @@
                     @click.stop="selectLayer(layer.id)"
                   >
                     <img v-if="layer.image" :src="resolveAssetUrl(layer.image, 'Emoji')" :alt="layer.name" draggable="false" />
-                    <span v-else>选择图像</span>
+                    <span v-else>{{ t('expressionManager.chooseImage', 'Choose Image') }}</span>
                   </div>
                 </div>
               </div>
 
               <aside class="layer-panel">
                 <div class="layer-panel-header">
-                  <strong>图层</strong>
-                  <button type="button" @click="addLayer">+ 图层</button>
+                  <strong>{{ t('expressionManager.layers', 'Layers') }}</strong>
+                  <button type="button" @click="addLayer">+ {{ t('expressionManager.layer', 'Layer') }}</button>
                 </div>
                 <button
                   v-for="layer in sortedLayers"
@@ -93,28 +93,28 @@
                 </button>
 
                 <div v-if="selectedLayer" class="layer-fields">
-                  <label><span>名称</span><input :value="selectedLayer.name" @input="updateLayer({ name: ($event.target as HTMLInputElement).value })" /></label>
-                  <label><span>图像</span><select :value="selectedLayer.image" @change="updateLayer({ image: ($event.target as HTMLSelectElement).value })"><option value="">未选择</option><option v-for="file in imageFiles" :key="file.path" :value="file.path">{{ file.name }}</option></select></label>
+                  <label><span>{{ t('common.name', 'Name') }}</span><input :value="selectedLayer.name" @input="updateLayer({ name: ($event.target as HTMLInputElement).value })" /></label>
+                  <label><span>{{ t('expressionManager.image', 'Image') }}</span><select :value="selectedLayer.image" @change="updateLayer({ image: ($event.target as HTMLSelectElement).value })"><option value="">{{ t('common.notSelected', 'Not selected') }}</option><option v-for="file in imageFiles" :key="file.path" :value="file.path">{{ file.name }}</option></select></label>
                   <div class="field-grid">
                     <label><span>X%</span><input type="number" min="0" max="100" step="1" :value="selectedLayer.x" @input="updateLayer({ x: normalizePercent(($event.target as HTMLInputElement).value, selectedLayer.x) })" /></label>
                     <label><span>Y%</span><input type="number" min="0" max="100" step="1" :value="selectedLayer.y" @input="updateLayer({ y: normalizePercent(($event.target as HTMLInputElement).value, selectedLayer.y) })" /></label>
-                    <label><span>宽%</span><input type="number" min="1" max="200" step="1" :value="selectedLayer.width" @input="updateLayer({ width: normalizeNumber(($event.target as HTMLInputElement).value, selectedLayer.width, 1, 200) })" /></label>
-                    <label><span>高%</span><input type="number" min="1" max="200" step="1" :value="selectedLayer.height" @input="updateLayer({ height: normalizeNumber(($event.target as HTMLInputElement).value, selectedLayer.height, 1, 200) })" /></label>
-                    <label><span>旋转</span><input type="number" min="-360" max="360" step="1" :value="selectedLayer.rotation" @input="updateLayer({ rotation: normalizeNumber(($event.target as HTMLInputElement).value, selectedLayer.rotation, -360, 360) })" /></label>
-                    <label><span>透明</span><input type="number" min="0" max="100" step="1" :value="selectedLayer.opacity" @input="updateLayer({ opacity: normalizePercent(($event.target as HTMLInputElement).value, selectedLayer.opacity) })" /></label>
+                    <label><span>{{ t('expressionManager.widthPercent', 'Width%') }}</span><input type="number" min="1" max="200" step="1" :value="selectedLayer.width" @input="updateLayer({ width: normalizeNumber(($event.target as HTMLInputElement).value, selectedLayer.width, 1, 200) })" /></label>
+                    <label><span>{{ t('expressionManager.heightPercent', 'Height%') }}</span><input type="number" min="1" max="200" step="1" :value="selectedLayer.height" @input="updateLayer({ height: normalizeNumber(($event.target as HTMLInputElement).value, selectedLayer.height, 1, 200) })" /></label>
+                    <label><span>{{ t('expressionManager.rotation', 'Rotation') }}</span><input type="number" min="-360" max="360" step="1" :value="selectedLayer.rotation" @input="updateLayer({ rotation: normalizeNumber(($event.target as HTMLInputElement).value, selectedLayer.rotation, -360, 360) })" /></label>
+                    <label><span>{{ t('expressionManager.opacity', 'Opacity') }}</span><input type="number" min="0" max="100" step="1" :value="selectedLayer.opacity" @input="updateLayer({ opacity: normalizePercent(($event.target as HTMLInputElement).value, selectedLayer.opacity) })" /></label>
                   </div>
-                  <button type="button" @click="addKeyframe">添加当前时间关键帧</button>
-                  <button type="button" :disabled="!selectedKeyframe" @click="removeSelectedKeyframe">删除选中关键帧</button>
-                  <button type="button" class="danger-button" @click="removeLayer">删除图层</button>
+                  <button type="button" @click="addKeyframe">{{ t('expressionManager.addCurrentKeyframe', 'Add keyframe at current time') }}</button>
+                  <button type="button" :disabled="!selectedKeyframe" @click="removeSelectedKeyframe">{{ t('expressionManager.removeSelectedKeyframe', 'Delete selected keyframe') }}</button>
+                  <button type="button" class="danger-button" @click="removeLayer">{{ t('expressionManager.deleteLayer', 'Delete layer') }}</button>
                   <div v-if="selectedKeyframe" class="bezier-fields">
-                    <strong>关键帧贝塞尔曲线</strong>
+                    <strong>{{ t('expressionManager.keyframeBezier', 'Keyframe Bezier Curve') }}</strong>
                     <select :value="selectedKeyframe.easing" @change="updateSelectedKeyframe({ easing: ($event.target as HTMLSelectElement).value })">
                       <option value="linear">Linear</option>
                       <option value="ease">Ease</option>
                       <option value="ease-in">Ease In</option>
                       <option value="ease-out">Ease Out</option>
                       <option value="ease-in-out">Ease In Out</option>
-                      <option value="bezier">自定义贝塞尔</option>
+                      <option value="bezier">{{ t('expressionManager.customBezier', 'Custom Bezier') }}</option>
                     </select>
                     <div class="field-grid">
                       <label><span>X1</span><input type="number" min="0" max="1" step="0.01" :value="selectedKeyframe.bezierX1" @input="updateSelectedKeyframe({ bezierX1: normalizeNumber(($event.target as HTMLInputElement).value, selectedKeyframe.bezierX1, 0, 1) })" /></label>
@@ -129,7 +129,7 @@
 
             <div class="timeline-panel">
               <div class="timeline-header">
-                <label>当前时间 {{ currentTime.toFixed(1) }}s</label>
+                <label>{{ t('expressionManager.currentTime', 'Current Time') }} {{ currentTime.toFixed(1) }}s</label>
                 <input type="range" min="0" :max="selectedExpression.duration" step="0.1" v-model.number="currentTime" />
               </div>
               <div class="timeline-track">
@@ -158,8 +158,8 @@
           </main>
 
           <main v-else class="empty-expression-state">
-            <strong>还没有表情成品</strong>
-            <span>点击“新建表情”开始制作。</span>
+            <strong>{{ t('expressionManager.emptyTitle', 'No expression results yet') }}</strong>
+            <span>{{ t('expressionManager.emptyDescription', 'Click “New Expression” to start creating.') }}</span>
           </main>
         </div>
       </section>
@@ -174,9 +174,11 @@ import { getCurrentProject, getExpressionConfig, saveExpressionConfig, type Expr
 import { useExpressionStore } from '@/stores/useExpressionStore'
 import { getEntries } from '@/api/fileBrowser'
 import { resolveAssetUrl } from '@/utils/assetPaths'
+import { useLocalization } from '@/composables/useLocalization'
 
 const uiStore = useUIStore()
 const expressionStore = useExpressionStore()
+const { t } = useLocalization()
 const expressions = ref<ExpressionConfigEntry[]>([])
 const selectedExpressionId = ref('')
 const selectedLayerId = ref('')
@@ -217,7 +219,7 @@ async function loadExpressions() {
     selectedLayerId.value ||= selectedExpression.value?.layers[0]?.id || ''
     await loadImageFiles()
   } catch (error: any) {
-    message.value = error?.message || '读取表情配置失败'
+    message.value = error?.message || t('expressionManager.loadFailed', 'Failed to read expression configuration')
   } finally {
     isLoading.value = false
   }
@@ -227,10 +229,14 @@ async function saveExpressions() {
   try {
     await saveExpressionConfig({ expressions: expressions.value })
     expressionStore.expressions = expressions.value
-    message.value = '已保存，可复制 Assets/Emoji 到其他项目复用。'
+    message.value = t('expressionManager.saved', 'Saved. You can copy Assets/Emoji to other projects for reuse.')
   } catch (error: any) {
-    message.value = error?.message || '保存表情配置失败'
+    message.value = error?.message || t('expressionManager.saveFailed', 'Failed to save expression configuration')
   }
+}
+
+function formatLayerCount(count: number) {
+  return t('expressionManager.layerCount', '{count} layers').replace('{count}', String(count))
 }
 
 async function loadImageFiles() {
@@ -277,7 +283,7 @@ function normalizePercent(value: unknown, fallback = 50) {
 function createLayer(index: number): ExpressionLayerEntry {
   return {
     id: `layer-${Date.now()}-${index}`,
-    name: `图层 ${index}`,
+    name: t('expressionManager.layerName', 'Layer {index}').replace('{index}', String(index)),
     image: imageFiles.value[0]?.path || '',
     x: 50,
     y: 50,
@@ -310,7 +316,7 @@ function addExpression() {
   const id = `expression-${Date.now()}`
   const expression: ExpressionConfigEntry = {
     id,
-    name: '新表情',
+    name: t('expressionManager.defaultExpressionName', 'New Expression'),
     duration: 2,
     canvasWidth: 512,
     canvasHeight: 512,

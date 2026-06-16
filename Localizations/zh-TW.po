@@ -1627,3 +1627,196 @@ msgstr "新建資料夾"
 
 msgid "FileBrowser.FolderNamePlaceholder"
 msgstr "輸入資料夾名稱"
+# Character Manager
+msgid "common.refresh"
+msgstr "重新整理"
+
+msgid "common.delete"
+msgstr "刪除"
+
+msgid "common.name"
+msgstr "名稱"
+
+msgid "common.notSelected"
+msgstr "未選擇"
+
+msgid "characterManager.title"
+msgstr "角色管理器"
+
+msgid "characterManager.descriptionPrefix"
+msgstr "讀取目前專案"
+
+msgid "characterManager.descriptionSuffix"
+msgstr "下的目錄作為角色，並預設使用 Avatars 中的第一張圖片作為頭像。"
+
+msgid "characterManager.closeAria"
+msgstr "關閉角色管理器"
+
+msgid "characterManager.loading"
+msgstr "讀取中..."
+
+msgid "characterManager.refresh"
+msgstr "重新整理角色目錄"
+
+msgid "characterManager.searchPlaceholder"
+msgstr "快速尋找角色..."
+
+msgid "characterManager.characterCount"
+msgstr "{count} 個角色"
+
+msgid "characterManager.emptyTitle"
+msgstr "沒有讀取到角色目錄"
+
+msgid "characterManager.emptyDescription"
+msgstr "請確認目前專案存在 Assets/Characters/<CharacterID> 目錄。"
+
+msgid "characterManager.noMatchTitle"
+msgstr "沒有符合的角色"
+
+msgid "characterManager.noMatchDescription"
+msgstr "請嘗試其他名稱或備註關鍵字。"
+
+msgid "characterManager.pickAvatarTitle"
+msgstr "選擇 {name} 的頭像"
+
+msgid "characterManager.pickColorTitle"
+msgstr "選擇角色顏色"
+
+msgid "characterManager.removeAvatarTitle"
+msgstr "移除頭像"
+
+msgid "characterManager.displayId"
+msgstr "顯示 ID"
+
+msgid "characterManager.displayIdPlaceholder"
+msgstr "例如 Plana"
+
+msgid "characterManager.affiliation"
+msgstr "歸屬（Affiliation）"
+
+msgid "characterManager.affiliationPlaceholder"
+msgstr "例如 Abydos / Seminar / Millenium"
+
+msgid "characterManager.folder"
+msgstr "資料夾"
+
+msgid "characterManager.path"
+msgstr "路徑"
+
+msgid "characterManager.dragAnchorTitle"
+msgstr "拖曳定位立繪錨點"
+
+msgid "characterManager.spriteAnchorX"
+msgstr "立繪錨點 X%"
+
+msgid "characterManager.spriteAnchorY"
+msgstr "立繪錨點 Y%"
+
+msgid "characterManager.notePlaceholder"
+msgstr "備註，例如聲線、身分或立繪說明"
+
+msgid "characterManager.chooseAvatar"
+msgstr "選擇頭像"
+
+msgid "characterManager.noAvatarImagesTitle"
+msgstr "Avatars 目錄中沒有圖片"
+
+msgid "characterManager.noAvatarImagesDescription"
+msgstr "請將頭像圖片放入 Assets/Characters/{name}/Avatars。"
+
+msgid "characterManager.saveFailed"
+msgstr "儲存角色設定失敗"
+
+msgid "characterManager.loadFailed"
+msgstr "讀取 Assets/Characters 失敗"
+
+msgid "characterManager.initialFallback"
+msgstr "角"
+
+# Expression Manager
+msgid "expressionManager.title"
+msgstr "表情管理器"
+
+msgid "expressionManager.descriptionPrefix"
+msgstr "透過畫布拖曳和 10 秒內時間軸製作可重複使用的表情，資源讀取自"
+
+msgid "expressionManager.descriptionMiddle"
+msgstr "，成品儲存到"
+
+msgid "expressionManager.closeAria"
+msgstr "關閉表情管理器"
+
+msgid "expressionManager.newExpression"
+msgstr "新增表情"
+
+msgid "expressionManager.layerCount"
+msgstr "{count} 層"
+
+msgid "expressionManager.duration"
+msgstr "時長"
+
+msgid "expressionManager.duplicate"
+msgstr "複製成品"
+
+msgid "expressionManager.chooseImage"
+msgstr "選擇圖像"
+
+msgid "expressionManager.layers"
+msgstr "圖層"
+
+msgid "expressionManager.layer"
+msgstr "圖層"
+
+msgid "expressionManager.image"
+msgstr "圖像"
+
+msgid "expressionManager.widthPercent"
+msgstr "寬%"
+
+msgid "expressionManager.heightPercent"
+msgstr "高%"
+
+msgid "expressionManager.rotation"
+msgstr "旋轉"
+
+msgid "expressionManager.opacity"
+msgstr "透明"
+
+msgid "expressionManager.addCurrentKeyframe"
+msgstr "加入目前時間關鍵幀"
+
+msgid "expressionManager.removeSelectedKeyframe"
+msgstr "刪除選取關鍵幀"
+
+msgid "expressionManager.deleteLayer"
+msgstr "刪除圖層"
+
+msgid "expressionManager.keyframeBezier"
+msgstr "關鍵幀貝塞爾曲線"
+
+msgid "expressionManager.currentTime"
+msgstr "目前時間"
+
+msgid "expressionManager.emptyTitle"
+msgstr "還沒有表情成品"
+
+msgid "expressionManager.emptyDescription"
+msgstr "點擊「新增表情」開始製作。"
+
+msgid "expressionManager.loadFailed"
+msgstr "讀取表情設定失敗"
+
+msgid "expressionManager.saved"
+msgstr "已儲存，可複製 Assets/Emoji 到其他專案重複使用。"
+
+msgid "expressionManager.saveFailed"
+msgstr "儲存表情設定失敗"
+
+msgid "expressionManager.layerName"
+msgstr "圖層 {index}"
+
+msgid "expressionManager.defaultExpressionName"
+msgstr "新表情"
+
+msgid "expressionManager.customBezier"
+msgstr "自訂貝塞爾"

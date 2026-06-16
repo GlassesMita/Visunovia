@@ -1641,3 +1641,197 @@ msgstr "产品名称（占位符）"
 
 msgid "settings.placeholderProduct.desc"
 msgstr "新建项目时默认的产品名称"
+
+# Character Manager
+msgid "common.refresh"
+msgstr "刷新"
+
+msgid "common.delete"
+msgstr "删除"
+
+msgid "common.name"
+msgstr "名称"
+
+msgid "common.notSelected"
+msgstr "未选择"
+
+msgid "characterManager.title"
+msgstr "角色管理器"
+
+msgid "characterManager.descriptionPrefix"
+msgstr "读取当前项目"
+
+msgid "characterManager.descriptionSuffix"
+msgstr "下的目录作为角色，并默认使用 Avatars 中的首张图片作为头像。"
+
+msgid "characterManager.closeAria"
+msgstr "关闭角色管理器"
+
+msgid "characterManager.loading"
+msgstr "读取中..."
+
+msgid "characterManager.refresh"
+msgstr "刷新角色目录"
+
+msgid "characterManager.searchPlaceholder"
+msgstr "快速查找角色..."
+
+msgid "characterManager.characterCount"
+msgstr "{count} 个角色"
+
+msgid "characterManager.emptyTitle"
+msgstr "没有读取到角色目录"
+
+msgid "characterManager.emptyDescription"
+msgstr "请确认当前项目存在 Assets/Characters/<CharacterID> 目录。"
+
+msgid "characterManager.noMatchTitle"
+msgstr "没有匹配的角色"
+
+msgid "characterManager.noMatchDescription"
+msgstr "请尝试其他名称或备注关键词。"
+
+msgid "characterManager.pickAvatarTitle"
+msgstr "选择 {name} 的头像"
+
+msgid "characterManager.pickColorTitle"
+msgstr "选择角色颜色"
+
+msgid "characterManager.removeAvatarTitle"
+msgstr "移除头像"
+
+msgid "characterManager.displayId"
+msgstr "显示 ID"
+
+msgid "characterManager.displayIdPlaceholder"
+msgstr "例如 Plana"
+
+msgid "characterManager.affiliation"
+msgstr "归属（Affiliation）"
+
+msgid "characterManager.affiliationPlaceholder"
+msgstr "例如 Abydos / Seminar / Millenium"
+
+msgid "characterManager.folder"
+msgstr "文件夹"
+
+msgid "characterManager.path"
+msgstr "路径"
+
+msgid "characterManager.dragAnchorTitle"
+msgstr "拖拽定位立绘锚点"
+
+msgid "characterManager.spriteAnchorX"
+msgstr "立绘锚点 X%"
+
+msgid "characterManager.spriteAnchorY"
+msgstr "立绘锚点 Y%"
+
+msgid "characterManager.notePlaceholder"
+msgstr "备注，例如声线、身份或立绘说明"
+
+msgid "characterManager.chooseAvatar"
+msgstr "选择头像"
+
+msgid "characterManager.noAvatarImagesTitle"
+msgstr "Avatars 目录中没有图片"
+
+msgid "characterManager.noAvatarImagesDescription"
+msgstr "请将头像图片放入 Assets/Characters/{name}/Avatars。"
+
+msgid "characterManager.saveFailed"
+msgstr "保存角色配置失败"
+
+msgid "characterManager.loadFailed"
+msgstr "读取 Assets/Characters 失败"
+
+msgid "characterManager.initialFallback"
+msgstr "角"
+
+# Expression Manager
+msgid "expressionManager.title"
+msgstr "表情管理器"
+
+msgid "expressionManager.descriptionPrefix"
+msgstr "通过画布拖拽和 10 秒内时间轴制作可复用表情，资源读取自"
+
+msgid "expressionManager.descriptionMiddle"
+msgstr "，成品保存到"
+
+msgid "expressionManager.closeAria"
+msgstr "关闭表情管理器"
+
+msgid "expressionManager.newExpression"
+msgstr "新建表情"
+
+msgid "expressionManager.layerCount"
+msgstr "{count} 层"
+
+msgid "expressionManager.duration"
+msgstr "时长"
+
+msgid "expressionManager.duplicate"
+msgstr "复制成品"
+
+msgid "expressionManager.chooseImage"
+msgstr "选择图像"
+
+msgid "expressionManager.layers"
+msgstr "图层"
+
+msgid "expressionManager.layer"
+msgstr "图层"
+
+msgid "expressionManager.image"
+msgstr "图像"
+
+msgid "expressionManager.widthPercent"
+msgstr "宽%"
+
+msgid "expressionManager.heightPercent"
+msgstr "高%"
+
+msgid "expressionManager.rotation"
+msgstr "旋转"
+
+msgid "expressionManager.opacity"
+msgstr "透明"
+
+msgid "expressionManager.addCurrentKeyframe"
+msgstr "添加当前时间关键帧"
+
+msgid "expressionManager.removeSelectedKeyframe"
+msgstr "删除选中关键帧"
+
+msgid "expressionManager.deleteLayer"
+msgstr "删除图层"
+
+msgid "expressionManager.keyframeBezier"
+msgstr "关键帧贝塞尔曲线"
+
+msgid "expressionManager.currentTime"
+msgstr "当前时间"
+
+msgid "expressionManager.emptyTitle"
+msgstr "还没有表情成品"
+
+msgid "expressionManager.emptyDescription"
+msgstr "点击“新建表情”开始制作。"
+
+msgid "expressionManager.loadFailed"
+msgstr "读取表情配置失败"
+
+msgid "expressionManager.saved"
+msgstr "已保存，可复制 Assets/Emoji 到其他项目复用。"
+
+msgid "expressionManager.saveFailed"
+msgstr "保存表情配置失败"
+
+msgid "expressionManager.layerName"
+msgstr "图层 {index}"
+
+msgid "expressionManager.defaultExpressionName"
+msgstr "新表情"
+
+msgid "expressionManager.customBezier"
+msgstr "自定义贝塞尔"

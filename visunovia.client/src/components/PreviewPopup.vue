@@ -72,8 +72,21 @@
                   :class="[`preview-expression-${expression.corner}`]"
                   :style="getExpressionStyle(expression)"
                 >
-                  <img v-if="expression.balloonUrl" class="preview-expression-balloon" :src="expression.balloonUrl" alt="balloon" @error="logMediaError('表情气泡', expression.balloonUrl)" />
-                  <img v-if="expression.iconUrl" class="preview-expression-icon" :src="expression.iconUrl" alt="expression" @error="logMediaError('表情图像', expression.iconUrl)" />
+                  <template v-if="expression.layers.length > 0">
+                    <img
+                      v-for="layer in expression.layers"
+                      :key="layer.id"
+                      class="preview-expression-layer"
+                      :style="getExpressionLayerStyle(layer)"
+                      :src="layer.imageUrl"
+                      :alt="layer.name || layer.id"
+                      @error="logMediaError('表情图层', layer.imageUrl)"
+                    />
+                  </template>
+                  <template v-else>
+                    <img v-if="expression.balloonUrl" class="preview-expression-balloon" :src="expression.balloonUrl" alt="balloon" @error="logMediaError('表情气泡', expression.balloonUrl)" />
+                    <img v-if="expression.iconUrl" class="preview-expression-icon" :src="expression.iconUrl" alt="expression" @error="logMediaError('表情图像', expression.iconUrl)" />
+                  </template>
                 </div>
               </div>
 
@@ -130,6 +143,7 @@ import DOMPurify from 'dompurify'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
 import type { GraphConnection, GraphNode } from '@/stores/useNodeGraphStore'
 import { useCharacterStore } from '@/stores/useCharacterStore'
+import { useExpressionStore } from '@/stores/useExpressionStore'
 import { resolveAssetUrl } from '@/utils/assetPaths'
 import {
   countDialogueVisibleCharacters,
@@ -169,6 +183,23 @@ type CharacterExpressionState = {
   iconUrl: string
   corner: string
   duration: number
+  scale: number
+  fading: boolean
+  canvasWidth: number
+  canvasHeight: number
+  layers: Array<{
+    id: string
+    name: string
+    image: string
+    imageUrl: string
+    x: number
+    y: number
+    width: number
+    height: number
+    rotation: number
+    opacity: number
+    zIndex: number
+  }>
 }
 
 type PreviewChoice = {
@@ -222,6 +253,7 @@ const PREVIEW_RESOLUTIONS = [
 
 const nodeGraphStore = useNodeGraphStore()
 const characterStore = useCharacterStore()
+const expressionStore = useExpressionStore()
 const viewport = ref({ ...DEFAULT_VIEWPORT })
 const graphNodes = ref<PreviewNode[]>([])
 const graphConnections = ref<PreviewConnection[]>([])
@@ -294,6 +326,7 @@ watch(
   async (visible) => {
     if (visible) {
       await characterStore.load().catch((error) => console.warn('[PreviewPopup] 角色配置加载失败', error))
+      await expressionStore.load().catch((error) => console.warn('[PreviewPopup] 表情配置加载失败', error))
       await nextTick()
       restartPreview()
       window.addEventListener('keydown', handlePreviewKeydown)
@@ -897,9 +930,10 @@ function applyCharacterControlData(control: any, sourceNode?: PreviewNode, targe
 
 function showCharacterExpression(control: any, sourceNode?: PreviewNode) {
   const slot = String(control.slot || '1')
+  const preset = expressionStore.findExpression(String(control.expressionPreset || '').trim())
   const balloon = String(control.expressionBalloon || '').trim()
   const icon = String(control.expressionIcon || '').trim()
-  if (!balloon && !icon) return
+  if (!preset && !balloon && !icon) return
 
   const balloonUrl = balloon ? resolveAssetUrl(balloon, 'Emoji') : ''
   const iconUrl = icon ? resolveAssetUrl(icon, 'Emoji') : ''
@@ -915,15 +949,36 @@ function showCharacterExpression(control: any, sourceNode?: PreviewNode) {
     icon,
     iconUrl,
     corner: String(control.expressionCorner || 'top-right'),
-    duration: Math.max(0.1, Number(control.expressionDuration || control.duration || 2)),
+    duration: Math.max(0.1, Number(control.expressionDuration || preset?.duration || control.duration || 2)),
+    scale: Math.max(0.2, Math.min(3, Number(control.expressionScale || 1))),
+    fading: false,
+    canvasWidth: Number(preset?.canvasWidth || 512),
+    canvasHeight: Number(preset?.canvasHeight || 512),
+    layers: (preset?.layers || []).map(layer => ({
+      id: layer.id,
+      name: layer.name,
+      image: layer.image,
+      imageUrl: resolveAssetUrl(layer.image, 'Emoji'),
+      x: Number(layer.x || 50),
+      y: Number(layer.y || 50),
+      width: Number(layer.width || 70),
+      height: Number(layer.height || 70),
+      rotation: Number(layer.rotation || 0),
+      opacity: Number(layer.opacity ?? 100),
+      zIndex: Number(layer.zIndex || 0),
+    })).sort((a, b) => a.zIndex - b.zIndex),
   }
 
   activeExpressions.value = activeExpressions.value.filter(item => item.slot !== slot).concat(expression)
-  const timer = window.setTimeout(() => {
-    activeExpressions.value = activeExpressions.value.filter(item => item.id !== id)
-    expressionTimers.delete(id)
+  const fadeTimer = window.setTimeout(() => {
+    activeExpressions.value = activeExpressions.value.map(item => item.id === id ? { ...item, fading: true } : item)
+    const removeTimer = window.setTimeout(() => {
+      activeExpressions.value = activeExpressions.value.filter(item => item.id !== id)
+      expressionTimers.delete(id)
+    }, 350)
+    expressionTimers.set(id, removeTimer)
   }, expression.duration * 1000)
-  expressionTimers.set(id, timer)
+  expressionTimers.set(id, fadeTimer)
 }
 
 function clearExpressions() {
@@ -1023,9 +1078,26 @@ function getCharacterClass(character: CharacterSlotState) {
 function getExpressionStyle(expression: CharacterExpressionState) {
   const character = characterSlots.value[expression.slot]
   const position = character?.position || 'center'
+  const baseSize = Math.min(viewport.value.width, viewport.value.height) * 0.14 * Math.max(0.2, Math.min(3, Number(expression.scale || 1)))
+  const aspectRatio = Math.max(0.1, Number(expression.canvasWidth || 512) / Math.max(1, Number(expression.canvasHeight || 512)))
   return {
     '--expression-left': POSITION_LEFT[position] || POSITION_LEFT.center,
     '--expression-transform': POSITION_TRANSFORM[position] || POSITION_TRANSFORM.center,
+    '--expression-size': `${baseSize}px`,
+    '--expression-aspect-ratio': `${aspectRatio}`,
+    '--expression-opacity': expression.fading ? 0 : 1,
+  }
+}
+
+function getExpressionLayerStyle(layer: CharacterExpressionState['layers'][number]) {
+  return {
+    left: `${layer.x}%`,
+    top: `${layer.y}%`,
+    width: `${layer.width}%`,
+    height: `${layer.height}%`,
+    opacity: layer.opacity / 100,
+    zIndex: layer.zIndex,
+    transform: `translate(-50%, -50%) rotate(${layer.rotation}deg)`,
   }
 }
 
@@ -1715,10 +1787,12 @@ function closePreview() {
   position: absolute;
   top: 12% !important;
   left: var(--expression-left, 50%) !important;
-  width: calc(var(--preview-width, 1920) * 210px / 1920);
-  height: calc(var(--preview-width, 1920) * 210px / 1920);
+  width: var(--expression-size, calc(var(--preview-width, 1920) * 150px / 1920));
+  aspect-ratio: var(--expression-aspect-ratio, 1);
   transform: var(--expression-transform, translateX(-50%));
+  opacity: var(--expression-opacity, 1);
   pointer-events: none;
+  transition: opacity 350ms ease;
   animation: preview-expression-pop 180ms ease-out;
 }
 
@@ -1731,13 +1805,24 @@ function closePreview() {
 }
 
 .preview-expression-balloon,
-.preview-expression-icon {
+.preview-expression-icon,
+.preview-expression-layer {
   position: absolute;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.34));
+}
+
+.preview-expression-balloon,
+.preview-expression-icon {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.34));
+}
+
+.preview-expression-layer {
+  transform-origin: center;
+  max-width: none !important;
+  max-height: none !important;
 }
 
 .preview-expression-icon {

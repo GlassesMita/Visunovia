@@ -8,97 +8,97 @@
       <section class="character-manager" role="dialog" aria-modal="true" aria-labelledby="character-manager-title">
         <header class="character-manager-header">
           <div>
-            <h2 id="character-manager-title">角色管理器</h2>
-            <p>读取当前项目 <code>Assets/Characters</code> 下的目录作为角色，并默认使用 <code>Avatars</code> 中的首张图片作为头像。</p>
+            <h2 id="character-manager-title">{{ t('characterManager.title', 'Character Manager') }}</h2>
+            <p>{{ t('characterManager.descriptionPrefix', 'Reads folders under the current project') }} <code>Assets/Characters</code> {{ t('characterManager.descriptionSuffix', 'as characters, and uses the first image in Avatars as the default avatar.') }}</p>
           </div>
-          <button class="icon-button" type="button" aria-label="关闭角色管理器" @click="uiStore.closeCharacterManager()">✕</button>
+          <button class="icon-button" type="button" :aria-label="t('characterManager.closeAria', 'Close character manager')" @click="uiStore.closeCharacterManager()">✕</button>
         </header>
 
         <div class="character-manager-toolbar">
           <button class="primary-button" type="button" :disabled="isRefreshing" @click="refreshCharacters">
-            {{ isRefreshing ? '读取中...' : '刷新角色目录' }}
+            {{ isRefreshing ? t('characterManager.loading', 'Loading...') : t('characterManager.refresh', 'Refresh Characters') }}
           </button>
           <input
             v-model.trim="searchQuery"
             class="character-search-input"
             type="search"
-            placeholder="快速查找角色..."
+            :placeholder="t('characterManager.searchPlaceholder', 'Quickly find a character...')"
           />
-          <span class="character-count">{{ characterStore.characters.length }} 个角色</span>
+          <span class="character-count">{{ formatCount('characterManager.characterCount', '{count} characters', characterStore.characters.length) }}</span>
         </div>
 
         <div v-if="loadError" class="manager-message error-message">{{ loadError }}</div>
 
         <div v-if="characterStore.characters.length === 0" class="empty-characters">
           <div class="empty-icon">👥</div>
-          <strong>没有读取到角色目录</strong>
-          <span>请确认当前项目存在 Assets/Characters/&lt;CharacterID&gt; 目录。</span>
+          <strong>{{ t('characterManager.emptyTitle', 'No character folders found') }}</strong>
+          <span>{{ t('characterManager.emptyDescription', 'Make sure the current project contains Assets/Characters/<CharacterID> folders.') }}</span>
         </div>
 
         <div v-else-if="filteredCharacters.length === 0" class="empty-characters">
           <div class="empty-icon">🔎</div>
-          <strong>没有匹配的角色</strong>
-          <span>请尝试其他名称或备注关键词。</span>
+          <strong>{{ t('characterManager.noMatchTitle', 'No matching characters') }}</strong>
+          <span>{{ t('characterManager.noMatchDescription', 'Try another name or note keyword.') }}</span>
         </div>
 
         <div v-else class="character-list">
           <article v-for="character in filteredCharacters" :key="character.id" class="character-card">
             <div class="avatar-tools">
-              <button class="avatar-picker" type="button" :style="getAvatarStyle(character)" :title="`选择 ${characterLabel(character)} 的头像`" @click="openAvatarPicker(character)">
+              <button class="avatar-picker" type="button" :style="getAvatarStyle(character)" :title="formatCharacter('characterManager.pickAvatarTitle', 'Choose avatar for {name}', characterLabel(character))" @click="openAvatarPicker(character)">
                 <span v-if="!character.avatar">{{ getInitial(character.displayId || character.name) }}</span>
               </button>
               <div class="avatar-actions">
-                <label class="color-dot" :style="{ backgroundColor: character.color }" title="选择角色颜色">
+                <label class="color-dot" :style="{ backgroundColor: character.color }" :title="t('characterManager.pickColorTitle', 'Choose character color')">
                   <input
                     type="color"
                     :value="character.color"
                     @input="updateCharacter(character.id, { color: ($event.target as HTMLInputElement).value })"
                   />
                 </label>
-                <button v-if="character.avatar" class="avatar-clear" type="button" title="移除头像" @click="updateCharacter(character.id, { avatar: '' })">×</button>
+                <button v-if="character.avatar" class="avatar-clear" type="button" :title="t('characterManager.removeAvatarTitle', 'Remove avatar')" @click="updateCharacter(character.id, { avatar: '' })">×</button>
               </div>
             </div>
 
             <div class="character-fields">
               <label class="field-label">
-                <span>显示 ID</span>
+                <span>{{ t('characterManager.displayId', 'Display ID') }}</span>
                 <input
                   class="character-name-input"
                   type="text"
                   :value="character.displayId"
-                  placeholder="例如 Plana"
+                  :placeholder="t('characterManager.displayIdPlaceholder', 'e.g. Plana')"
                   @input="updateCharacter(character.id, { displayId: ($event.target as HTMLInputElement).value })"
                 />
               </label>
               <label class="field-label">
-                <span>归属（Affiliation）</span>
+                <span>{{ t('characterManager.affiliation', 'Affiliation') }}</span>
                 <input
                   class="character-affiliation-input"
                   type="text"
                   :value="character.affiliation"
-                  placeholder="例如 Abydos / Seminar / Millenium"
+                  :placeholder="t('characterManager.affiliationPlaceholder', 'e.g. Abydos / Seminar / Millenium')"
                   @input="updateCharacter(character.id, { affiliation: ($event.target as HTMLInputElement).value })"
                 />
               </label>
-              <div class="character-folder-input readonly-field" :title="character.spriteFolder">文件夹：{{ character.name }}</div>
-              <div class="character-folder-input readonly-field" :title="character.spriteFolder">路径：{{ getCharacterRelativePath(character) }}</div>
+              <div class="character-folder-input readonly-field" :title="character.spriteFolder">{{ t('characterManager.folder', 'Folder') }}: {{ character.name }}</div>
+              <div class="character-folder-input readonly-field" :title="character.spriteFolder">{{ t('characterManager.path', 'Path') }}: {{ getCharacterRelativePath(character) }}</div>
               <div class="sprite-anchor-editor">
-                <div class="sprite-anchor-preview" title="拖拽定位立绘锚点" @pointerdown="startAnchorDrag($event, character)">
+                <div class="sprite-anchor-preview" :title="t('characterManager.dragAnchorTitle', 'Drag to position sprite anchor')" @pointerdown="startAnchorDrag($event, character)">
                   <div class="sprite-anchor-handle" :style="getAnchorHandleStyle(character)"></div>
                 </div>
                 <label>
-                  <span>立绘锚点 X%</span>
+                  <span>{{ t('characterManager.spriteAnchorX', 'Sprite Anchor X%') }}</span>
                   <input type="number" min="0" max="100" step="1" :value="character.spriteAnchorX" @input="updateCharacter(character.id, { spriteAnchorX: normalizePercentInput(($event.target as HTMLInputElement).value, character.spriteAnchorX) })" />
                 </label>
                 <label>
-                  <span>立绘锚点 Y%</span>
+                  <span>{{ t('characterManager.spriteAnchorY', 'Sprite Anchor Y%') }}</span>
                   <input type="number" min="0" max="100" step="1" :value="character.spriteAnchorY" @input="updateCharacter(character.id, { spriteAnchorY: normalizePercentInput(($event.target as HTMLInputElement).value, character.spriteAnchorY) })" />
                 </label>
               </div>
               <textarea
                 class="character-note-input"
                 :value="character.note"
-                placeholder="备注，例如声线、身份或立绘说明"
+                :placeholder="t('characterManager.notePlaceholder', 'Notes, such as voice, identity, or sprite details')"
                 rows="2"
                 @input="updateCharacter(character.id, { note: ($event.target as HTMLTextAreaElement).value })"
               />
@@ -109,13 +109,13 @@
         <div v-if="avatarPickerVisible" class="avatar-modal-overlay" @click.self="closeAvatarPicker">
           <section class="avatar-modal">
             <header class="avatar-modal-header">
-              <strong>选择头像：{{ avatarPickerCharacter ? characterLabel(avatarPickerCharacter) : '' }}</strong>
+              <strong>{{ t('characterManager.chooseAvatar', 'Choose Avatar') }}: {{ avatarPickerCharacter ? characterLabel(avatarPickerCharacter) : '' }}</strong>
               <button class="icon-button" type="button" @click="closeAvatarPicker">✕</button>
             </header>
             <div v-if="avatarFiles.length === 0" class="empty-characters compact-empty">
               <div class="empty-icon">🖼️</div>
-              <strong>Avatars 目录中没有图片</strong>
-              <span>请将头像图片放入 Assets/Characters/{{ avatarPickerCharacter?.name }}/Avatars。</span>
+              <strong>{{ t('characterManager.noAvatarImagesTitle', 'No images in Avatars folder') }}</strong>
+              <span>{{ formatAvatarPath('characterManager.noAvatarImagesDescription', 'Place avatar images in Assets/Characters/{name}/Avatars.', avatarPickerCharacter?.name || '') }}</span>
             </div>
             <div v-else class="avatar-grid">
               <button
@@ -142,9 +142,11 @@ import { useCharacterStore, type CharacterProfile } from '@/stores/useCharacterS
 import { useUIStore } from '@/stores/useUIStore'
 import { getEntries, type DirEntry } from '@/api/fileBrowser'
 import { resolveAssetUrl } from '@/utils/assetPaths'
+import { useLocalization } from '@/composables/useLocalization'
 
 const characterStore = useCharacterStore()
 const uiStore = useUIStore()
+const { t } = useLocalization()
 const searchQuery = ref('')
 const isRefreshing = ref(false)
 const loadError = ref('')
@@ -164,7 +166,7 @@ async function updateCharacter(id: string, updates: Partial<CharacterProfile>) {
   try {
     await characterStore.updateCharacter(id, updates)
   } catch (error: any) {
-    loadError.value = error?.message || '保存角色配置失败'
+    loadError.value = error?.message || t('characterManager.saveFailed', 'Failed to save character configuration')
   }
 }
 
@@ -174,7 +176,7 @@ async function refreshCharacters() {
   try {
     await characterStore.refreshFromAssets()
   } catch (error: any) {
-    loadError.value = error?.message || '读取 Assets/Characters 失败'
+    loadError.value = error?.message || t('characterManager.loadFailed', 'Failed to read Assets/Characters')
     await characterStore.load()
   } finally {
     isRefreshing.value = false
@@ -182,7 +184,19 @@ async function refreshCharacters() {
 }
 
 function getInitial(name: string) {
-  return name.trim().charAt(0).toUpperCase() || '角'
+  return name.trim().charAt(0).toUpperCase() || t('characterManager.initialFallback', 'C')
+}
+
+function formatCount(key: string, fallback: string, count: number) {
+  return t(key, fallback).replace('{count}', String(count))
+}
+
+function formatCharacter(key: string, fallback: string, name: string) {
+  return t(key, fallback).replace('{name}', name)
+}
+
+function formatAvatarPath(key: string, fallback: string, name: string) {
+  return t(key, fallback).replace('{name}', name)
 }
 
 function characterLabel(character: CharacterProfile) {

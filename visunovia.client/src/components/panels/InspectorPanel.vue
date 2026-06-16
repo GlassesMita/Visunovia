@@ -87,8 +87,20 @@
               class="character-stage-expression"
               :style="getExpressionPreviewStyle(expression)"
             >
-              <img v-if="expression.balloonUrl" class="character-stage-expression-balloon" :src="expression.balloonUrl" alt="balloon" />
-              <img v-if="expression.iconUrl" class="character-stage-expression-icon" :src="expression.iconUrl" alt="expression" />
+              <template v-if="expression.layers.length > 0">
+                <img
+                  v-for="layer in expression.layers"
+                  :key="layer.id"
+                  class="character-stage-expression-layer"
+                  :style="getExpressionLayerPreviewStyle(layer)"
+                  :src="layer.imageUrl"
+                  :alt="layer.name || layer.id"
+                />
+              </template>
+              <template v-else>
+                <img v-if="expression.balloonUrl" class="character-stage-expression-balloon" :src="expression.balloonUrl" alt="balloon" />
+                <img v-if="expression.iconUrl" class="character-stage-expression-icon" :src="expression.iconUrl" alt="expression" />
+              </template>
             </div>
             <div v-if="characterControlPreviewCharacters.length === 0" class="character-stage-empty">
               {{ t('characterControl.noPreview') || 'No visible character changes' }}
@@ -207,6 +219,10 @@
                   <div class="property-group">
                     <label>持续秒数</label>
                     <input class="prop-input prop-number" type="number" step="0.1" min="0.1" :value="activeCharacterControl.expressionDuration" @input="updateCharacterControlField('expressionDuration', normalizeNumberProperty('duration', parseFloat(($event.target as HTMLInputElement).value)))" />
+                  </div>
+                  <div class="property-group">
+                    <label>舞台缩放</label>
+                    <input class="prop-input prop-number" type="number" step="0.05" min="0.2" max="3" :value="activeCharacterControl.expressionScale" @input="updateCharacterControlField('expressionScale', normalizeNumberProperty('duration', parseFloat(($event.target as HTMLInputElement).value)))" />
                   </div>
                 </div>
                 <div class="property-group">
@@ -444,6 +460,7 @@ type CharacterControlEntry = {
   expressionPreset: string
   expressionCorner: string
   expressionDuration: number
+  expressionScale: number
 }
 
 const { t } = useLocalization()
@@ -677,6 +694,7 @@ function createDefaultCharacterControl(slot: string): CharacterControlEntry {
     expressionPreset: '',
     expressionCorner: 'top-right',
     expressionDuration: 2,
+    expressionScale: 1,
   }
 }
 
@@ -718,6 +736,7 @@ function normalizeCharacterControlEntry(value: any, fallbackSlot: string): Chara
     expressionPreset: String(value?.expressionPreset || ''),
     expressionCorner: String(value?.expressionCorner || 'top-right'),
     expressionDuration: Number(value?.expressionDuration ?? 2) || 2,
+    expressionScale: Number(value?.expressionScale ?? 1) || 1,
   }
 }
 
@@ -764,12 +783,21 @@ const characterControlPreviewCharacters = computed(() => modifiedCharacterContro
 )
 
 const characterControlPreviewExpressions = computed(() => modifiedCharacterControls.value
-  .filter(control => control.mode === 'expression' && (control.expressionBalloon || control.expressionIcon))
-  .map(control => ({
-    ...control,
-    balloonUrl: control.expressionBalloon ? resolveAssetUrl(control.expressionBalloon, 'Emoji') : '',
-    iconUrl: control.expressionIcon ? resolveAssetUrl(control.expressionIcon, 'Emoji') : '',
-  }))
+  .filter(control => control.mode === 'expression' && (control.expressionPreset || control.expressionBalloon || control.expressionIcon))
+  .map(control => {
+    const preset = expressionStore.findExpression(control.expressionPreset)
+    return {
+      ...control,
+      balloonUrl: control.expressionBalloon ? resolveAssetUrl(control.expressionBalloon, 'Emoji') : '',
+      iconUrl: control.expressionIcon ? resolveAssetUrl(control.expressionIcon, 'Emoji') : '',
+      canvasWidth: preset?.canvasWidth || 512,
+      canvasHeight: preset?.canvasHeight || 512,
+      layers: (preset?.layers || []).map(layer => ({
+        ...layer,
+        imageUrl: resolveAssetUrl(layer.image, 'Emoji'),
+      })),
+    }
+  })
 )
 
 function serializeCharacterControls(controls: CharacterControlEntry[]) {
@@ -853,10 +881,27 @@ function getCharacterPreviewStyle(character: CharacterControlEntry & { spriteUrl
 
 function getExpressionPreviewStyle(expression: CharacterControlEntry) {
   const base = getCharacterPreviewStyle(expression as CharacterControlEntry & { spriteUrl: string })
+  const preset = expressionStore.findExpression(expression.expressionPreset)
+  const aspectRatio = Math.max(0.1, Number(preset?.canvasWidth || 512) / Math.max(1, Number(preset?.canvasHeight || 512)))
+  const scale = Math.max(0.2, Math.min(3, Number(expression.expressionScale || 1)))
   return {
     left: base.left,
     transform: `${base.transform} translateY(-12%)`,
     justifyContent: expression.expressionCorner === 'top-left' ? 'flex-start' : 'flex-end',
+    width: `${28 * scale}%`,
+    aspectRatio: `${aspectRatio}`,
+  }
+}
+
+function getExpressionLayerPreviewStyle(layer: any) {
+  return {
+    left: `${Number(layer.x || 50)}%`,
+    top: `${Number(layer.y || 50)}%`,
+    width: `${Number(layer.width || 70)}%`,
+    height: `${Number(layer.height || 70)}%`,
+    opacity: Number(layer.opacity ?? 100) / 100,
+    zIndex: Number(layer.zIndex || 0),
+    transform: `translate(-50%, -50%) rotate(${Number(layer.rotation || 0)}deg)`,
   }
 }
 
@@ -1619,11 +1664,18 @@ function onResourcePicked(path: string) {
 }
 
 .character-stage-expression-balloon,
-.character-stage-expression-icon {
+.character-stage-expression-icon,
+.character-stage-expression-layer {
   position: absolute;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+.character-stage-expression-layer {
+  max-width: none;
+  max-height: none;
+  transform-origin: center;
 }
 
 .character-stage-expression-icon {

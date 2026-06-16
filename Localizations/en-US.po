@@ -1642,3 +1642,197 @@ msgstr "Product Name (Placeholder)"
 
 msgid "settings.placeholderProduct.desc"
 msgstr "Default product name for new projects"
+
+# Character Manager
+msgid "common.refresh"
+msgstr "Refresh"
+
+msgid "common.delete"
+msgstr "Delete"
+
+msgid "common.name"
+msgstr "Name"
+
+msgid "common.notSelected"
+msgstr "Not selected"
+
+msgid "characterManager.title"
+msgstr "Character Manager"
+
+msgid "characterManager.descriptionPrefix"
+msgstr "Reads folders under the current project"
+
+msgid "characterManager.descriptionSuffix"
+msgstr "as characters, and uses the first image in Avatars as the default avatar."
+
+msgid "characterManager.closeAria"
+msgstr "Close character manager"
+
+msgid "characterManager.loading"
+msgstr "Loading..."
+
+msgid "characterManager.refresh"
+msgstr "Refresh Characters"
+
+msgid "characterManager.searchPlaceholder"
+msgstr "Quickly find a character..."
+
+msgid "characterManager.characterCount"
+msgstr "{count} characters"
+
+msgid "characterManager.emptyTitle"
+msgstr "No character folders found"
+
+msgid "characterManager.emptyDescription"
+msgstr "Make sure the current project contains Assets/Characters/<CharacterID> folders."
+
+msgid "characterManager.noMatchTitle"
+msgstr "No matching characters"
+
+msgid "characterManager.noMatchDescription"
+msgstr "Try another name or note keyword."
+
+msgid "characterManager.pickAvatarTitle"
+msgstr "Choose avatar for {name}"
+
+msgid "characterManager.pickColorTitle"
+msgstr "Choose character color"
+
+msgid "characterManager.removeAvatarTitle"
+msgstr "Remove avatar"
+
+msgid "characterManager.displayId"
+msgstr "Display ID"
+
+msgid "characterManager.displayIdPlaceholder"
+msgstr "e.g. Plana"
+
+msgid "characterManager.affiliation"
+msgstr "Affiliation"
+
+msgid "characterManager.affiliationPlaceholder"
+msgstr "e.g. Abydos / Seminar / Millenium"
+
+msgid "characterManager.folder"
+msgstr "Folder"
+
+msgid "characterManager.path"
+msgstr "Path"
+
+msgid "characterManager.dragAnchorTitle"
+msgstr "Drag to position sprite anchor"
+
+msgid "characterManager.spriteAnchorX"
+msgstr "Sprite Anchor X%"
+
+msgid "characterManager.spriteAnchorY"
+msgstr "Sprite Anchor Y%"
+
+msgid "characterManager.notePlaceholder"
+msgstr "Notes, such as voice, identity, or sprite details"
+
+msgid "characterManager.chooseAvatar"
+msgstr "Choose Avatar"
+
+msgid "characterManager.noAvatarImagesTitle"
+msgstr "No images in Avatars folder"
+
+msgid "characterManager.noAvatarImagesDescription"
+msgstr "Place avatar images in Assets/Characters/{name}/Avatars."
+
+msgid "characterManager.saveFailed"
+msgstr "Failed to save character configuration"
+
+msgid "characterManager.loadFailed"
+msgstr "Failed to read Assets/Characters"
+
+msgid "characterManager.initialFallback"
+msgstr "C"
+
+# Expression Manager
+msgid "expressionManager.title"
+msgstr "Expression Manager"
+
+msgid "expressionManager.descriptionPrefix"
+msgstr "Create reusable expressions by dragging on the canvas and editing a timeline up to 10 seconds. Assets are read from"
+
+msgid "expressionManager.descriptionMiddle"
+msgstr ", and results are saved to"
+
+msgid "expressionManager.closeAria"
+msgstr "Close expression manager"
+
+msgid "expressionManager.newExpression"
+msgstr "New Expression"
+
+msgid "expressionManager.layerCount"
+msgstr "{count} layers"
+
+msgid "expressionManager.duration"
+msgstr "Duration"
+
+msgid "expressionManager.duplicate"
+msgstr "Duplicate Result"
+
+msgid "expressionManager.chooseImage"
+msgstr "Choose Image"
+
+msgid "expressionManager.layers"
+msgstr "Layers"
+
+msgid "expressionManager.layer"
+msgstr "Layer"
+
+msgid "expressionManager.image"
+msgstr "Image"
+
+msgid "expressionManager.widthPercent"
+msgstr "Width%"
+
+msgid "expressionManager.heightPercent"
+msgstr "Height%"
+
+msgid "expressionManager.rotation"
+msgstr "Rotation"
+
+msgid "expressionManager.opacity"
+msgstr "Opacity"
+
+msgid "expressionManager.addCurrentKeyframe"
+msgstr "Add keyframe at current time"
+
+msgid "expressionManager.removeSelectedKeyframe"
+msgstr "Delete selected keyframe"
+
+msgid "expressionManager.deleteLayer"
+msgstr "Delete layer"
+
+msgid "expressionManager.keyframeBezier"
+msgstr "Keyframe Bezier Curve"
+
+msgid "expressionManager.currentTime"
+msgstr "Current Time"
+
+msgid "expressionManager.emptyTitle"
+msgstr "No expression results yet"
+
+msgid "expressionManager.emptyDescription"
+msgstr "Click “New Expression” to start creating."
+
+msgid "expressionManager.loadFailed"
+msgstr "Failed to read expression configuration"
+
+msgid "expressionManager.saved"
+msgstr "Saved. You can copy Assets/Emoji to other projects for reuse."
+
+msgid "expressionManager.saveFailed"
+msgstr "Failed to save expression configuration"
+
+msgid "expressionManager.layerName"
+msgstr "Layer {index}"
+
+msgid "expressionManager.defaultExpressionName"
+msgstr "New Expression"
+
+msgid "expressionManager.customBezier"
+msgstr "Custom Bezier"

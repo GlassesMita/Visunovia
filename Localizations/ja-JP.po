@@ -1639,3 +1639,197 @@ msgstr "製品名（プレースホルダー）"
 
 msgid "settings.placeholderProduct.desc"
 msgstr "新規プロジェクトのデフォルト製品名"
+
+# Character Manager
+msgid "common.refresh"
+msgstr "更新"
+
+msgid "common.delete"
+msgstr "削除"
+
+msgid "common.name"
+msgstr "名前"
+
+msgid "common.notSelected"
+msgstr "未選択"
+
+msgid "characterManager.title"
+msgstr "キャラクターマネージャー"
+
+msgid "characterManager.descriptionPrefix"
+msgstr "現在のプロジェクト内の"
+
+msgid "characterManager.descriptionSuffix"
+msgstr "配下のフォルダーをキャラクターとして読み込み、Avatars 内の最初の画像を既定のアバターとして使用します。"
+
+msgid "characterManager.closeAria"
+msgstr "キャラクターマネージャーを閉じる"
+
+msgid "characterManager.loading"
+msgstr "読み込み中..."
+
+msgid "characterManager.refresh"
+msgstr "キャラクターフォルダーを更新"
+
+msgid "characterManager.searchPlaceholder"
+msgstr "キャラクターをすばやく検索..."
+
+msgid "characterManager.characterCount"
+msgstr "{count} 人のキャラクター"
+
+msgid "characterManager.emptyTitle"
+msgstr "キャラクターフォルダーが見つかりません"
+
+msgid "characterManager.emptyDescription"
+msgstr "現在のプロジェクトに Assets/Characters/<CharacterID> フォルダーが存在することを確認してください。"
+
+msgid "characterManager.noMatchTitle"
+msgstr "一致するキャラクターがありません"
+
+msgid "characterManager.noMatchDescription"
+msgstr "別の名前またはメモのキーワードを試してください。"
+
+msgid "characterManager.pickAvatarTitle"
+msgstr "{name} のアバターを選択"
+
+msgid "characterManager.pickColorTitle"
+msgstr "キャラクターの色を選択"
+
+msgid "characterManager.removeAvatarTitle"
+msgstr "アバターを削除"
+
+msgid "characterManager.displayId"
+msgstr "表示 ID"
+
+msgid "characterManager.displayIdPlaceholder"
+msgstr "例: Plana"
+
+msgid "characterManager.affiliation"
+msgstr "所属（Affiliation）"
+
+msgid "characterManager.affiliationPlaceholder"
+msgstr "例: Abydos / Seminar / Millenium"
+
+msgid "characterManager.folder"
+msgstr "フォルダー"
+
+msgid "characterManager.path"
+msgstr "パス"
+
+msgid "characterManager.dragAnchorTitle"
+msgstr "ドラッグして立ち絵アンカーを配置"
+
+msgid "characterManager.spriteAnchorX"
+msgstr "立ち絵アンカー X%"
+
+msgid "characterManager.spriteAnchorY"
+msgstr "立ち絵アンカー Y%"
+
+msgid "characterManager.notePlaceholder"
+msgstr "メモ。例: 声質、身分、立ち絵の説明"
+
+msgid "characterManager.chooseAvatar"
+msgstr "アバターを選択"
+
+msgid "characterManager.noAvatarImagesTitle"
+msgstr "Avatars フォルダーに画像がありません"
+
+msgid "characterManager.noAvatarImagesDescription"
+msgstr "アバター画像を Assets/Characters/{name}/Avatars に配置してください。"
+
+msgid "characterManager.saveFailed"
+msgstr "キャラクター設定の保存に失敗しました"
+
+msgid "characterManager.loadFailed"
+msgstr "Assets/Characters の読み込みに失敗しました"
+
+msgid "characterManager.initialFallback"
+msgstr "キ"
+
+# Expression Manager
+msgid "expressionManager.title"
+msgstr "表情マネージャー"
+
+msgid "expressionManager.descriptionPrefix"
+msgstr "キャンバスのドラッグ操作と最大 10 秒のタイムラインで再利用可能な表情を作成します。素材は"
+
+msgid "expressionManager.descriptionMiddle"
+msgstr "から読み込まれ、成果物は"
+
+msgid "expressionManager.closeAria"
+msgstr "表情マネージャーを閉じる"
+
+msgid "expressionManager.newExpression"
+msgstr "新規表情"
+
+msgid "expressionManager.layerCount"
+msgstr "{count} レイヤー"
+
+msgid "expressionManager.duration"
+msgstr "長さ"
+
+msgid "expressionManager.duplicate"
+msgstr "成果物を複製"
+
+msgid "expressionManager.chooseImage"
+msgstr "画像を選択"
+
+msgid "expressionManager.layers"
+msgstr "レイヤー"
+
+msgid "expressionManager.layer"
+msgstr "レイヤー"
+
+msgid "expressionManager.image"
+msgstr "画像"
+
+msgid "expressionManager.widthPercent"
+msgstr "幅%"
+
+msgid "expressionManager.heightPercent"
+msgstr "高さ%"
+
+msgid "expressionManager.rotation"
+msgstr "回転"
+
+msgid "expressionManager.opacity"
+msgstr "透明度"
+
+msgid "expressionManager.addCurrentKeyframe"
+msgstr "現在時刻にキーフレームを追加"
+
+msgid "expressionManager.removeSelectedKeyframe"
+msgstr "選択したキーフレームを削除"
+
+msgid "expressionManager.deleteLayer"
+msgstr "レイヤーを削除"
+
+msgid "expressionManager.keyframeBezier"
+msgstr "キーフレームのベジェ曲線"
+
+msgid "expressionManager.currentTime"
+msgstr "現在時刻"
+
+msgid "expressionManager.emptyTitle"
+msgstr "表情の成果物はまだありません"
+
+msgid "expressionManager.emptyDescription"
+msgstr "「新規表情」をクリックして作成を開始します。"
+
+msgid "expressionManager.loadFailed"
+msgstr "表情設定の読み込みに失敗しました"
+
+msgid "expressionManager.saved"
+msgstr "保存しました。Assets/Emoji を他のプロジェクトへコピーして再利用できます。"
+
+msgid "expressionManager.saveFailed"
+msgstr "表情設定の保存に失敗しました"
+
+msgid "expressionManager.layerName"
+msgstr "レイヤー {index}"
+
+msgid "expressionManager.defaultExpressionName"
+msgstr "新規表情"
+
+msgid "expressionManager.customBezier"
+msgstr "カスタムベジェ"

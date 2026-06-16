@@ -118,6 +118,7 @@ function normalizeCharacterControl(control: any, fallbackSlot = '1') {
     expressionPreset: String(control?.expressionPreset ?? '').trim(),
     expressionCorner: String(control?.expressionCorner ?? 'top-right').trim() || 'top-right',
     expressionDuration: Number(control?.expressionDuration ?? 2),
+    expressionScale: Number(control?.expressionScale ?? 1) || 1,
   }
 }
 
