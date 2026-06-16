@@ -1,4 +1,4 @@
-export type AssetFolder = 'Backgrounds' | 'Characters' | 'Musics' | 'Sfx' | 'Voices'
+export type AssetFolder = 'Backgrounds' | 'Characters' | 'Musics' | 'Sfx' | 'Voices' | 'Emoji'
 
 const ASSET_FOLDER_ALIASES: Record<AssetFolder, string[]> = {
   Backgrounds: ['backgrounds', 'background', 'bg', 'bgs'],
@@ -6,6 +6,7 @@ const ASSET_FOLDER_ALIASES: Record<AssetFolder, string[]> = {
   Musics: ['musics', 'music', 'bgm'],
   Sfx: ['sfx', 'sfxs', 'sounds', 'sound'],
   Voices: ['voices', 'voice'],
+  Emoji: ['emoji', 'emojis'],
 }
 
 export function normalizePathSeparators(path: string) {
@@ -78,6 +79,8 @@ export function normalizeKnownAssetProperty(key: string, value: unknown, parentK
     voicePath: 'Voices',
     voice: 'Voices',
     sprite: 'Characters',
+    expressionBalloon: 'Emoji',
+    expressionIcon: 'Emoji',
   }
 
   const folder = assetFolderByKey[key]

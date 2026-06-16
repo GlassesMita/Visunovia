@@ -24,6 +24,13 @@
       </button>
       <button
         class="toolbar-button"
+        title="表情管理器"
+        @click="uiStore.openExpressionManager()"
+      >
+        <Sparkles :size="18" />
+      </button>
+      <button
+        class="toolbar-button"
         :title="t('menu.new')"
         @click="handleNew"
       >
@@ -91,7 +98,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue'
-import { FilePlus, FolderOpen, RefreshCw, Save, Undo2, Redo2, Users, Play, Grid3X3 } from 'lucide-vue-next'
+import { FilePlus, FolderOpen, RefreshCw, Save, Undo2, Redo2, Users, Play, Grid3X3, Sparkles } from 'lucide-vue-next'
 import NativeFreeSelect from '@/components/NativeFreeSelect.vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useUIStore } from '@/stores/useUIStore'

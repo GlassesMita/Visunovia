@@ -113,6 +113,11 @@ function normalizeCharacterControl(control: any, fallbackSlot = '1') {
     animation: String(control?.animation ?? 'fade').trim() || 'fade',
     easing: String(control?.easing ?? 'easeOutCubic').trim() || 'easeOutCubic',
     duration: Number(control?.duration ?? 0.3),
+    expressionBalloon: String(control?.expressionBalloon ?? '').trim(),
+    expressionIcon: String(control?.expressionIcon ?? '').trim(),
+    expressionPreset: String(control?.expressionPreset ?? '').trim(),
+    expressionCorner: String(control?.expressionCorner ?? 'top-right').trim() || 'top-right',
+    expressionDuration: Number(control?.expressionDuration ?? 2),
   }
 }
 

@@ -57,6 +57,9 @@
     <!-- 角色管理器 -->
     <CharacterManagerModal />
 
+    <!-- 表情管理器 -->
+    <ExpressionManagerModal />
+
     <!-- 场景管理器 -->
     <SceneManagerModal />
 
@@ -115,12 +118,12 @@ import FileExplorer from '@/components/FileExplorer.vue'
 import NewProjectModal from '@/components/NewProjectModal.vue'
 import ProjectPreferencesModal from '@/components/ProjectPreferencesModal.vue'
 import CharacterManagerModal from '@/components/CharacterManagerModal.vue'
+import ExpressionManagerModal from '@/components/ExpressionManagerModal.vue'
 import SceneManagerModal from '@/components/SceneManagerModal.vue'
 import PreviewPopup from '@/components/PreviewPopup.vue'
 import NodeDetailsModal from '@/components/NodeDetailsModal.vue'
 import WelcomeModal from '@/components/WelcomeModal.vue'
 import { getCurrentProject } from '@/api/projectApi'
-import { getRecentProjects } from '@/api/systemApi'
 
 const { t } = useLocalization()
 const uiStore = useUIStore()
@@ -189,17 +192,11 @@ onMounted(async () => {
       // First try to import from URL
       const imported = await importProjectIfNeeded()
 
-      // If no URL import, restore the last opened project from persisted recents.
-      // If restore fails, show the welcome modal.
+      // 如果没有 URL 项目参数，不再自动打开最近项目。
+      // 启动时保持未打开项目状态，等待用户在欢迎页手动选择项目。
       if (!imported) {
-        const restored = await restoreLastOpenedProject()
-        if (restored) {
-          hasOpenProject.value = true
-          uiStore.closeWelcomeModal()
-        } else {
-          hasOpenProject.value = false
-          uiStore.openWelcomeModal()
-        }
+        hasOpenProject.value = false
+        uiStore.openWelcomeModal()
       } else {
         hasOpenProject.value = true
       }
@@ -263,28 +260,6 @@ async function importProjectIfNeeded(): Promise<boolean> {
     }
   }
   return false
-}
-
-async function restoreLastOpenedProject(): Promise<boolean> {
-  try {
-    const recentProjects = await getRecentProjects()
-    const lastProject = recentProjects[0]
-    if (!lastProject?.path) {
-      return false
-    }
-
-    const success = await projectImport.importProjectPath(lastProject.path)
-    if (!success) {
-      projectOpenError.value = projectImport.error.value || '上一次打开的项目恢复失败。'
-      return false
-    }
-
-    console.log(`[AppLayout] 已恢复上一次打开的项目: ${lastProject.path}`)
-    return true
-  } catch (error) {
-    console.warn('[AppLayout] 恢复上一次打开的项目失败:', error)
-    return false
-  }
 }
 
 async function handleProjectSelected(path: string, isDir: boolean) {

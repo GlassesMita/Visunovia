@@ -81,6 +81,15 @@
               :src="character.spriteUrl"
               :alt="character.character || `slot-${character.slot}`"
             />
+            <div
+              v-for="expression in characterControlPreviewExpressions"
+              :key="expression.slot"
+              class="character-stage-expression"
+              :style="getExpressionPreviewStyle(expression)"
+            >
+              <img v-if="expression.balloonUrl" class="character-stage-expression-balloon" :src="expression.balloonUrl" alt="balloon" />
+              <img v-if="expression.iconUrl" class="character-stage-expression-icon" :src="expression.iconUrl" alt="expression" />
+            </div>
             <div v-if="characterControlPreviewCharacters.length === 0" class="character-stage-empty">
               {{ t('characterControl.noPreview') || 'No visible character changes' }}
             </div>
@@ -108,6 +117,12 @@
                 <option value="hide">{{ t('characterControl.hide') || 'Hide Character' }}</option>
                 <option value="update">{{ t('characterControl.update') || 'Update Character' }}</option>
                 <option value="move">{{ t('characterControl.move') || 'Move Character' }}</option>
+                <option value="rotate180">平面旋转 180°</option>
+                <option value="moveReturn">左右移动后回到原位</option>
+                <option value="exitLeft">从左侧移出舞台</option>
+                <option value="exitRight">从右侧移出舞台</option>
+                <option value="shakeFallExit">左右晃动后倒地退出</option>
+                <option value="expression">表情表达</option>
               </select>
             </div>
 
@@ -130,7 +145,7 @@
                 </div>
               </div>
 
-              <div v-if="activeCharacterSlot !== '6' && activeCharacterControl.mode !== 'hide'" class="property-group">
+              <div v-if="activeCharacterSlot !== '6' && shouldShowSpritePicker(activeCharacterControl.mode)" class="property-group">
                 <label>{{ t('characterControl.sprite') || 'Sprite' }}</label>
                 <div class="resource-input-wrapper">
                   <input class="prop-input prop-resource prop-readonly" type="text" readonly :value="activeCharacterControl.sprite" @click="handleCharacterControlResourceBrowse('sprite')" />
@@ -138,7 +153,7 @@
                 </div>
               </div>
 
-              <div v-if="activeCharacterControl.mode !== 'hide'" class="property-group">
+              <div v-if="shouldShowPositionControls(activeCharacterControl.mode)" class="property-group">
                 <label>{{ t('eventProps.position') || 'Position' }}</label>
                 <select class="prop-input prop-select" :value="activeCharacterControl.position" @change="updateCharacterControlField('position', ($event.target as HTMLSelectElement).value)">
                   <option value="left">{{ t('eventOptions.left') || 'Left' }}</option>
@@ -168,7 +183,49 @@
                 </div>
               </div>
 
-              <div v-if="activeCharacterControl.mode !== 'hide'" class="character-control-grid">
+              <div v-if="activeCharacterControl.mode === 'expression'" class="expression-control-section">
+                <div class="property-group">
+                  <label>表情成品</label>
+                  <div class="character-select-wrapper">
+                    <select class="prop-input prop-select" :value="activeCharacterControl.expressionPreset" @change="applyExpressionPreset(($event.target as HTMLSelectElement).value)">
+                      <option value="">自定义组合</option>
+                      <option v-for="expression in expressionStore.sortedExpressions" :key="expression.id" :value="expression.id">
+                        {{ expression.name || expression.id }}
+                      </option>
+                    </select>
+                    <button class="character-manager-btn" type="button" title="打开表情管理器" @click="uiStore.openExpressionManager()">✨</button>
+                  </div>
+                </div>
+                <div class="character-control-grid">
+                  <div class="property-group">
+                    <label>显示位置</label>
+                    <select class="prop-input prop-select" :value="activeCharacterControl.expressionCorner" @change="updateCharacterControlField('expressionCorner', ($event.target as HTMLSelectElement).value)">
+                      <option value="top-left">立绘左上角</option>
+                      <option value="top-right">立绘右上角</option>
+                    </select>
+                  </div>
+                  <div class="property-group">
+                    <label>持续秒数</label>
+                    <input class="prop-input prop-number" type="number" step="0.1" min="0.1" :value="activeCharacterControl.expressionDuration" @input="updateCharacterControlField('expressionDuration', normalizeNumberProperty('duration', parseFloat(($event.target as HTMLInputElement).value)))" />
+                  </div>
+                </div>
+                <div class="property-group">
+                  <label>Balloon 基底图像</label>
+                  <div class="resource-input-wrapper">
+                    <input class="prop-input prop-resource prop-readonly" type="text" readonly :value="activeCharacterControl.expressionBalloon" @click="handleCharacterControlResourceBrowse('expressionBalloon')" />
+                    <button class="browse-btn" type="button" @click="handleCharacterControlResourceBrowse('expressionBalloon')">📂</button>
+                  </div>
+                </div>
+                <div class="property-group">
+                  <label>内部情绪图像</label>
+                  <div class="resource-input-wrapper">
+                    <input class="prop-input prop-resource prop-readonly" type="text" readonly :value="activeCharacterControl.expressionIcon" @click="handleCharacterControlResourceBrowse('expressionIcon')" />
+                    <button class="browse-btn" type="button" @click="handleCharacterControlResourceBrowse('expressionIcon')">📂</button>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="shouldShowAnimationControls(activeCharacterControl.mode)" class="character-control-grid">
                 <div class="property-group">
                   <label>{{ t('characterControl.animation') || 'Animation' }}</label>
                   <select class="prop-input prop-select" :value="activeCharacterControl.animation" @change="updateCharacterControlField('animation', ($event.target as HTMLSelectElement).value)">
@@ -347,6 +404,7 @@ import { useLocalization } from '@/composables/useLocalization'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
 import { useCharacterStore } from '@/stores/useCharacterStore'
+import { useExpressionStore } from '@/stores/useExpressionStore'
 import { useUIStore } from '@/stores/useUIStore'
 import { 
   EventType, 
@@ -364,7 +422,7 @@ import { getCurrentProject } from '@/api/projectApi'
 import { renderDialogueMarkdown } from '@/utils/dialogueMarkdown'
 import { resolveAssetUrl } from '@/utils/assetPaths'
 
-type CharacterControlMode = 'none' | 'show' | 'hide' | 'update' | 'move'
+type CharacterControlMode = 'none' | 'show' | 'hide' | 'update' | 'move' | 'rotate180' | 'moveReturn' | 'exitLeft' | 'exitRight' | 'shakeFallExit' | 'expression'
 
 type CharacterControlEntry = {
   slot: string
@@ -381,12 +439,18 @@ type CharacterControlEntry = {
   animation: string
   easing: string
   duration: number
+  expressionBalloon: string
+  expressionIcon: string
+  expressionPreset: string
+  expressionCorner: string
+  expressionDuration: number
 }
 
 const { t } = useLocalization()
 const editorStore = useEditorStore()
 const nodeGraphStore = useNodeGraphStore()
 const characterStore = useCharacterStore()
+const expressionStore = useExpressionStore()
 const uiStore = useUIStore()
 
 const showResourcePicker = ref(false)
@@ -405,6 +469,9 @@ const characterControlSlots = ['1', '2', '3', '4', '5', '6']
 onMounted(() => {
   characterStore.load().catch(error => {
     console.warn('[InspectorPanel] Failed to load characters:', error)
+  })
+  expressionStore.load().catch(error => {
+    console.warn('[InspectorPanel] Failed to load expressions:', error)
   })
 })
 
@@ -605,13 +672,30 @@ function createDefaultCharacterControl(slot: string): CharacterControlEntry {
     animation: 'fade',
     easing: 'easeOutCubic',
     duration: 0.3,
+    expressionBalloon: '',
+    expressionIcon: '',
+    expressionPreset: '',
+    expressionCorner: 'top-right',
+    expressionDuration: 2,
   }
 }
 
 function normalizeCharacterControlEntry(value: any, fallbackSlot: string): CharacterControlEntry {
   const slot = String(value?.slot || fallbackSlot || '1')
   const rawMode = String(value?.mode || value?.action || 'none').toLowerCase()
-  const mode = ['show', 'hide', 'update', 'move'].includes(rawMode) ? rawMode as CharacterControlMode : 'none'
+  const modeAlias: Record<string, CharacterControlMode> = {
+    show: 'show',
+    hide: 'hide',
+    update: 'update',
+    move: 'move',
+    rotate180: 'rotate180',
+    movereturn: 'moveReturn',
+    exitleft: 'exitLeft',
+    exitright: 'exitRight',
+    shakefallexit: 'shakeFallExit',
+    expression: 'expression',
+  }
+  const mode = modeAlias[rawMode] || 'none'
   return {
     ...createDefaultCharacterControl(slot),
     ...value,
@@ -629,6 +713,11 @@ function normalizeCharacterControlEntry(value: any, fallbackSlot: string): Chara
     animation: String(value?.animation || 'fade'),
     easing: String(value?.easing || 'easeOutCubic'),
     duration: Number(value?.duration ?? 0.3) || 0.3,
+    expressionBalloon: String(value?.expressionBalloon || ''),
+    expressionIcon: String(value?.expressionIcon || ''),
+    expressionPreset: String(value?.expressionPreset || ''),
+    expressionCorner: String(value?.expressionCorner || 'top-right'),
+    expressionDuration: Number(value?.expressionDuration ?? 2) || 2,
   }
 }
 
@@ -666,12 +755,21 @@ const BACKGROUND_VIDEO_EXTENSIONS = ['.mp4', '.webm', '.m4v', '.mov', '.ogv', '.
 const modifiedCharacterControls = computed(() => characterControls.value.filter(control => control.mode !== 'none'))
 
 const characterControlPreviewCharacters = computed(() => modifiedCharacterControls.value
-  .filter(control => control.slot !== '6' && control.mode !== 'hide' && Boolean(control.sprite))
+  .filter(control => control.slot !== '6' && !['hide', 'expression'].includes(control.mode) && Boolean(control.sprite))
   .map(control => ({
     ...control,
     spriteUrl: resolveAssetUrl(control.sprite, 'Characters'),
   }))
   .filter(control => Boolean(control.spriteUrl))
+)
+
+const characterControlPreviewExpressions = computed(() => modifiedCharacterControls.value
+  .filter(control => control.mode === 'expression' && (control.expressionBalloon || control.expressionIcon))
+  .map(control => ({
+    ...control,
+    balloonUrl: control.expressionBalloon ? resolveAssetUrl(control.expressionBalloon, 'Emoji') : '',
+    iconUrl: control.expressionIcon ? resolveAssetUrl(control.expressionIcon, 'Emoji') : '',
+  }))
 )
 
 function serializeCharacterControls(controls: CharacterControlEntry[]) {
@@ -715,6 +813,30 @@ function updateCharacterControlField(field: keyof CharacterControlEntry, value: 
   setCharacterControls(next)
 }
 
+function shouldShowSpritePicker(mode: CharacterControlMode) {
+  return ['show', 'update', 'move'].includes(mode)
+}
+
+function shouldShowPositionControls(mode: CharacterControlMode) {
+  return ['show', 'update', 'move'].includes(mode)
+}
+
+function shouldShowAnimationControls(mode: CharacterControlMode) {
+  return ['show', 'update', 'move'].includes(mode)
+}
+
+function applyExpressionPreset(expressionId: string) {
+  const preset = expressionStore.findExpression(expressionId)
+  updateCharacterControlField('expressionPreset', expressionId)
+  if (!preset) return
+  const layers = [...preset.layers].sort((a, b) => a.zIndex - b.zIndex)
+  const baseLayer = layers[0]
+  const iconLayer = [...layers].reverse().find(layer => layer.id !== baseLayer?.id)
+  updateCharacterControlField('expressionBalloon', baseLayer?.image || '')
+  updateCharacterControlField('expressionIcon', iconLayer?.image || '')
+  updateCharacterControlField('expressionDuration', preset.duration)
+}
+
 function isCharacterSlotModified(slot: string) {
   return characterControls.value.some(control => control.slot === slot && control.mode !== 'none')
 }
@@ -726,6 +848,15 @@ function getCharacterPreviewStyle(character: CharacterControlEntry & { spriteUrl
   return {
     left: left[position] || left.center,
     transform: transform[position] || transform.center,
+  }
+}
+
+function getExpressionPreviewStyle(expression: CharacterControlEntry) {
+  const base = getCharacterPreviewStyle(expression as CharacterControlEntry & { spriteUrl: string })
+  return {
+    left: base.left,
+    transform: `${base.transform} translateY(-12%)`,
+    justifyContent: expression.expressionCorner === 'top-left' ? 'flex-start' : 'flex-end',
   }
 }
 
@@ -1070,6 +1201,25 @@ async function loadDialogueVoiceFiles(propName: string) {
   }
 }
 
+async function loadEmojiResourceFiles() {
+  const currentProject = await getCurrentProject()
+  const root = currentProject.data?.projectPath
+  if (!root) {
+    currentResourceFiles.value = []
+    return
+  }
+
+  try {
+    const result = await getEntries(`${root}\\Assets\\Emoji\\Resources`)
+    const imageExts = RESOURCE_TYPE_EXTENSIONS.image
+    currentResourceFiles.value = toResourcePickerFiles(result.entries)
+      .filter(file => imageExts.includes(file.name.slice(file.name.lastIndexOf('.')).toLowerCase()))
+  } catch (error) {
+    console.warn('[InspectorPanel] Failed to load emoji resource folder:', error)
+    currentResourceFiles.value = []
+  }
+}
+
 async function handleResourceBrowse(propName: string) {
   currentResourcePropName.value = propName
   currentCharacterControlResourceSlot.value = ''
@@ -1117,7 +1267,7 @@ async function handleResourceBrowse(propName: string) {
   showResourcePicker.value = true
 }
 
-async function handleCharacterControlResourceBrowse(propName: 'sprite' | 'sfx') {
+async function handleCharacterControlResourceBrowse(propName: 'sprite' | 'sfx' | 'expressionBalloon' | 'expressionIcon') {
   currentResourcePropName.value = propName
   currentCharacterControlResourceSlot.value = activeCharacterSlot.value
   currentResourceFiles.value = []
@@ -1125,6 +1275,8 @@ async function handleCharacterControlResourceBrowse(propName: 'sprite' | 'sfx') 
 
   if (propName === 'sprite') {
     await loadCharacterSpriteFiles()
+  } else if (propName === 'expressionBalloon' || propName === 'expressionIcon') {
+    await loadEmojiResourceFiles()
   } else {
     await loadProjectAssetFiles(propName, currentResourceType.value)
   }
@@ -1453,6 +1605,38 @@ function onResourcePicked(path: string) {
   max-height: 104%;
   object-fit: contain;
   filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.48));
+}
+
+.character-stage-expression {
+  position: absolute;
+  top: 15%;
+  z-index: 3;
+  width: 28%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.character-stage-expression-balloon,
+.character-stage-expression-icon {
+  position: absolute;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.character-stage-expression-icon {
+  inset: 24%;
+  width: 52%;
+  height: 52%;
+  margin: auto;
+}
+
+.expression-control-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .character-stage-empty {

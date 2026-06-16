@@ -13,7 +13,15 @@ export interface CharacterProfile {
   avatar: string
   spriteFolder: string
   sprites: string[]
+  spriteAnchorX: number
+  spriteAnchorY: number
   note: string
+}
+
+function normalizePercent(value: unknown, fallback: number) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return fallback
+  return Math.max(0, Math.min(100, Math.trunc(numeric)))
 }
 
 const DEFAULT_COLORS = ['#569cd6', '#ce9178', '#c586c0', '#4ec9b0', '#dcdcaa', '#b5cea8']
@@ -31,6 +39,8 @@ function normalizeCharacter(raw: Partial<CharacterProfile>, index = 0): Characte
     avatar: raw.avatar || '',
     spriteFolder: raw.spriteFolder || '',
     sprites: raw.sprites || [],
+    spriteAnchorX: normalizePercent(raw.spriteAnchorX, 50),
+    spriteAnchorY: normalizePercent(raw.spriteAnchorY, 100),
     note: raw.note || '',
   }
 }
@@ -102,6 +112,8 @@ export const useCharacterStore = defineStore('characters', () => {
         color: character.color,
         avatar: toRelativeCharacterPath(projectRoot.value, character.avatar),
         sprites: character.sprites.map(sprite => toRelativeCharacterPath(projectRoot.value, sprite)),
+        spriteAnchorX: normalizePercent(character.spriteAnchorX, 50),
+        spriteAnchorY: normalizePercent(character.spriteAnchorY, 100),
         note: character.note,
       }))
     })
@@ -174,6 +186,8 @@ export const useCharacterStore = defineStore('characters', () => {
           sprites: (configured?.sprites && configured.sprites.length > 0)
             ? configured.sprites.map(sprite => toAbsoluteCharacterPath(projectPath, sprite))
             : await findSpriteFiles(folder.path),
+          spriteAnchorX: normalizePercent((configured as any)?.spriteAnchorX, 50),
+          spriteAnchorY: normalizePercent((configured as any)?.spriteAnchorY, 100),
           note: configured?.note || '',
         }, index)
       }))
@@ -208,6 +222,8 @@ export const useCharacterStore = defineStore('characters', () => {
     character.avatar = updates.avatar ?? character.avatar
     character.spriteFolder = updates.spriteFolder ?? character.spriteFolder
     character.sprites = updates.sprites ?? character.sprites
+    character.spriteAnchorX = normalizePercent(updates.spriteAnchorX ?? character.spriteAnchorX, 50)
+    character.spriteAnchorY = normalizePercent(updates.spriteAnchorY ?? character.spriteAnchorY, 100)
     character.note = updates.note ?? character.note
     syncCharacterSelectOptions(characters.value)
     await save()

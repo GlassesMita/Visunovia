@@ -486,6 +486,8 @@ public class ProjectController : ControllerBase
                             .Select(sprite => sprite.Trim())
                             .Distinct(StringComparer.OrdinalIgnoreCase)
                             .ToList(),
+                        SpriteAnchorX = Math.Clamp(character.SpriteAnchorX, 0, 100),
+                        SpriteAnchorY = Math.Clamp(character.SpriteAnchorY, 0, 100),
                         Note = character.Note?.Trim() ?? string.Empty
                     })
                     .Where(character => !string.IsNullOrWhiteSpace(character.Id))
@@ -500,6 +502,119 @@ public class ProjectController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "保存角色配置失败: {Path}", configPath);
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 读取当前项目 Assets/Emoji/Manifest.resona 表情成品配置。
+    /// </summary>
+    [HttpGet("expressions/config")]
+    public async Task<IActionResult> GetExpressionConfig()
+    {
+        if (!TryGetExpressionsConfigPath(out var configPath, out var error))
+        {
+            return BadRequest(new { success = false, error });
+        }
+
+        try
+        {
+            if (!System.IO.File.Exists(configPath))
+            {
+                return Ok(new { success = true, data = new ExpressionConfigResponse() });
+            }
+
+            var json = await System.IO.File.ReadAllTextAsync(configPath);
+            var config = JsonSerializer.Deserialize<ExpressionConfigResponse>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            }) ?? new ExpressionConfigResponse();
+
+            return Ok(new { success = true, data = config });
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "表情配置文件格式无效: {Path}", configPath);
+            return BadRequest(new { success = false, error = "表情配置文件格式无效: " + ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "读取表情配置失败: {Path}", configPath);
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 写入当前项目 Assets/Emoji/Manifest.resona 表情成品配置。
+    /// </summary>
+    [HttpPut("expressions/config")]
+    public async Task<IActionResult> SaveExpressionConfig([FromBody] ExpressionConfigResponse request)
+    {
+        if (!TryGetExpressionsConfigPath(out var configPath, out var error))
+        {
+            return BadRequest(new { success = false, error });
+        }
+
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
+            var sanitized = new ExpressionConfigResponse
+            {
+                Expressions = (request?.Expressions ?? new List<ExpressionConfigEntry>())
+                    .Where(expression => !string.IsNullOrWhiteSpace(expression.Id))
+                    .Select(expression => new ExpressionConfigEntry
+                    {
+                        Id = Path.GetFileNameWithoutExtension(expression.Id.Trim()),
+                        Name = expression.Name?.Trim() ?? string.Empty,
+                        Duration = Math.Clamp(expression.Duration, 0.1, 10),
+                        CanvasWidth = Math.Clamp(expression.CanvasWidth, 100, 4096),
+                        CanvasHeight = Math.Clamp(expression.CanvasHeight, 100, 4096),
+                        Layers = (expression.Layers ?? new List<ExpressionLayerEntry>())
+                            .Where(layer => !string.IsNullOrWhiteSpace(layer.Id))
+                            .Select(layer => new ExpressionLayerEntry
+                            {
+                                Id = Path.GetFileNameWithoutExtension(layer.Id.Trim()),
+                                Name = layer.Name?.Trim() ?? string.Empty,
+                                Image = layer.Image?.Trim() ?? string.Empty,
+                                X = Math.Clamp(layer.X, 0, 100),
+                                Y = Math.Clamp(layer.Y, 0, 100),
+                                Width = Math.Clamp(layer.Width, 1, 200),
+                                Height = Math.Clamp(layer.Height, 1, 200),
+                                Rotation = Math.Clamp(layer.Rotation, -360, 360),
+                                Opacity = Math.Clamp(layer.Opacity, 0, 100),
+                                ZIndex = Math.Clamp(layer.ZIndex, 0, 999),
+                                Keyframes = (layer.Keyframes ?? new List<ExpressionKeyframeEntry>())
+                                    .Select(keyframe => new ExpressionKeyframeEntry
+                                    {
+                                        Time = Math.Clamp(keyframe.Time, 0, Math.Min(10, Math.Max(0.1, expression.Duration))),
+                                        X = Math.Clamp(keyframe.X, 0, 100),
+                                        Y = Math.Clamp(keyframe.Y, 0, 100),
+                                        Scale = Math.Clamp(keyframe.Scale, 1, 300),
+                                        Rotation = Math.Clamp(keyframe.Rotation, -360, 360),
+                                        Opacity = Math.Clamp(keyframe.Opacity, 0, 100),
+                                        Easing = string.IsNullOrWhiteSpace(keyframe.Easing) ? "bezier" : keyframe.Easing.Trim(),
+                                        BezierX1 = Math.Clamp(keyframe.BezierX1, 0, 1),
+                                        BezierY1 = Math.Clamp(keyframe.BezierY1, -2, 2),
+                                        BezierX2 = Math.Clamp(keyframe.BezierX2, 0, 1),
+                                        BezierY2 = Math.Clamp(keyframe.BezierY2, -2, 2)
+                                    })
+                                    .OrderBy(keyframe => keyframe.Time)
+                                    .ToList()
+                            })
+                            .OrderBy(layer => layer.ZIndex)
+                            .ToList()
+                    })
+                    .ToList()
+            };
+
+            var json = JsonSerializer.Serialize(sanitized, new JsonSerializerOptions { WriteIndented = true });
+            await System.IO.File.WriteAllTextAsync(configPath, json);
+
+            return Ok(new { success = true, data = sanitized });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "保存表情配置失败: {Path}", configPath);
             return StatusCode(500, new { success = false, error = ex.Message });
         }
     }
@@ -755,6 +870,32 @@ public class ProjectController : ControllerBase
         if (!IsPathInside(assetsRoot, configPath))
         {
             error = "角色配置路径无效";
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool TryGetExpressionsConfigPath(out string configPath, out string error)
+    {
+        configPath = string.Empty;
+        error = string.Empty;
+
+        var editor = _sessionService.GetEditor();
+        if (string.IsNullOrWhiteSpace(editor.CurrentProjectPath))
+        {
+            error = "当前没有打开的项目";
+            return false;
+        }
+
+        var projectRoot = Path.GetFullPath(Path.GetDirectoryName(editor.CurrentProjectPath) ?? editor.CurrentProjectPath);
+        var assetsRoot = Path.GetFullPath(Path.Combine(projectRoot, "Assets"));
+        var expressionsRoot = Path.GetFullPath(Path.Combine(assetsRoot, "Emoji"));
+        configPath = Path.GetFullPath(Path.Combine(expressionsRoot, "Manifest.resona"));
+
+        if (!IsPathInside(assetsRoot, configPath))
+        {
+            error = "表情配置路径无效";
             return false;
         }
 
@@ -1817,7 +1958,60 @@ public class CharacterConfigEntry
     public string Color { get; set; } = string.Empty;
     public string Avatar { get; set; } = string.Empty;
     public List<string> Sprites { get; set; } = new();
+    public int SpriteAnchorX { get; set; } = 50;
+    public int SpriteAnchorY { get; set; } = 100;
     public string Note { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// 项目表情成品配置。
+/// </summary>
+public class ExpressionConfigResponse
+{
+    public List<ExpressionConfigEntry> Expressions { get; set; } = new();
+}
+
+/// <summary>
+/// 可复用表情成品。
+/// </summary>
+public class ExpressionConfigEntry
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public double Duration { get; set; } = 2;
+    public int CanvasWidth { get; set; } = 512;
+    public int CanvasHeight { get; set; } = 512;
+    public List<ExpressionLayerEntry> Layers { get; set; } = new();
+}
+
+public class ExpressionLayerEntry
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Image { get; set; } = string.Empty;
+    public int X { get; set; } = 50;
+    public int Y { get; set; } = 50;
+    public int Width { get; set; } = 70;
+    public int Height { get; set; } = 70;
+    public int Rotation { get; set; }
+    public int Opacity { get; set; } = 100;
+    public int ZIndex { get; set; }
+    public List<ExpressionKeyframeEntry> Keyframes { get; set; } = new();
+}
+
+public class ExpressionKeyframeEntry
+{
+    public double Time { get; set; }
+    public int X { get; set; } = 50;
+    public int Y { get; set; } = 50;
+    public int Scale { get; set; } = 100;
+    public int Rotation { get; set; }
+    public int Opacity { get; set; } = 100;
+    public string Easing { get; set; } = "bezier";
+    public double BezierX1 { get; set; } = 0.25;
+    public double BezierY1 { get; set; } = 0.1;
+    public double BezierX2 { get; set; } = 0.25;
+    public double BezierY2 { get; set; } = 1;
 }
 
 /// <summary>

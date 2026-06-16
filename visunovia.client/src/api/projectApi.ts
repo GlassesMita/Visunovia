@@ -297,7 +297,50 @@ export interface CharacterConfigEntry {
   color?: string
   avatar?: string
   sprites?: string[]
+  spriteAnchorX?: number
+  spriteAnchorY?: number
   note?: string
+}
+
+export interface ExpressionKeyframeEntry {
+  time: number
+  x: number
+  y: number
+  scale: number
+  rotation: number
+  opacity: number
+  easing: string
+  bezierX1: number
+  bezierY1: number
+  bezierX2: number
+  bezierY2: number
+}
+
+export interface ExpressionLayerEntry {
+  id: string
+  name: string
+  image: string
+  x: number
+  y: number
+  width: number
+  height: number
+  rotation: number
+  opacity: number
+  zIndex: number
+  keyframes: ExpressionKeyframeEntry[]
+}
+
+export interface ExpressionConfigEntry {
+  id: string
+  name: string
+  duration: number
+  canvasWidth: number
+  canvasHeight: number
+  layers: ExpressionLayerEntry[]
+}
+
+export interface ExpressionConfigResponse {
+  expressions: ExpressionConfigEntry[]
 }
 
 export interface CharacterConfigResponse {
@@ -311,6 +354,8 @@ type RawCharacterConfigEntry = CharacterConfigEntry & {
   Color?: string
   Avatar?: string
   Sprites?: string[]
+  SpriteAnchorX?: number
+  SpriteAnchorY?: number
   Note?: string
 }
 
@@ -328,8 +373,62 @@ function normalizeCharacterConfig(config?: RawCharacterConfigResponse): Characte
       color: character.color || character.Color || '',
       avatar: character.avatar || character.Avatar || '',
       sprites: character.sprites || character.Sprites || [],
+      spriteAnchorX: character.spriteAnchorX ?? character.SpriteAnchorX ?? 50,
+      spriteAnchorY: character.spriteAnchorY ?? character.SpriteAnchorY ?? 100,
       note: character.note || character.Note || '',
     })).filter(character => character.id)
+  }
+}
+
+type RawExpressionConfigEntry = Omit<ExpressionConfigEntry, 'layers'> & {
+  Id?: string
+  Name?: string
+  Duration?: number
+  CanvasWidth?: number
+  CanvasHeight?: number
+  Layers?: Array<Partial<ExpressionLayerEntry> & { Id?: string; Name?: string; Image?: string; X?: number; Y?: number; Width?: number; Height?: number; Rotation?: number; Opacity?: number; ZIndex?: number; Keyframes?: any[] }>
+  layers?: ExpressionLayerEntry[]
+}
+
+type RawExpressionConfigResponse = ExpressionConfigResponse & {
+  Expressions?: RawExpressionConfigEntry[]
+}
+
+function normalizeExpressionConfig(config?: RawExpressionConfigResponse): ExpressionConfigResponse {
+  const rawExpressions = config?.expressions || config?.Expressions || []
+  return {
+    expressions: rawExpressions.map(expression => ({
+      id: expression.id || expression.Id || '',
+      name: expression.name || expression.Name || expression.id || expression.Id || '',
+      duration: Number(expression.duration ?? expression.Duration ?? 2) || 2,
+      canvasWidth: Number(expression.canvasWidth ?? expression.CanvasWidth ?? 512) || 512,
+      canvasHeight: Number(expression.canvasHeight ?? expression.CanvasHeight ?? 512) || 512,
+      layers: (expression.layers || expression.Layers || []).map((layer: any, index: number) => ({
+        id: layer.id || layer.Id || `layer-${index + 1}`,
+        name: layer.name || layer.Name || `Layer ${index + 1}`,
+        image: layer.image || layer.Image || '',
+        x: Number(layer.x ?? layer.X ?? 50),
+        y: Number(layer.y ?? layer.Y ?? 50),
+        width: Number(layer.width ?? layer.Width ?? 70),
+        height: Number(layer.height ?? layer.Height ?? 70),
+        rotation: Number(layer.rotation ?? layer.Rotation ?? 0),
+        opacity: Number(layer.opacity ?? layer.Opacity ?? 100),
+        zIndex: Number(layer.zIndex ?? layer.ZIndex ?? index),
+        keyframes: (layer.keyframes || layer.Keyframes || []).map((keyframe: any) => ({
+          time: Number(keyframe.time ?? keyframe.Time ?? 0),
+          x: Number(keyframe.x ?? keyframe.X ?? layer.x ?? layer.X ?? 50),
+          y: Number(keyframe.y ?? keyframe.Y ?? layer.y ?? layer.Y ?? 50),
+          scale: Number(keyframe.scale ?? keyframe.Scale ?? 100),
+          rotation: Number(keyframe.rotation ?? keyframe.Rotation ?? 0),
+          opacity: Number(keyframe.opacity ?? keyframe.Opacity ?? 100),
+          easing: String(keyframe.easing ?? keyframe.Easing ?? 'bezier'),
+          bezierX1: Number(keyframe.bezierX1 ?? keyframe.BezierX1 ?? 0.25),
+          bezierY1: Number(keyframe.bezierY1 ?? keyframe.BezierY1 ?? 0.1),
+          bezierX2: Number(keyframe.bezierX2 ?? keyframe.BezierX2 ?? 0.25),
+          bezierY2: Number(keyframe.bezierY2 ?? keyframe.BezierY2 ?? 1),
+        })),
+      })),
+    })).filter(expression => expression.id)
   }
 }
 
@@ -388,6 +487,34 @@ export async function saveCharacterConfig(config: CharacterConfigResponse): Prom
   }
 
   return response.data.data || config
+}
+
+export async function getExpressionConfig(): Promise<ExpressionConfigResponse> {
+  const response = await apiClient.get<{
+    success: boolean
+    data: RawExpressionConfigResponse
+    error?: string
+  }>('/project/expressions/config')
+
+  if (!response.data?.success) {
+    throw new Error(response.data?.error || '读取表情配置失败')
+  }
+
+  return normalizeExpressionConfig(response.data.data)
+}
+
+export async function saveExpressionConfig(config: ExpressionConfigResponse): Promise<ExpressionConfigResponse> {
+  const response = await apiClient.put<{
+    success: boolean
+    data: RawExpressionConfigResponse
+    error?: string
+  }>('/project/expressions/config', config)
+
+  if (!response.data?.success) {
+    throw new Error(response.data?.error || '保存表情配置失败')
+  }
+
+  return normalizeExpressionConfig(response.data.data || config)
 }
 
 /**

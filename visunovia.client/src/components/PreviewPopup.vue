@@ -59,12 +59,22 @@
                   v-for="character in renderableCharacters"
                   :key="character.slot"
                   class="preview-character"
-                  :class="[`preview-character-${character.position}`, `preview-character-${character.animation}`]"
+                  :class="getCharacterClass(character)"
                   :style="getCharacterStyle(character)"
                   :src="character.spriteUrl"
                   :alt="character.character || `character-${character.slot}`"
                   @error="logMediaError('角色立绘', character.spriteUrl)"
                 />
+                <div
+                  v-for="expression in activeExpressions"
+                  :key="expression.id"
+                  class="preview-character-expression"
+                  :class="[`preview-expression-${expression.corner}`]"
+                  :style="getExpressionStyle(expression)"
+                >
+                  <img v-if="expression.balloonUrl" class="preview-expression-balloon" :src="expression.balloonUrl" alt="balloon" @error="logMediaError('表情气泡', expression.balloonUrl)" />
+                  <img v-if="expression.iconUrl" class="preview-expression-icon" :src="expression.iconUrl" alt="expression" @error="logMediaError('表情图像', expression.iconUrl)" />
+                </div>
               </div>
 
               <div v-if="choices.length > 0" class="preview-choices" @click.stop>
@@ -145,6 +155,20 @@ type CharacterSlotState = {
   fromPosition?: string
   easing?: string
   duration?: number
+  effect?: string
+  anchorX?: number
+  anchorY?: number
+}
+
+type CharacterExpressionState = {
+  id: string
+  slot: string
+  balloon: string
+  balloonUrl: string
+  icon: string
+  iconUrl: string
+  corner: string
+  duration: number
 }
 
 type PreviewChoice = {
@@ -219,8 +243,10 @@ const stageRef = ref<HTMLElement | null>(null)
 const bgmAudio = ref<HTMLAudioElement | null>(null)
 const stageModalVisible = ref(false)
 const characterSlots = ref<Record<string, CharacterSlotState>>({})
+const activeExpressions = ref<CharacterExpressionState[]>([])
 const resourceTraceByUrl = ref<Record<string, PreviewResourceTrace>>({})
 let typewriterTimer: number | null = null
+const expressionTimers = new Map<string, number>()
 
 const visibleCharacters = computed(() => Object.values(characterSlots.value).sort((a, b) => Number(a.slot) - Number(b.slot)))
 const renderableCharacters = computed(() => visibleCharacters.value.filter(character => character.slot !== '6' && Boolean(character.sprite && character.spriteUrl)))
@@ -417,6 +443,7 @@ function resetPlaybackState() {
   selectedChoicePort.value = ''
   isChoiceNavigating.value = false
   characterSlots.value = {}
+  clearExpressions()
   resourceTraceByUrl.value = {}
   stopAudio()
 }
@@ -795,6 +822,11 @@ function applyCharacterControlData(control: any, sourceNode?: PreviewNode, targe
   if (action === 'none') return
   if (action === 'show' && slot !== '6' && !control.character && !control.sprite && !nextSlots[slot]) return
 
+  if (action === 'expression') {
+    showCharacterExpression(control, sourceNode)
+    return
+  }
+
   if (action === 'hide') {
     const hiddenSprite = nextSlots[slot]?.sprite || ''
     const hiddenSpriteUrl = hiddenSprite ? resolveAssetUrl(hiddenSprite, 'Characters') : ''
@@ -803,6 +835,29 @@ function applyCharacterControlData(control: any, sourceNode?: PreviewNode, targe
     }
     delete nextSlots[slot]
     if (!targetSlots) characterSlots.value = nextSlots
+    return
+  }
+
+  if (action === 'exitleft' || action === 'exitright' || action === 'shakefallexit') {
+    const existing = nextSlots[slot]
+    if (existing) {
+      nextSlots[slot] = {
+        ...existing,
+        effect: action,
+        duration: Number(control.duration || existing.duration || 0.6),
+      }
+      window.setTimeout(() => {
+        const current = characterSlots.value[slot]
+        if (current?.effect === action) {
+          const updated = { ...characterSlots.value }
+          delete updated[slot]
+          characterSlots.value = updated
+        }
+      }, Math.max(0, Number(control.duration || 0.6)) * 1000)
+    } else {
+      delete nextSlots[slot]
+    }
+    characterSlots.value = nextSlots
     return
   }
 
@@ -822,6 +877,7 @@ function applyCharacterControlData(control: any, sourceNode?: PreviewNode, targe
     : String(control.position || nextSlots[slot]?.position || 'center')
   const fromPosition = String(control.fromPosition || '')
   const shouldMove = control.action === 'move' || (control.animation === 'move' && control.toPosition && control.toPosition !== 'none')
+  const characterProfile = characterStore.characters.find(item => item.id === character || item.name === character || item.displayId === character)
   nextSlots[slot] = {
     slot,
     character,
@@ -832,8 +888,48 @@ function applyCharacterControlData(control: any, sourceNode?: PreviewNode, targe
     animation: String(control.animation || 'fade'),
     easing: String(control.easing || 'easeOutCubic'),
     duration: Number(control.duration || 0.3),
+    effect: ['rotate180', 'movereturn'].includes(action) ? action : '',
+    anchorX: Number(characterProfile?.spriteAnchorX ?? 50),
+    anchorY: Number(characterProfile?.spriteAnchorY ?? 100),
   }
   if (!targetSlots) characterSlots.value = nextSlots
+}
+
+function showCharacterExpression(control: any, sourceNode?: PreviewNode) {
+  const slot = String(control.slot || '1')
+  const balloon = String(control.expressionBalloon || '').trim()
+  const icon = String(control.expressionIcon || '').trim()
+  if (!balloon && !icon) return
+
+  const balloonUrl = balloon ? resolveAssetUrl(balloon, 'Emoji') : ''
+  const iconUrl = icon ? resolveAssetUrl(icon, 'Emoji') : ''
+  if (sourceNode && balloon) registerResourceTrace(createResourceTrace(sourceNode, 'background', `表情气泡 slot ${slot}`, 'characterControls.expressionBalloon', balloon, balloonUrl))
+  if (sourceNode && icon) registerResourceTrace(createResourceTrace(sourceNode, 'background', `表情图像 slot ${slot}`, 'characterControls.expressionIcon', icon, iconUrl))
+
+  const id = `${slot}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const expression: CharacterExpressionState = {
+    id,
+    slot,
+    balloon,
+    balloonUrl,
+    icon,
+    iconUrl,
+    corner: String(control.expressionCorner || 'top-right'),
+    duration: Math.max(0.1, Number(control.expressionDuration || control.duration || 2)),
+  }
+
+  activeExpressions.value = activeExpressions.value.filter(item => item.slot !== slot).concat(expression)
+  const timer = window.setTimeout(() => {
+    activeExpressions.value = activeExpressions.value.filter(item => item.id !== id)
+    expressionTimers.delete(id)
+  }, expression.duration * 1000)
+  expressionTimers.set(id, timer)
+}
+
+function clearExpressions() {
+  expressionTimers.forEach(timer => window.clearTimeout(timer))
+  expressionTimers.clear()
+  activeExpressions.value = []
 }
 
 function playDialogueVoices(node: PreviewNode) {
@@ -888,6 +984,8 @@ function getCharacterStyle(character: CharacterSlotState) {
   const target = character.position || 'center'
   const from = character.fromPosition || ''
   const moving = character.animation === 'move' && from && from !== target
+  const anchorX = Math.max(0, Math.min(100, Math.trunc(Number(character.anchorX ?? 50))))
+  const anchorY = Math.max(0, Math.min(100, Math.trunc(Number(character.anchorY ?? 100))))
 
   return {
     '--character-left': POSITION_LEFT[target] || POSITION_LEFT.center,
@@ -896,10 +994,38 @@ function getCharacterStyle(character: CharacterSlotState) {
     '--character-from-transform': POSITION_TRANSFORM[from] || POSITION_TRANSFORM[target] || POSITION_TRANSFORM.center,
     '--character-duration': `${duration}s`,
     '--character-easing': easing,
+    '--character-anchor-x': `${anchorX}%`,
+    '--character-anchor-y': `${anchorY}%`,
     left: POSITION_LEFT[target] || POSITION_LEFT.center,
     right: 'auto',
     transform: POSITION_TRANSFORM[target] || POSITION_TRANSFORM.center,
-    animation: moving ? `preview-character-move ${duration}s ${easing}` : undefined,
+    animation: getCharacterAnimation(character, moving, duration, easing),
+  }
+}
+
+function getCharacterAnimation(character: CharacterSlotState, moving: boolean, duration: number, easing: string) {
+  if (character.effect === 'rotate180') return `preview-character-rotate180 ${duration}s ${easing}`
+  if (character.effect === 'movereturn') return `preview-character-move-return ${duration}s ${easing}`
+  if (character.effect === 'exitleft') return `preview-character-exit-left ${duration}s ${easing} forwards`
+  if (character.effect === 'exitright') return `preview-character-exit-right ${duration}s ${easing} forwards`
+  if (character.effect === 'shakefallexit') return `preview-character-shake-fall ${duration}s ${easing} forwards`
+  return moving ? `preview-character-move ${duration}s ${easing}` : undefined
+}
+
+function getCharacterClass(character: CharacterSlotState) {
+  return [
+    `preview-character-${character.position}`,
+    `preview-character-${character.animation}`,
+    character.effect ? `preview-character-effect-${character.effect}` : '',
+  ]
+}
+
+function getExpressionStyle(expression: CharacterExpressionState) {
+  const character = characterSlots.value[expression.slot]
+  const position = character?.position || 'center'
+  return {
+    '--expression-left': POSITION_LEFT[position] || POSITION_LEFT.center,
+    '--expression-transform': POSITION_TRANSFORM[position] || POSITION_TRANSFORM.center,
   }
 }
 
@@ -1521,6 +1647,7 @@ function closePreview() {
   mix-blend-mode: normal !important;
   filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.45)) !important;
   transform: var(--character-transform, translateX(-50%)) !important;
+  transform-origin: var(--character-anchor-x, 50%) var(--character-anchor-y, 100%) !important;
   transition: left var(--character-duration, 0.3s) var(--character-easing, cubic-bezier(0.22, 1, 0.36, 1)), transform var(--character-duration, 0.3s) var(--character-easing, cubic-bezier(0.22, 1, 0.36, 1)) !important;
 }
 
@@ -1553,6 +1680,76 @@ function closePreview() {
     left: var(--character-left, 50%);
     transform: var(--character-transform, translateX(-50%));
   }
+}
+
+@keyframes preview-character-rotate180 {
+  from { rotate: 0deg; }
+  to { rotate: 180deg; }
+}
+
+@keyframes preview-character-move-return {
+  0%, 100% { translate: 0 0; }
+  25% { translate: -5% 0; }
+  50% { translate: 5% 0; }
+  75% { translate: -2% 0; }
+}
+
+@keyframes preview-character-exit-left {
+  to { translate: -130vw 0; opacity: 0; }
+}
+
+@keyframes preview-character-exit-right {
+  to { translate: 130vw 0; opacity: 0; }
+}
+
+@keyframes preview-character-shake-fall {
+  0% { translate: 0 0; rotate: 0deg; opacity: 1; }
+  15% { translate: -2.5% 0; rotate: -2deg; }
+  30% { translate: 2.5% 0; rotate: 2deg; }
+  45% { translate: -2% 0; rotate: -3deg; }
+  62% { translate: 1.5% 0; rotate: 8deg; }
+  100% { translate: 0 145%; rotate: 90deg; opacity: 0; }
+}
+
+.preview-character-expression {
+  position: absolute;
+  top: 12% !important;
+  left: var(--expression-left, 50%) !important;
+  width: calc(var(--preview-width, 1920) * 210px / 1920);
+  height: calc(var(--preview-width, 1920) * 210px / 1920);
+  transform: var(--expression-transform, translateX(-50%));
+  pointer-events: none;
+  animation: preview-expression-pop 180ms ease-out;
+}
+
+.preview-expression-top-left {
+  translate: -48% 0;
+}
+
+.preview-expression-top-right {
+  translate: 48% 0;
+}
+
+.preview-expression-balloon,
+.preview-expression-icon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.34));
+}
+
+.preview-expression-icon {
+  inset: 24%;
+  width: 52%;
+  height: 52%;
+  margin: auto;
+}
+
+@keyframes preview-expression-pop {
+  from { scale: 0.72; opacity: 0; }
+  to { scale: 1; opacity: 1; }
 }
 
 .preview-character-fade,

@@ -82,6 +82,19 @@
               </label>
               <div class="character-folder-input readonly-field" :title="character.spriteFolder">文件夹：{{ character.name }}</div>
               <div class="character-folder-input readonly-field" :title="character.spriteFolder">路径：{{ getCharacterRelativePath(character) }}</div>
+              <div class="sprite-anchor-editor">
+                <div class="sprite-anchor-preview" title="拖拽定位立绘锚点" @pointerdown="startAnchorDrag($event, character)">
+                  <div class="sprite-anchor-handle" :style="getAnchorHandleStyle(character)"></div>
+                </div>
+                <label>
+                  <span>立绘锚点 X%</span>
+                  <input type="number" min="0" max="100" step="1" :value="character.spriteAnchorX" @input="updateCharacter(character.id, { spriteAnchorX: normalizePercentInput(($event.target as HTMLInputElement).value, character.spriteAnchorX) })" />
+                </label>
+                <label>
+                  <span>立绘锚点 Y%</span>
+                  <input type="number" min="0" max="100" step="1" :value="character.spriteAnchorY" @input="updateCharacter(character.id, { spriteAnchorY: normalizePercentInput(($event.target as HTMLInputElement).value, character.spriteAnchorY) })" />
+                </label>
+              </div>
               <textarea
                 class="character-note-input"
                 :value="character.note"
@@ -185,6 +198,37 @@ function getAvatarStyle(character: CharacterProfile) {
   return character.avatar
     ? { backgroundImage: `url(${getPreviewUrl(character.avatar)})`, backgroundColor: character.color }
     : { backgroundColor: character.color }
+}
+
+function normalizePercentInput(value: unknown, fallback = 0) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return fallback
+  return Math.max(0, Math.min(100, Math.trunc(numeric)))
+}
+
+function getAnchorHandleStyle(character: CharacterProfile) {
+  return {
+    left: `${normalizePercentInput(character.spriteAnchorX, 50)}%`,
+    top: `${normalizePercentInput(character.spriteAnchorY, 100)}%`,
+  }
+}
+
+function startAnchorDrag(event: PointerEvent, character: CharacterProfile) {
+  const target = event.currentTarget as HTMLElement
+  target.setPointerCapture?.(event.pointerId)
+  const updateFromPointer = (pointerEvent: PointerEvent) => {
+    const rect = target.getBoundingClientRect()
+    const x = normalizePercentInput(((pointerEvent.clientX - rect.left) / rect.width) * 100, character.spriteAnchorX)
+    const y = normalizePercentInput(((pointerEvent.clientY - rect.top) / rect.height) * 100, character.spriteAnchorY)
+    updateCharacter(character.id, { spriteAnchorX: x, spriteAnchorY: y })
+  }
+  const stop = () => {
+    window.removeEventListener('pointermove', updateFromPointer)
+    window.removeEventListener('pointerup', stop)
+  }
+  updateFromPointer(event)
+  window.addEventListener('pointermove', updateFromPointer)
+  window.addEventListener('pointerup', stop, { once: true })
 }
 
 function getPreviewUrl(path: string) {
@@ -499,6 +543,50 @@ function closeAvatarPicker() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.sprite-anchor-editor {
+  display: grid;
+  grid-template-columns: 82px 1fr 1fr;
+  gap: 8px;
+  align-items: end;
+}
+
+.sprite-anchor-editor label {
+  display: grid;
+  gap: 4px;
+  color: #cfcfcf;
+  font-size: 11px;
+}
+
+.sprite-anchor-editor input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #4a4a52;
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: #f0f0f0;
+  background: #25252b;
+}
+
+.sprite-anchor-preview {
+  position: relative;
+  height: 54px;
+  border: 1px dashed #5b6472;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.12), rgba(168, 85, 247, 0.1));
+  cursor: crosshair;
+}
+
+.sprite-anchor-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.42);
+  transform: translate(-50%, -50%);
 }
 
 .character-note-input {

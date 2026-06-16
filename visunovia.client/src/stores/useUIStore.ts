@@ -13,6 +13,7 @@ export const useUIStore = defineStore('ui', () => {
   const showNewProjectModal = ref(false)
   const showProjectPreferences = ref(false)
   const showCharacterManager = ref(false)
+  const showExpressionManager = ref(false)
   const showSceneManager = ref(false)
   const showPreviewPopup = ref(false)
   const showNodeDetailsModal = ref(false)
@@ -103,6 +104,14 @@ export const useUIStore = defineStore('ui', () => {
     showCharacterManager.value = false
   }
 
+  function openExpressionManager() {
+    showExpressionManager.value = true
+  }
+
+  function closeExpressionManager() {
+    showExpressionManager.value = false
+  }
+
   function openSceneManager() {
     showSceneManager.value = true
   }
@@ -174,6 +183,9 @@ export const useUIStore = defineStore('ui', () => {
     showCharacterManager,
     openCharacterManager,
     closeCharacterManager,
+    showExpressionManager,
+    openExpressionManager,
+    closeExpressionManager,
     showSceneManager,
     openSceneManager,
     closeSceneManager,
