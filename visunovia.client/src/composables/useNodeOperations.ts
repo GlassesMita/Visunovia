@@ -313,6 +313,21 @@ function normalizeBlueprintPosition(position: { x: number; y: number } | undefin
   }
 }
 
+function clearEditorGraph(editor: Editor) {
+  const graph = editor.graph as any
+  if (typeof graph.clear === 'function') {
+    graph.clear()
+  } else {
+    if (Array.isArray(graph.connections)) graph.connections.splice(0, graph.connections.length)
+    else graph.connections = []
+    if (Array.isArray(graph.nodes)) graph.nodes.splice(0, graph.nodes.length)
+    else graph.nodes = []
+  }
+
+  if (Array.isArray(graph.connections)) graph.connections.length = 0
+  if (Array.isArray(graph.nodes)) graph.nodes.length = 0
+}
+
 function getBlueprintOriginY(): number {
   const editorElement = document.querySelector('.baklava-editor-wrapper, .baklava-editor') as HTMLElement | null
   return (editorElement?.clientHeight ?? window.innerHeight ?? 0) / 2
@@ -444,14 +459,7 @@ async function restoreNodeProperties(
 }
 
 async function deserializeToEditor(editor: Editor, data: SerializedSceneGraph) {
-  const graph = editor.graph as any
-  
-  if (typeof graph.clear === 'function') {
-    graph.clear()
-  } else {
-    if (Array.isArray(graph.nodes)) graph.nodes.length = 0
-    if (Array.isArray(graph.connections)) graph.connections.length = 0
-  }
+  clearEditorGraph(editor)
   
   for (const nodeData of data.nodes) {
     const normalizedNodeType = normalizeNodeType(nodeData.nodeType)

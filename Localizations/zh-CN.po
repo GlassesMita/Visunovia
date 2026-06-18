@@ -1629,6 +1629,109 @@ msgstr "新建文件夹"
 
 msgid "FileBrowser.FolderNamePlaceholder"
 msgstr "输入文件夹名称"
+
+# Lor/LRC Import
+msgid "lorImport.title"
+msgstr "导入 Lor/LRC 到蓝图"
+
+msgid "lorImport.menuImport"
+msgstr "导入 Lor/LRC 到蓝图"
+
+msgid "lorImport.selectFile"
+msgstr "选择文件"
+
+msgid "lorImport.selectProjectDirectory"
+msgstr "选择项目目录"
+
+msgid "lorImport.selectTlorFile"
+msgstr "选择项目文件 (.tlor)"
+
+msgid "lorImport.selectLrcFile"
+msgstr "选择 LRC 歌词文件 (.lrc)"
+
+msgid "lorImport.fromProject"
+msgstr "从项目导入"
+
+msgid "lorImport.fromContent"
+msgstr "从内容导入"
+
+msgid "lorImport.lrcToBlueprint"
+msgstr "LRC 转蓝图"
+
+msgid "lorImport.projectPath"
+msgstr "项目路径"
+
+msgid "lorImport.projectPathPlaceholder"
+msgstr "点击浏览选择项目目录或 .tlor 文件"
+
+msgid "lorImport.selectScene"
+msgstr "选择场景"
+
+msgid "lorImport.availableCount"
+msgstr "个可用"
+
+msgid "lorImport.noLorFiles"
+msgstr "该项目中没有找到 .lor 文件"
+
+msgid "lorImport.selectProjectHint"
+msgstr "请点击浏览按钮选择项目目录或 .tlor 文件"
+
+msgid "lorImport.sceneId"
+msgstr "场景 ID"
+
+msgid "lorImport.sceneIdPlaceholder"
+msgstr "输入场景 ID（如：start）"
+
+msgid "lorImport.jsonContent"
+msgstr "JSON 内容"
+
+msgid "lorImport.jsonContentPlaceholder"
+msgstr "粘贴 Lor 剧本 JSON 内容..."
+
+msgid "lorImport.previewConversion"
+msgstr "预览转换结果"
+
+msgid "lorImport.lrcSceneIdPlaceholder"
+msgstr "输入场景 ID（如：song_scene）"
+
+msgid "lorImport.lrcFile"
+msgstr "LRC 文件"
+
+msgid "lorImport.lrcFilePlaceholder"
+msgstr "可选择 .lrc 文件，也可直接粘贴内容"
+
+msgid "lorImport.lrcContent"
+msgstr "LRC 内容"
+
+msgid "lorImport.lrcContentPlaceholder"
+msgstr "粘贴 LRC 内容，例如：[00:12.34]第一句歌词"
+
+msgid "lorImport.conversionPreview"
+msgstr "转换预览"
+
+msgid "lorImport.nodeCount"
+msgstr "节点总数"
+
+msgid "lorImport.connectionCount"
+msgstr "连接总数"
+
+msgid "lorImport.nodeTypeDistribution"
+msgstr "节点类型分布"
+
+msgid "lorImport.validationWarnings"
+msgstr "验证警告"
+
+msgid "lorImport.importSuccess"
+msgstr "导入成功！"
+
+msgid "lorImport.processing"
+msgstr "处理中..."
+
+msgid "lorImport.importAndConvert"
+msgstr "导入并转换"
+
+msgid "lorImport.lrcReadFailed"
+msgstr "读取 LRC 失败"
 # Placeholder settings (Preferences page)
 msgid "settings.placeholderCompany"
 msgstr "公司名称（占位符）"

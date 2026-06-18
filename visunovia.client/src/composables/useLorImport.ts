@@ -26,9 +26,9 @@ export function useLorImport() {
   async function importFromContent(
     lorContent: string,
     sceneId: string,
-    options: { validate?: boolean; autoLayout?: boolean } = {}
+    options: { validate?: boolean; autoLayout?: boolean; format?: 'lor' | 'lrc'; characterSlot?: string } = {}
   ): Promise<boolean> {
-    const { validate = true, autoLayout = true } = options
+    const { validate = true, autoLayout = true, format = 'lor', characterSlot = '1' } = options
     
     isImporting.value = true
     importError.value = null
@@ -38,15 +38,19 @@ export function useLorImport() {
     try {
       // 可选：验证文件格式
       if (validate) {
-        validationResult.value = lorConverter.validateLorFile(lorContent)
+        validationResult.value = format === 'lrc'
+          ? lorConverter.validateLrcFile(lorContent)
+          : lorConverter.validateLorFile(lorContent)
         if (!validationResult.value.valid) {
           importError.value = `文件格式验证失败:\n${validationResult.value.errors.join('\n')}`
           return false
         }
       }
       
-      // 转换 Lor 为蓝图
-      const blueprint = await lorConverter.convertFromJson(lorContent)
+      // 转换 Lor/LRC 为蓝图
+      const blueprint = format === 'lrc'
+        ? await lorConverter.convertFromLrc(lorContent, { sceneId, characterSlot })
+        : await lorConverter.convertFromJson(lorContent)
       blueprint.id = sceneId
       
       // 加载蓝图到编辑器
@@ -162,6 +166,29 @@ export function useLorImport() {
     }
   }
 
+  async function previewLrcConversion(lrcContent: string, sceneId = 'lrc_import', characterSlot = '1'): Promise<{
+    nodeCount: number
+    connectionCount: number
+    nodeTypes: Record<string, number>
+  } | null> {
+    try {
+      const blueprint = await lorConverter.convertFromLrc(lrcContent, { sceneId, characterSlot })
+      const nodeTypes: Record<string, number> = {}
+      blueprint.nodes.forEach(node => {
+        nodeTypes[node.nodeType] = (nodeTypes[node.nodeType] || 0) + 1
+      })
+
+      return {
+        nodeCount: blueprint.nodes.length,
+        connectionCount: blueprint.connections.length,
+        nodeTypes,
+      }
+    } catch (error) {
+      importError.value = error instanceof Error ? error.message : 'LRC 预览失败'
+      return null
+    }
+  }
+
   /**
    * 清除导入状态
    */
@@ -183,6 +210,7 @@ export function useLorImport() {
     importFromMyNewProject,
     importMultipleScenes,
     previewConversion,
+    previewLrcConversion,
     clearImportState,
   }
 }

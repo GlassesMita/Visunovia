@@ -33,6 +33,12 @@ export interface SpecialFolder {
   path: string
 }
 
+export interface TextFileContent {
+  path: string
+  name: string
+  content: string
+}
+
 /**
  * 获取系统驱动器列表
  * @returns 驱动器信息数组
@@ -77,4 +83,17 @@ export async function getSpecialFolders(): Promise<SpecialFolder[]> {
     '/FileBrowser/special-folders'
   )
   return response.data?.data ?? []
+}
+
+export async function readTextFile(path: string): Promise<TextFileContent> {
+  const response = await apiClient.get<{ success: boolean; data: TextFileContent; error?: string }>(
+    '/FileBrowser/read-text',
+    { params: { path } }
+  )
+
+  if (!response.data?.success) {
+    throw new Error(response.data?.error || '读取文本文件失败')
+  }
+
+  return response.data.data
 }

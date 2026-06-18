@@ -1550,6 +1550,109 @@ msgstr "New Folder"
 msgid "FileBrowser.FolderNamePlaceholder"
 msgstr "Enter folder name"
 
+# Lor/LRC Import
+msgid "lorImport.title"
+msgstr "Import Lor/LRC to Blueprint"
+
+msgid "lorImport.menuImport"
+msgstr "Import Lor/LRC to Blueprint"
+
+msgid "lorImport.selectFile"
+msgstr "Select file"
+
+msgid "lorImport.selectProjectDirectory"
+msgstr "Select project directory"
+
+msgid "lorImport.selectTlorFile"
+msgstr "Select project file (.tlor)"
+
+msgid "lorImport.selectLrcFile"
+msgstr "Select LRC lyrics file (.lrc)"
+
+msgid "lorImport.fromProject"
+msgstr "From Project"
+
+msgid "lorImport.fromContent"
+msgstr "From Content"
+
+msgid "lorImport.lrcToBlueprint"
+msgstr "LRC to Blueprint"
+
+msgid "lorImport.projectPath"
+msgstr "Project Path"
+
+msgid "lorImport.projectPathPlaceholder"
+msgstr "Click Browse to select a project folder or .tlor file"
+
+msgid "lorImport.selectScene"
+msgstr "Select Scene"
+
+msgid "lorImport.availableCount"
+msgstr "available"
+
+msgid "lorImport.noLorFiles"
+msgstr "No .lor files found in this project"
+
+msgid "lorImport.selectProjectHint"
+msgstr "Click Browse to select a project folder or .tlor file"
+
+msgid "lorImport.sceneId"
+msgstr "Scene ID"
+
+msgid "lorImport.sceneIdPlaceholder"
+msgstr "Enter scene ID (e.g. start)"
+
+msgid "lorImport.jsonContent"
+msgstr "JSON Content"
+
+msgid "lorImport.jsonContentPlaceholder"
+msgstr "Paste Lor script JSON content..."
+
+msgid "lorImport.previewConversion"
+msgstr "Preview Conversion"
+
+msgid "lorImport.lrcSceneIdPlaceholder"
+msgstr "Enter scene ID (e.g. song_scene)"
+
+msgid "lorImport.lrcFile"
+msgstr "LRC File"
+
+msgid "lorImport.lrcFilePlaceholder"
+msgstr "Select a .lrc file or paste content directly"
+
+msgid "lorImport.lrcContent"
+msgstr "LRC Content"
+
+msgid "lorImport.lrcContentPlaceholder"
+msgstr "Paste LRC content, e.g. [00:12.34]First lyric line"
+
+msgid "lorImport.conversionPreview"
+msgstr "Conversion Preview"
+
+msgid "lorImport.nodeCount"
+msgstr "Node Count"
+
+msgid "lorImport.connectionCount"
+msgstr "Connection Count"
+
+msgid "lorImport.nodeTypeDistribution"
+msgstr "Node Type Distribution"
+
+msgid "lorImport.validationWarnings"
+msgstr "Validation Warnings"
+
+msgid "lorImport.importSuccess"
+msgstr "Import successful!"
+
+msgid "lorImport.processing"
+msgstr "Processing..."
+
+msgid "lorImport.importAndConvert"
+msgstr "Import and Convert"
+
+msgid "lorImport.lrcReadFailed"
+msgstr "Failed to read LRC file"
+
 # ============================================================
 # Startup Page & Setup Wizard
 # ============================================================

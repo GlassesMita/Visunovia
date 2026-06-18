@@ -83,6 +83,7 @@ const menus = computed<Menu[]>(() => [
       { key: 'divider1', labelKey: '', divider: true },
       { key: 'projectPreferences', labelKey: 'Menu.ProjectPreferences', action: 'openProjectPreferences' },
       { key: 'sceneManager', labelKey: '场景管理', action: 'openSceneManager' },
+      { key: 'lorImport', labelKey: 'lorImport.menuImport', action: 'openLorImport' },
       { key: 'divider2', labelKey: '', divider: true },
       { key: 'exit', labelKey: 'menu.exit', action: 'exitApp' },
     ],
@@ -183,6 +184,9 @@ function executeAction(action: string) {
       break
     case 'openSceneManager':
       uiStore.openSceneManager()
+      break
+    case 'openLorImport':
+      uiStore.openLorImportDialog()
       break
     case 'toggleConsole':
       uiStore.togglePanel('console')

@@ -18,7 +18,12 @@ apiClient.interceptors.response.use(
   (error: AxiosError) => {
     const message = (error.response?.data as { message?: string })?.message || error.message
     console.error('API Error:', message)
-    reportBackendRequestFailure(error)
+    const status = error.response?.status
+    if (!status || status >= 500) {
+      reportBackendRequestFailure(error)
+    } else {
+      reportBackendRequestSuccess(status)
+    }
     return Promise.reject(error)
   }
 )

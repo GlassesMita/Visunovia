@@ -102,6 +102,20 @@ const NODE_TYPE_MAP: Record<string, string> = {
 
 const END_EVENT_NAMES = new Set(['end_game', 'return_to_menu', 'jump_to_scene'])
 const LOR_FORMAT_VERSION = '1.1'
+const AUTO_LAYOUT_START_X = 80
+const AUTO_LAYOUT_Y = 120
+const AUTO_LAYOUT_GAP_X = 360
+const CHARACTER_CONTROL_OFFSET_Y = 180
+
+export interface LrcToBlueprintOptions {
+  sceneId?: string
+  characterSlot?: string
+}
+
+interface ParsedLrcLine {
+  time: number
+  text: string
+}
 
 function normalizeCharacterControl(control: any, fallbackSlot = '1') {
   const slot = String(control?.slot || fallbackSlot || '1')
@@ -210,6 +224,82 @@ export function useLorToBlueprint() {
     return []
   }
 
+  function parseLrcTimestamp(minutes: string, seconds: string, fraction = '0'): number {
+    const normalizedFraction = fraction.padEnd(3, '0').slice(0, 3)
+    return (Number(minutes) * 60) + Number(seconds) + (Number(normalizedFraction) / 1000)
+  }
+
+  function parseLrc(lrcContent: string): ParsedLrcLine[] {
+    const timestampPattern = /\[(\d{1,3}):(\d{2})(?:\.(\d{1,3}))?\]/g
+    const lines: ParsedLrcLine[] = []
+
+    lrcContent.split(/\r?\n/).forEach((rawLine) => {
+      const line = rawLine.trim()
+      if (!line) return
+
+      const matches = [...line.matchAll(timestampPattern)]
+      if (matches.length === 0) return
+
+      const text = line.replace(timestampPattern, '').trim()
+      if (!text) return
+
+      matches.forEach((match) => {
+        lines.push({
+          time: parseLrcTimestamp(match[1], match[2], match[3] || '0'),
+          text,
+        })
+      })
+    })
+
+    return lines.sort((a, b) => a.time - b.time)
+  }
+
+  function lrcToLorScene(lrcContent: string, options: LrcToBlueprintOptions = {}): LorScene {
+    const characterSlot = String(options.characterSlot || '1')
+    const sceneId = options.sceneId?.trim() || 'lrc_import'
+    const lines = parseLrc(lrcContent)
+
+    return {
+      id: sceneId,
+      background: '',
+      bgm: {
+        path: '',
+        volume: 100,
+        loop: false,
+      },
+      dialogues: lines.map((line, index) => ({
+        uuid: generateUUID(),
+        type: 'Dialogue',
+        speaker: '',
+        text: line.text,
+        sprites: [],
+        voice: '',
+        textEffect: {
+          type: '',
+          speed: 0,
+          shake: false,
+          fadeDuration: 0,
+          delayBeforeStart: Math.max(0, line.time),
+        },
+        animation: {
+          type: '',
+          duration: index < lines.length - 1 ? Math.max(0, lines[index + 1].time - line.time) : 0,
+        },
+        branch: null,
+        event: null,
+        transition: {
+          effect: '',
+          duration: 0,
+        },
+        position: {
+          x: AUTO_LAYOUT_START_X + (index + 1) * AUTO_LAYOUT_GAP_X,
+          y: AUTO_LAYOUT_Y,
+        },
+        speakerSlot: characterSlot,
+      })),
+    }
+  }
+
   /**
    * 创建执行连接（通过 UUID）
    * 使用 UUID 进行节点对应和连线
@@ -243,7 +333,7 @@ export function useLorToBlueprint() {
       ? { x: dialogue.positionX, y: dialogue.positionY }
       : dialogue.position && typeof dialogue.position.x === 'number' && typeof dialogue.position.y === 'number'
         ? { x: dialogue.position.x, y: dialogue.position.y }
-        : { x: 300, y: 100 + index * 150 }
+        : { x: AUTO_LAYOUT_START_X + (index + 1) * AUTO_LAYOUT_GAP_X, y: AUTO_LAYOUT_Y }
     const position = normalizeBlueprintPosition(rawPosition)
     
     if (dialogue.type === 'Dialogue') {
@@ -539,7 +629,7 @@ export function useLorToBlueprint() {
       uuid: startUuid,
       id: startUuid,
       nodeType: 'StartNode',
-      position: { x: 50, y: 50 },
+      position: { x: AUTO_LAYOUT_START_X, y: AUTO_LAYOUT_Y },
       properties: {},
       nextNodeUuids: [],
     })
@@ -553,7 +643,7 @@ export function useLorToBlueprint() {
         id: bgmUuid,
         nodeType: 'EventNode',
         subType: 'playBgm',
-        position: { x: 300, y: 50 },
+        position: { x: AUTO_LAYOUT_START_X + nodes.length * AUTO_LAYOUT_GAP_X, y: AUTO_LAYOUT_Y },
         properties: normalizeAssetProperties({
           bgmPath: scene.bgm.path,
           volume: scene.bgm.volume / 100,
@@ -573,7 +663,7 @@ export function useLorToBlueprint() {
         id: bgUuid,
         nodeType: 'EventNode',
         subType: 'changeBackground',
-        position: { x: 300, y: 200 },
+        position: { x: AUTO_LAYOUT_START_X + nodes.length * AUTO_LAYOUT_GAP_X, y: AUTO_LAYOUT_Y },
         properties: normalizeAssetProperties({
           imagePath: scene.background,
           transition: 'fade',
@@ -597,7 +687,14 @@ export function useLorToBlueprint() {
           uuid: controlUuid,
           id: controlUuid,
           nodeType: 'CharacterControlNode',
-          position: normalizeBlueprintPosition({ x: (dialogue.positionX ?? 300) - 220, y: (dialogue.positionY ?? 100 + index * 150) }),
+          position: normalizeBlueprintPosition({
+            x: typeof dialogue.positionX === 'number'
+              ? Math.max(0, dialogue.positionX)
+              : AUTO_LAYOUT_START_X + (index + 1) * AUTO_LAYOUT_GAP_X,
+            y: typeof dialogue.positionY === 'number'
+              ? dialogue.positionY + CHARACTER_CONTROL_OFFSET_Y
+              : AUTO_LAYOUT_Y + CHARACTER_CONTROL_OFFSET_Y,
+          }),
           properties: {
             characterControls: dialogueControls,
             characterControlsJson: serializeCharacterControls(dialogueControls),
@@ -639,7 +736,7 @@ export function useLorToBlueprint() {
         uuid: endUuid,
         id: endUuid,
         nodeType: 'EndNode',
-        position: { x: 300, y: 100 + (scene.dialogues.length + 2) * 150 },
+        position: { x: AUTO_LAYOUT_START_X + (nodes.length + 1) * AUTO_LAYOUT_GAP_X, y: AUTO_LAYOUT_Y },
         properties: {},
         nextNodeUuids: [],
       })
@@ -692,6 +789,30 @@ export function useLorToBlueprint() {
       return blueprint
     } catch (error) {
       conversionError.value = error instanceof Error ? error.message : '转换失败'
+      throw error
+    } finally {
+      isConverting.value = false
+    }
+  }
+
+  async function convertFromLrc(lrcContent: string, options: LrcToBlueprintOptions = {}): Promise<SerializedSceneGraph> {
+    isConverting.value = true
+    conversionError.value = null
+    conversionProgress.value = 0
+
+    try {
+      conversionProgress.value = 30
+      const scene = lrcToLorScene(lrcContent, options)
+      if (scene.dialogues.length === 0) {
+        throw new Error('LRC 中没有找到有效歌词行')
+      }
+
+      conversionProgress.value = 70
+      const blueprint = convertLorToBlueprint(scene)
+      conversionProgress.value = 100
+      return blueprint
+    } catch (error) {
+      conversionError.value = error instanceof Error ? error.message : 'LRC 转换失败'
       throw error
     } finally {
       isConverting.value = false
@@ -753,14 +874,30 @@ export function useLorToBlueprint() {
     }
   }
 
+  function validateLrcFile(content: string): { valid: boolean; errors: string[] } {
+    const errors: string[] = []
+    if (parseLrc(content).length === 0) {
+      errors.push('没有找到形如 [00:12.34]歌词 的有效 LRC 行')
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+    }
+  }
+
   return {
     isConverting,
     conversionError,
     conversionProgress,
     parseJson,
+    parseLrc,
+    lrcToLorScene,
     convertLorToBlueprint,
     convertFromJson,
+    convertFromLrc,
     convertFromFile,
     validateLorFile,
+    validateLrcFile,
   }
 }

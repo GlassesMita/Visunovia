@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useLorImport } from '@/composables/useLorImport'
+import { useLocalization } from '@/composables/useLocalization'
 import FileExplorer from './FileExplorer.vue'
-import { getEntries } from '@/api/fileBrowser'
+import { getEntries, readTextFile } from '@/api/fileBrowser'
 
 const props = defineProps<{
   visible: boolean
@@ -14,9 +15,12 @@ const emit = defineEmits<{
 }>()
 
 const lorImport = useLorImport()
+const { t } = useLocalization()
 
-const activeTab = ref<'explorer' | 'content'>('explorer')
+const activeTab = ref<'explorer' | 'content' | 'lrc'>('explorer')
 const jsonContent = ref('')
+const lrcContent = ref('')
+const selectedCharacterSlot = ref('1')
 const showPreview = ref(false)
 const conversionPreview = ref<{
   nodeCount: number
@@ -27,31 +31,43 @@ const conversionPreview = ref<{
 // 项目相关状态
 const selectedProjectPath = ref('')
 const selectedTlorPath = ref('')
+const selectedLrcPath = ref('')
 const availableScenes = ref<string[]>([])
 const selectedSceneId = ref('')
 const isScanningProject = ref(false)
 
 // 文件选择器
 const showFileExplorer = ref(false)
-const fileExplorerTitle = ref('选择文件')
+const fileExplorerTitle = ref(t('lorImport.selectFile', 'Select file'))
 const fileExplorerFilter = ref<string[]>([])
 
 const isLoading = computed(() => lorImport.isImporting.value || isScanningProject.value)
 const hasError = computed(() => lorImport.importError.value !== null)
 const hasSuccess = computed(() => lorImport.importSuccess.value)
 const validationErrors = computed(() => lorImport.validationResult.value?.errors || [])
+const characterSlotOptions = computed(() => [1, 2, 3, 4, 5, 6].map(slot => ({
+  value: String(slot),
+  label: `${t('characterControl.slot', 'Character Slot')} ${slot}`,
+})))
 
 /** 打开文件选择器选择项目目录 */
 function openProjectExplorer() {
-  fileExplorerTitle.value = '选择项目目录'
+  fileExplorerTitle.value = t('lorImport.selectProjectDirectory', 'Select project directory')
   fileExplorerFilter.value = []
   showFileExplorer.value = true
 }
 
 /** 打开文件选择器选择 .tlor 文件 */
 function openTlorExplorer() {
-  fileExplorerTitle.value = '选择项目文件 (.tlor)'
+  fileExplorerTitle.value = t('lorImport.selectTlorFile', 'Select project file (.tlor)')
   fileExplorerFilter.value = ['.tlor']
+  showFileExplorer.value = true
+}
+
+/** 打开文件选择器选择 .lrc 文件 */
+function openLrcExplorer() {
+  fileExplorerTitle.value = t('lorImport.selectLrcFile', 'Select LRC lyrics file (.lrc)')
+  fileExplorerFilter.value = ['.lrc']
   showFileExplorer.value = true
 }
 
@@ -64,6 +80,19 @@ async function handleFileSelect(path: string, isDirectory: boolean) {
     selectedProjectPath.value = path
     selectedTlorPath.value = ''
     await scanProject(path)
+  } else if (path.toLowerCase().endsWith('.lrc')) {
+    selectedLrcPath.value = path
+    if (!selectedSceneId.value) {
+      selectedSceneId.value = path.replace(/\\/g, '/').split('/').pop()?.replace(/\.lrc$/i, '') || 'lrc_import'
+    }
+
+    try {
+      const response = await readTextFile(path)
+      lrcContent.value = response.content || ''
+    } catch (error) {
+      lorImport.importError.value = error instanceof Error ? error.message : t('lorImport.lrcReadFailed', 'Failed to read LRC file')
+      console.error('[LorImportDialog] Failed to read LRC:', error)
+    }
   } else if (path.endsWith('.tlor')) {
     // 选择了 .tlor 文件
     selectedTlorPath.value = path
@@ -103,7 +132,7 @@ async function scanProject(projectPath: string) {
         selectedSceneId.value = availableScenes.value[0]
       }
     } catch (err) {
-      console.error('扫描项目失败:', err)
+      console.error('[LorImportDialog] Failed to scan project:', err)
     }
   } finally {
     isScanningProject.value = false
@@ -117,9 +146,15 @@ async function handleImport() {
   if (activeTab.value === 'explorer') {
     if (!selectedSceneId.value) return
     success = await lorImport.importFromProject(selectedProjectPath.value, selectedSceneId.value)
-  } else {
+  } else if (activeTab.value === 'content') {
     if (!selectedSceneId.value) return
     success = await lorImport.importFromContent(jsonContent.value, selectedSceneId.value)
+  } else {
+    if (!selectedSceneId.value || !lrcContent.value) return
+    success = await lorImport.importFromContent(lrcContent.value, selectedSceneId.value, {
+      format: 'lrc',
+      characterSlot: selectedCharacterSlot.value,
+    })
   }
 
   if (success) {
@@ -135,6 +170,9 @@ async function handlePreview() {
   if (activeTab.value === 'content' && jsonContent.value) {
     conversionPreview.value = await lorImport.previewConversion(jsonContent.value)
     showPreview.value = true
+  } else if (activeTab.value === 'lrc' && lrcContent.value) {
+    conversionPreview.value = await lorImport.previewLrcConversion(lrcContent.value, selectedSceneId.value || 'lrc_import', selectedCharacterSlot.value)
+    showPreview.value = true
   }
 }
 
@@ -148,10 +186,13 @@ watch(() => props.visible, (newVal) => {
   if (newVal) {
     activeTab.value = 'explorer'
     jsonContent.value = ''
+    lrcContent.value = ''
+    selectedCharacterSlot.value = '1'
     showPreview.value = false
     conversionPreview.value = null
     selectedProjectPath.value = ''
     selectedTlorPath.value = ''
+    selectedLrcPath.value = ''
     availableScenes.value = []
     selectedSceneId.value = ''
   }
@@ -163,7 +204,7 @@ watch(() => props.visible, (newVal) => {
     <div v-if="visible" class="dialog-overlay" @click.self="handleClose">
       <div class="dialog-container">
         <div class="dialog-header">
-          <h2>导入 Lor 剧本到蓝图</h2>
+          <h2>{{ t('lorImport.title', 'Import Lor/LRC to Blueprint') }}</h2>
           <button class="close-btn" @click="handleClose">×</button>
         </div>
         
@@ -174,13 +215,19 @@ watch(() => props.visible, (newVal) => {
               :class="{ active: activeTab === 'explorer' }" 
               @click="activeTab = 'explorer'"
             >
-              从项目导入
+              {{ t('lorImport.fromProject', 'From Project') }}
             </button>
             <button 
               :class="{ active: activeTab === 'content' }" 
               @click="activeTab = 'content'"
             >
-              从内容导入
+              {{ t('lorImport.fromContent', 'From Content') }}
+            </button>
+            <button 
+              :class="{ active: activeTab === 'lrc' }" 
+              @click="activeTab = 'lrc'"
+            >
+              {{ t('lorImport.lrcToBlueprint', 'LRC to Blueprint') }}
             </button>
           </div>
           
@@ -188,24 +235,24 @@ watch(() => props.visible, (newVal) => {
           <div v-if="activeTab === 'explorer'" class="tab-content">
             <!-- 项目选择 -->
             <div class="form-group">
-              <label>项目路径</label>
+              <label>{{ t('lorImport.projectPath', 'Project Path') }}</label>
               <div class="input-with-btn">
                 <input 
                   v-model="selectedProjectPath" 
                   type="text" 
-                  placeholder="点击右侧按钮选择项目目录或 .tlor 文件"
+                  :placeholder="t('lorImport.projectPathPlaceholder', 'Click Browse to select a project folder or .tlor file')"
                   :disabled="isLoading"
                   readonly
                 />
                 <button class="browse-btn" @click="openTlorExplorer" :disabled="isLoading">
-                  浏览...
+                  {{ t('common.browse', 'Browse...') }}
                 </button>
               </div>
             </div>
 
             <!-- 场景列表 -->
             <div class="form-group" v-if="availableScenes.length > 0">
-              <label>选择场景 ({{ availableScenes.length }} 个可用)</label>
+              <label>{{ t('lorImport.selectScene', 'Select Scene') }} ({{ availableScenes.length }} {{ t('lorImport.availableCount', 'available') }})</label>
               <select v-model="selectedSceneId" class="scene-select" :disabled="isLoading">
                 <option v-for="scene in availableScenes" :key="scene" :value="scene">
                   {{ scene }}.lor
@@ -216,34 +263,34 @@ watch(() => props.visible, (newVal) => {
             <!-- 无场景提示 -->
             <div v-else-if="selectedProjectPath && !isLoading" class="empty-hint">
               <span class="hint-icon">📂</span>
-              <span>该项目中没有找到 .lor 文件</span>
+              <span>{{ t('lorImport.noLorFiles', 'No .lor files found in this project') }}</span>
             </div>
 
             <!-- 等待选择 -->
             <div v-else-if="!selectedProjectPath" class="empty-hint">
               <span class="hint-icon">👆</span>
-              <span>请点击"浏览"按钮选择项目目录或 .tlor 文件</span>
+              <span>{{ t('lorImport.selectProjectHint', 'Click Browse to select a project folder or .tlor file') }}</span>
             </div>
           </div>
           
           <!-- 从内容导入 -->
-          <div v-else class="tab-content">
+          <div v-else-if="activeTab === 'content'" class="tab-content">
             <div class="form-group">
-              <label>场景 ID</label>
+              <label>{{ t('lorImport.sceneId', 'Scene ID') }}</label>
               <input 
                 v-model="selectedSceneId" 
                 type="text" 
-                placeholder="输入场景 ID (如: start)"
+                :placeholder="t('lorImport.sceneIdPlaceholder', 'Enter scene ID (e.g. start)')"
                 :disabled="isLoading"
               />
             </div>
 
             <div class="form-group">
-              <label>JSON 内容</label>
+              <label>{{ t('lorImport.jsonContent', 'JSON Content') }}</label>
               <textarea 
                 v-model="jsonContent" 
                 rows="8" 
-                placeholder="粘贴 Lor 剧本 JSON 内容..."
+                :placeholder="t('lorImport.jsonContentPlaceholder', 'Paste Lor script JSON content...')"
                 :disabled="isLoading"
               />
             </div>
@@ -252,25 +299,80 @@ watch(() => props.visible, (newVal) => {
               @click="handlePreview"
               :disabled="!jsonContent || isLoading"
             >
-              预览转换结果
+              {{ t('lorImport.previewConversion', 'Preview Conversion') }}
+            </button>
+          </div>
+
+          <!-- LRC 转蓝图 -->
+          <div v-else class="tab-content">
+            <div class="form-group">
+              <label>{{ t('lorImport.sceneId', 'Scene ID') }}</label>
+              <input 
+                v-model="selectedSceneId" 
+                type="text" 
+                :placeholder="t('lorImport.lrcSceneIdPlaceholder', 'Enter scene ID (e.g. song_scene)')"
+                :disabled="isLoading"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>{{ t('characterControl.slot', 'Character Slot') }}</label>
+              <select v-model="selectedCharacterSlot" class="scene-select" :disabled="isLoading">
+                <option v-for="option in characterSlotOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>{{ t('lorImport.lrcFile', 'LRC File') }}</label>
+              <div class="input-with-btn">
+                <input 
+                  v-model="selectedLrcPath" 
+                  type="text" 
+                  :placeholder="t('lorImport.lrcFilePlaceholder', 'Select a .lrc file or paste content directly')"
+                  :disabled="isLoading"
+                  readonly
+                />
+                <button class="browse-btn" @click="openLrcExplorer" :disabled="isLoading">
+                  {{ t('common.browse', 'Browse...') }}
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>{{ t('lorImport.lrcContent', 'LRC Content') }}</label>
+              <textarea 
+                v-model="lrcContent" 
+                rows="8" 
+                :placeholder="t('lorImport.lrcContentPlaceholder', 'Paste LRC content, e.g. [00:12.34]First lyric line')"
+                :disabled="isLoading"
+              />
+            </div>
+            <button 
+              class="preview-btn" 
+              @click="handlePreview"
+              :disabled="!lrcContent || isLoading"
+            >
+              {{ t('lorImport.previewConversion', 'Preview Conversion') }}
             </button>
           </div>
           
           <!-- 预览结果 -->
           <div v-if="showPreview && conversionPreview" class="preview-result">
-            <h4>转换预览</h4>
+            <h4>{{ t('lorImport.conversionPreview', 'Conversion Preview') }}</h4>
             <div class="preview-stats">
               <div class="stat">
-                <span class="label">节点总数:</span>
+                <span class="label">{{ t('lorImport.nodeCount', 'Node Count') }}:</span>
                 <span class="value">{{ conversionPreview.nodeCount }}</span>
               </div>
               <div class="stat">
-                <span class="label">连接总数:</span>
+                <span class="label">{{ t('lorImport.connectionCount', 'Connection Count') }}:</span>
                 <span class="value">{{ conversionPreview.connectionCount }}</span>
               </div>
             </div>
             <div class="node-types">
-              <h5>节点类型分布</h5>
+              <h5>{{ t('lorImport.nodeTypeDistribution', 'Node Type Distribution') }}</h5>
               <div 
                 v-for="(count, type) in conversionPreview.nodeTypes" 
                 :key="type" 
@@ -284,7 +386,7 @@ watch(() => props.visible, (newVal) => {
           
           <!-- 验证错误 -->
           <div v-if="validationErrors.length > 0" class="validation-errors">
-            <h4>验证警告</h4>
+            <h4>{{ t('lorImport.validationWarnings', 'Validation Warnings') }}</h4>
             <ul>
               <li v-for="(error, index) in validationErrors" :key="index">
                 {{ error }}
@@ -301,21 +403,21 @@ watch(() => props.visible, (newVal) => {
           <!-- 成功提示 -->
           <div v-if="hasSuccess" class="success-message">
             <span class="success-icon">✓</span>
-            <span>导入成功！</span>
+            <span>{{ t('lorImport.importSuccess', 'Import successful!') }}</span>
           </div>
         </div>
         
         <div class="dialog-footer">
           <button class="cancel-btn" @click="handleClose" :disabled="isLoading">
-            取消
+            {{ t('Common.Cancel', 'Cancel') }}
           </button>
           <button 
             class="import-btn" 
             @click="handleImport" 
-            :disabled="isLoading || !selectedSceneId || (activeTab === 'explorer' && !selectedProjectPath)"
+            :disabled="isLoading || !selectedSceneId || (activeTab === 'explorer' && !selectedProjectPath) || (activeTab === 'lrc' && !lrcContent)"
           >
-            <span v-if="isLoading">处理中...</span>
-            <span v-else>导入并转换</span>
+            <span v-if="isLoading">{{ t('lorImport.processing', 'Processing...') }}</span>
+            <span v-else>{{ t('lorImport.importAndConvert', 'Import and Convert') }}</span>
           </button>
         </div>
       </div>

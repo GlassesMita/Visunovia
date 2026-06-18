@@ -407,6 +407,56 @@ public class FileBrowserController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// 读取文本文件内容，用于导入 LRC/脚本等通过文件浏览器选择的文本资源。
+    /// </summary>
+    [HttpGet("read-text")]
+    public async Task<IActionResult> ReadText([FromQuery] string? path)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return BadRequest(new { success = false, error = "路径参数不能为空" });
+
+            var targetPath = Uri.UnescapeDataString(path).Trim();
+            if (targetPath.Contains("..") || targetPath.Contains("|"))
+                return BadRequest(new { success = false, error = "路径包含非法字符" });
+
+            targetPath = System.IO.Path.GetFullPath(targetPath);
+            if (!System.IO.File.Exists(targetPath))
+                return NotFound(new { success = false, error = "文件不存在", requestedPath = path, resolvedPath = targetPath });
+
+            var extension = System.IO.Path.GetExtension(targetPath).ToLowerInvariant();
+            var allowedExtensions = new HashSet<string> { ".lrc", ".txt", ".lor", ".json", ".xml", ".md", ".po", ".csv", ".tsv" };
+            if (!allowedExtensions.Contains(extension))
+                return BadRequest(new { success = false, error = "不支持的文本文件格式", requestedPath = path, resolvedPath = targetPath, extension });
+
+            var fileInfo = new FileInfo(targetPath);
+            if (fileInfo.Length > 1024 * 1024)
+                return BadRequest(new { success = false, error = "文件过大，无法读取" });
+
+            var content = await System.IO.File.ReadAllTextAsync(targetPath);
+            return Ok(new
+            {
+                success = true,
+                data = new
+                {
+                    path = targetPath,
+                    name = Path.GetFileName(targetPath),
+                    content
+                }
+            });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return StatusCode(403, new { success = false, error = "无权访问该文件" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, error = $"读取文本文件失败: {ex.Message}" });
+        }
+    }
+
     #region 请求模型
 
     /// <summary>

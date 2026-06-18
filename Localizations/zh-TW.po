@@ -20,6 +20,108 @@ msgstr ""
 msgid "Common.LanguageDisplayName"
 msgstr "中文（繁体）"
 
+# Lor/LRC Import
+msgid "lorImport.title"
+msgstr "匯入 Lor/LRC 到藍圖"
+
+msgid "lorImport.menuImport"
+msgstr "匯入 Lor/LRC 到藍圖"
+
+msgid "lorImport.selectFile"
+msgstr "選擇檔案"
+
+msgid "lorImport.selectProjectDirectory"
+msgstr "選擇專案目錄"
+
+msgid "lorImport.selectTlorFile"
+msgstr "選擇專案檔案 (.tlor)"
+
+msgid "lorImport.selectLrcFile"
+msgstr "選擇 LRC 歌詞檔案 (.lrc)"
+
+msgid "lorImport.fromProject"
+msgstr "從專案匯入"
+
+msgid "lorImport.fromContent"
+msgstr "從內容匯入"
+
+msgid "lorImport.lrcToBlueprint"
+msgstr "LRC 轉藍圖"
+
+msgid "lorImport.projectPath"
+msgstr "專案路徑"
+
+msgid "lorImport.projectPathPlaceholder"
+msgstr "點擊瀏覽選擇專案目錄或 .tlor 檔案"
+
+msgid "lorImport.selectScene"
+msgstr "選擇場景"
+
+msgid "lorImport.availableCount"
+msgstr "個可用"
+
+msgid "lorImport.noLorFiles"
+msgstr "此專案中找不到 .lor 檔案"
+
+msgid "lorImport.selectProjectHint"
+msgstr "請點擊瀏覽按鈕選擇專案目錄或 .tlor 檔案"
+
+msgid "lorImport.sceneId"
+msgstr "場景 ID"
+
+msgid "lorImport.sceneIdPlaceholder"
+msgstr "輸入場景 ID（例如：start）"
+
+msgid "lorImport.jsonContent"
+msgstr "JSON 內容"
+
+msgid "lorImport.jsonContentPlaceholder"
+msgstr "貼上 Lor 劇本 JSON 內容..."
+
+msgid "lorImport.previewConversion"
+msgstr "預覽轉換結果"
+
+msgid "lorImport.lrcSceneIdPlaceholder"
+msgstr "輸入場景 ID（例如：song_scene）"
+
+msgid "lorImport.lrcFile"
+msgstr "LRC 檔案"
+
+msgid "lorImport.lrcFilePlaceholder"
+msgstr "可選擇 .lrc 檔案，也可直接貼上內容"
+
+msgid "lorImport.lrcContent"
+msgstr "LRC 內容"
+
+msgid "lorImport.lrcContentPlaceholder"
+msgstr "貼上 LRC 內容，例如：[00:12.34]第一句歌詞"
+
+msgid "lorImport.conversionPreview"
+msgstr "轉換預覽"
+
+msgid "lorImport.nodeCount"
+msgstr "節點總數"
+
+msgid "lorImport.connectionCount"
+msgstr "連線總數"
+
+msgid "lorImport.nodeTypeDistribution"
+msgstr "節點類型分布"
+
+msgid "lorImport.validationWarnings"
+msgstr "驗證警告"
+
+msgid "lorImport.importSuccess"
+msgstr "匯入成功！"
+
+msgid "lorImport.processing"
+msgstr "處理中..."
+
+msgid "lorImport.importAndConvert"
+msgstr "匯入並轉換"
+
+msgid "lorImport.lrcReadFailed"
+msgstr "讀取 LRC 失敗"
 #. Application title displayed in browser tab and window header
 #: Pages/Shared/_Layout.cshtml
 msgid "App.Title"

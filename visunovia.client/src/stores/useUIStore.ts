@@ -15,6 +15,7 @@ export const useUIStore = defineStore('ui', () => {
   const showCharacterManager = ref(false)
   const showExpressionManager = ref(false)
   const showSceneManager = ref(false)
+  const showLorImportDialog = ref(false)
   const showPreviewPopup = ref(false)
   const showNodeDetailsModal = ref(false)
   const activePanel = ref<string | null>(null)
@@ -120,6 +121,14 @@ export const useUIStore = defineStore('ui', () => {
     showSceneManager.value = false
   }
 
+  function openLorImportDialog() {
+    showLorImportDialog.value = true
+  }
+
+  function closeLorImportDialog() {
+    showLorImportDialog.value = false
+  }
+
   function openPreviewPopup() {
     showPreviewPopup.value = true
     previewReloadToken.value += 1
@@ -189,6 +198,9 @@ export const useUIStore = defineStore('ui', () => {
     showSceneManager,
     openSceneManager,
     closeSceneManager,
+    showLorImportDialog,
+    openLorImportDialog,
+    closeLorImportDialog,
     showPreviewPopup,
     previewReloadToken,
     openPreviewPopup,

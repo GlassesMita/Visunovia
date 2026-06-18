@@ -20,6 +20,108 @@ msgstr ""
 msgid "Common.LanguageDisplayName"
 msgstr "日本語"
 
+# Lor/LRC Import
+msgid "lorImport.title"
+msgstr "Lor/LRC をブループリントへインポート"
+
+msgid "lorImport.menuImport"
+msgstr "Lor/LRC をブループリントへインポート"
+
+msgid "lorImport.selectFile"
+msgstr "ファイルを選択"
+
+msgid "lorImport.selectProjectDirectory"
+msgstr "プロジェクトフォルダーを選択"
+
+msgid "lorImport.selectTlorFile"
+msgstr "プロジェクトファイル (.tlor) を選択"
+
+msgid "lorImport.selectLrcFile"
+msgstr "LRC 歌詞ファイル (.lrc) を選択"
+
+msgid "lorImport.fromProject"
+msgstr "プロジェクトから"
+
+msgid "lorImport.fromContent"
+msgstr "内容から"
+
+msgid "lorImport.lrcToBlueprint"
+msgstr "LRC からブループリント"
+
+msgid "lorImport.projectPath"
+msgstr "プロジェクトパス"
+
+msgid "lorImport.projectPathPlaceholder"
+msgstr "参照をクリックしてプロジェクトフォルダーまたは .tlor ファイルを選択"
+
+msgid "lorImport.selectScene"
+msgstr "シーンを選択"
+
+msgid "lorImport.availableCount"
+msgstr "件利用可能"
+
+msgid "lorImport.noLorFiles"
+msgstr "このプロジェクトに .lor ファイルが見つかりません"
+
+msgid "lorImport.selectProjectHint"
+msgstr "参照ボタンをクリックしてプロジェクトフォルダーまたは .tlor ファイルを選択してください"
+
+msgid "lorImport.sceneId"
+msgstr "シーン ID"
+
+msgid "lorImport.sceneIdPlaceholder"
+msgstr "シーン ID を入力（例: start）"
+
+msgid "lorImport.jsonContent"
+msgstr "JSON 内容"
+
+msgid "lorImport.jsonContentPlaceholder"
+msgstr "Lor シナリオ JSON 内容を貼り付け..."
+
+msgid "lorImport.previewConversion"
+msgstr "変換結果をプレビュー"
+
+msgid "lorImport.lrcSceneIdPlaceholder"
+msgstr "シーン ID を入力（例: song_scene）"
+
+msgid "lorImport.lrcFile"
+msgstr "LRC ファイル"
+
+msgid "lorImport.lrcFilePlaceholder"
+msgstr ".lrc ファイルを選択するか、内容を直接貼り付け"
+
+msgid "lorImport.lrcContent"
+msgstr "LRC 内容"
+
+msgid "lorImport.lrcContentPlaceholder"
+msgstr "LRC 内容を貼り付け（例: [00:12.34]最初の歌詞）"
+
+msgid "lorImport.conversionPreview"
+msgstr "変換プレビュー"
+
+msgid "lorImport.nodeCount"
+msgstr "ノード数"
+
+msgid "lorImport.connectionCount"
+msgstr "接続数"
+
+msgid "lorImport.nodeTypeDistribution"
+msgstr "ノードタイプ分布"
+
+msgid "lorImport.validationWarnings"
+msgstr "検証警告"
+
+msgid "lorImport.importSuccess"
+msgstr "インポート成功！"
+
+msgid "lorImport.processing"
+msgstr "処理中..."
+
+msgid "lorImport.importAndConvert"
+msgstr "インポートして変換"
+
+msgid "lorImport.lrcReadFailed"
+msgstr "LRC の読み込みに失敗しました"
 #. Application title displayed in browser tab and window header
 #: Pages/Shared/_Layout.cshtml
 msgid "App.Title"

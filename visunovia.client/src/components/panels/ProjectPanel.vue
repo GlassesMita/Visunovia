@@ -349,6 +349,12 @@ function selectFile(path: string) {
 function openNode(node: DisplayNode) {
   if (node.isDirectory) return
 
+  if (node.name.toLowerCase().endsWith('.lor')) {
+    uiStore.closeProjectPopup()
+    uiStore.openFileByPath(getPrimaryPath(node.path))
+    return
+  }
+
   if (node.name.toLowerCase() === 'project.tlor') {
     uiStore.closeProjectPopup()
     uiStore.openProjectPreferences()

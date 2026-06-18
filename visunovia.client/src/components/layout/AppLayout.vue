@@ -63,6 +63,13 @@
     <!-- 场景管理器 -->
     <SceneManagerModal />
 
+    <!-- Lor/LRC 导入器 -->
+    <LorImportDialog
+      :visible="uiStore.showLorImportDialog"
+      @close="uiStore.closeLorImportDialog()"
+      @imported="handleLorImported"
+    />
+
     <!-- 项目预览 -->
     <PreviewPopup
       :visible="uiStore.showPreviewPopup"
@@ -107,6 +114,7 @@ import { useLocalization } from '@/composables/useLocalization'
 import { useUIStore } from '@/stores/useUIStore'
 import { useShortcuts } from '@/composables/useShortcuts'
 import { useProjectImport } from '@/composables/useProjectImport'
+import { useLorImport } from '@/composables/useLorImport'
 import { useNodeOperations } from '@/composables/useNodeOperations'
 import MenuBar from './MenuBar.vue'
 import Toolbar from './Toolbar.vue'
@@ -120,14 +128,16 @@ import ProjectPreferencesModal from '@/components/ProjectPreferencesModal.vue'
 import CharacterManagerModal from '@/components/CharacterManagerModal.vue'
 import ExpressionManagerModal from '@/components/ExpressionManagerModal.vue'
 import SceneManagerModal from '@/components/SceneManagerModal.vue'
+import LorImportDialog from '@/components/LorImportDialog.vue'
 import PreviewPopup from '@/components/PreviewPopup.vue'
 import NodeDetailsModal from '@/components/NodeDetailsModal.vue'
 import WelcomeModal from '@/components/WelcomeModal.vue'
-import { getCurrentProject } from '@/api/projectApi'
+import { getCurrentProject, getProjectFileContent } from '@/api/projectApi'
 
 const { t } = useLocalization()
 const uiStore = useUIStore()
 const projectImport = useProjectImport()
+const lorImport = useLorImport()
 const { loadSceneGraph, newGraph } = useNodeOperations()
 const editorReady = ref(false)
 
@@ -217,10 +227,10 @@ watch(
     if (filePath) {
       await nextTick()
       const normalizedPath = filePath.replace(/\\/g, '/')
-      const scriptsMainIndex = normalizedPath.toLowerCase().lastIndexOf('/scripts/main/')
-      if (scriptsMainIndex >= 0) {
-        const projectPath = filePath.slice(0, scriptsMainIndex)
-        await projectImport.importProjectPath(projectPath)
+      if (normalizedPath.toLowerCase().endsWith('.lor')) {
+        const sceneId = normalizedPath.split('/').pop()?.replace(/\.lor$/i, '') || 'untitled'
+        const fileContent = await getProjectFileContent(filePath)
+        await lorImport.importFromContent(fileContent.content, sceneId, { validate: false })
       } else {
         await loadSceneGraph(filePath)
       }
@@ -295,6 +305,12 @@ function handleRecentProjectOpened() {
 function handleRecentProjectOpenFailed(message: string) {
   hasOpenProject.value = false
   projectOpenError.value = message
+}
+
+function handleLorImported(sceneId: string) {
+  hasOpenProject.value = true
+  projectOpenError.value = ''
+  console.log(`[AppLayout] LRC/Lor 已导入: ${sceneId}`)
 }
 
 onUnmounted(() => {
