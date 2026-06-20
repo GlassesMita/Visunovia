@@ -136,7 +136,7 @@ defineExpose({ addLog, clearLogs })
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #1e1e1e;
+  background: var(--md-sys-color-surface-container-low);
 }
 
 .panel-header {
@@ -144,8 +144,8 @@ defineExpose({ addLog, clearLogs })
   justify-content: space-between;
   align-items: center;
   padding: 6px 10px;
-  border-bottom: 1px solid #3e3e42;
-  background: #252526;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container-high);
   flex-shrink: 0;
 }
 
@@ -159,15 +159,15 @@ defineExpose({ addLog, clearLogs })
   margin: 0;
   font-size: 11px;
   font-weight: 600;
-  color: #cccccc;
+  color: var(--md-sys-color-on-surface);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .log-count {
   font-size: 10px;
-  color: #707070;
-  background: #333333;
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-secondary-container);
   padding: 1px 6px;
   border-radius: 8px;
 }
@@ -204,7 +204,7 @@ defineExpose({ addLog, clearLogs })
 
 .filter-btn.active {
   opacity: 1;
-  border-color: #555555;
+  border-color: var(--md-sys-color-primary);
 }
 
 .filter-btn.info.active { color: #569cd6; }
@@ -215,18 +215,18 @@ defineExpose({ addLog, clearLogs })
 .console-action-btn {
   padding: 2px 6px;
   background: transparent;
-  border: 1px solid #3e3e42;
-  border-radius: 3px;
-  color: #808080;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 999px;
+  color: var(--md-sys-color-on-surface-variant);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .console-action-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #cccccc;
-  border-color: #555555;
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-surface);
+  border-color: var(--md-sys-color-primary);
 }
 
 .panel-content {

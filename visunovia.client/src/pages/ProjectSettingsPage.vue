@@ -211,7 +211,7 @@ async function saveSettings() {
   display: flex;
   justify-content: center;
   padding: 40px;
-  background: #1e1e1e;
+  background: var(--md-sys-color-background);
   min-height: 100vh;
   box-sizing: border-box;
 }
@@ -219,8 +219,9 @@ async function saveSettings() {
 .preferences-container {
   width: 100%;
   max-width: 700px;
-  background: #252526;
-  border-radius: 8px;
+  background: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-large);
   padding: 24px;
   box-sizing: border-box;
 }
@@ -230,14 +231,14 @@ h1 {
   margin: 0 0 24px;
   font-size: 24px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--md-sys-color-on-surface);
 }
 
 /* 设置分组容器 */
 .settings-section {
   margin-bottom: 32px;
   padding-bottom: 24px;
-  border-bottom: 1px solid #3e3e42;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
 }
 
 .settings-section:last-of-type {
@@ -250,7 +251,7 @@ h1 {
   margin: 0 0 16px;
   font-size: 16px;
   font-weight: 600;
-  color: #cccccc;
+  color: var(--md-sys-color-on-surface-variant);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -270,7 +271,7 @@ h1 {
 
 /* 设置项标签 */
 .setting-item label {
-  color: #ffffff;
+  color: var(--md-sys-color-on-surface);
   font-size: 14px;
   flex-shrink: 0;
   min-width: 160px;
@@ -281,10 +282,10 @@ h1 {
 .setting-item input[type="number"],
 .setting-item select {
   padding: 6px 12px;
-  background: #3c3c3c;
-  border: 1px solid #3e3e42;
-  border-radius: 4px;
-  color: #ffffff;
+  background: var(--md-sys-color-surface-container-high);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-small);
+  color: var(--md-sys-color-on-surface);
   font-size: 14px;
   min-width: 180px;
   max-width: 250px;
@@ -296,7 +297,7 @@ h1 {
 .setting-item input[type="number"]:focus,
 .setting-item select:focus {
   outline: none;
-  border-color: #007acc;
+  border-color: var(--md-sys-color-primary);
 }
 
 /* 数字输入框隐藏微调按钮（保持视觉一致性） */
@@ -307,8 +308,8 @@ h1 {
 
 /* 下拉框箭头颜色修复 */
 .setting-item select option {
-  background: #3c3c3c;
-  color: #ffffff;
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
 }
 
 /* 复选框样式 */
@@ -316,7 +317,7 @@ h1 {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #007acc;
+  accent-color: var(--md-sys-color-primary);
 }
 
 /* 分辨率行布局 */
@@ -335,7 +336,7 @@ h1 {
 }
 
 .resolution-separator {
-  color: #ffffff;
+  color: var(--md-sys-color-on-surface);
   font-size: 14px;
 }
 
@@ -346,16 +347,16 @@ h1 {
   justify-content: flex-end;
   margin-top: 24px;
   padding-top: 16px;
-  border-top: 1px solid #3e3e42;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
 }
 
 /* 主要按钮样式 */
 .btn-primary {
   padding: 8px 24px;
-  background: #007acc;
+  background: var(--md-sys-color-primary);
   border: none;
-  border-radius: 4px;
-  color: #ffffff;
+  border-radius: 999px;
+  color: var(--md-sys-color-on-primary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -366,11 +367,11 @@ h1 {
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #1177bb;
+  box-shadow: var(--md-sys-elevation-1);
 }
 
 .btn-primary:active:not(:disabled) {
-  background: #0e639c;
+  background: var(--md-sys-color-primary-container);
 }
 
 .btn-primary:disabled {

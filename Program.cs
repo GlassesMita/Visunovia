@@ -45,6 +45,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 减少冗余的 HTTP 请求日志输出
 // 生产构建后 info 级别请求日志会淹没终端，仅保留 Warning 及以上级别
+builder.Logging.ClearProviders();
+builder.Logging.AddProvider(new BeautifiedConsoleLoggerProvider());
 builder.Logging.SetMinimumLevel(LogLevel.Warning);
 builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
 builder.Logging.AddFilter("Microsoft.AspNetCore.Routing", LogLevel.Warning);
@@ -278,7 +280,7 @@ app.Use(async (context, next) =>
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[StartupPage] 读取 isFirstRun 配置失败: {ex.Message}，默认显示安装向导");
+        app.Logger.LogWarning(ex, "[StartupPage] 读取 isFirstRun 配置失败，默认显示安装向导");
         context.Response.Redirect("/SetupWizard", permanent: false);
         return;
     }
@@ -413,7 +415,7 @@ if (!noNewTab)
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Startup] Failed to open browser automatically: {ex.Message}");
+                app.Logger.LogWarning(ex, "[Startup] Failed to open browser automatically");
             }
         });
     });
@@ -545,6 +547,10 @@ static async Task WaitForFrontendReadyAsync(string url, TimeSpan timeout)
 
     if (lastError != null)
     {
-        Console.WriteLine($"[Startup] Frontend readiness check timed out: {lastError.Message}");
+        Console.Error.WriteLine(BeautifiedConsoleOutput.FormatException(
+            "Warning",
+            nameof(WaitForFrontendReadyAsync),
+            "[Startup] Frontend readiness check timed out",
+            lastError));
     }
 }

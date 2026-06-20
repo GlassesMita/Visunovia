@@ -147,34 +147,112 @@ menu {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-fill-color: var(--vn-text) !important;
-  --vn-bg: #1e1e1e;
-  --vn-bg-elevated: #252526;
-  --vn-surface: #2d2d30;
-  --vn-surface-muted: #333337;
-  --vn-control-bg: #3c3c3c;
-  --vn-text: #ffffff;
-  --vn-text-soft: #e0e0e0;
-  --vn-text-muted: #a7a7a7;
-  --vn-border: #3e3e42;
-  --vn-border-strong: #555555;
-  --vn-accent: #007acc;
-  --vn-accent-hover: #1a8ad4;
+  --md-sys-color-primary: #d0bcff;
+  --md-sys-color-on-primary: #381e72;
+  --md-sys-color-primary-container: #4f378b;
+  --md-sys-color-on-primary-container: #eaddff;
+  --md-sys-color-secondary: #ccc2dc;
+  --md-sys-color-on-secondary: #332d41;
+  --md-sys-color-secondary-container: #4a4458;
+  --md-sys-color-tertiary: #efb8c8;
+  --md-sys-color-on-tertiary: #492532;
+  --md-sys-color-background: #141218;
+  --md-sys-color-on-background: #e6e0e9;
+  --md-sys-color-surface: #141218;
+  --md-sys-color-surface-dim: #141218;
+  --md-sys-color-surface-bright: #3b383e;
+  --md-sys-color-surface-container-lowest: #0f0d13;
+  --md-sys-color-surface-container-low: #1d1b20;
+  --md-sys-color-surface-container: #211f26;
+  --md-sys-color-surface-container-high: #2b2930;
+  --md-sys-color-surface-container-highest: #36343b;
+  --md-sys-color-on-surface: #e6e0e9;
+  --md-sys-color-on-surface-variant: #cac4d0;
+  --md-sys-color-outline: #938f99;
+  --md-sys-color-outline-variant: #49454f;
+  --md-sys-color-error: #ffb4ab;
+  --md-sys-color-on-error: #690005;
+  --md-sys-color-error-container: #93000a;
+  --md-sys-color-on-error-container: #ffdad6;
+  --md-sys-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --md-sys-elevation-2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-state-hover-opacity: 0.08;
+  --md-sys-state-focus-opacity: 0.12;
+  --vn-bg: var(--md-sys-color-background);
+  --vn-bg-elevated: var(--md-sys-color-surface-container);
+  --vn-surface: var(--md-sys-color-surface-container-high);
+  --vn-surface-muted: var(--md-sys-color-surface-container-highest);
+  --vn-control-bg: var(--md-sys-color-surface-container-high);
+  --vn-text: var(--md-sys-color-on-surface);
+  --vn-text-soft: var(--md-sys-color-on-surface);
+  --vn-text-muted: var(--md-sys-color-on-surface-variant);
+  --vn-border: var(--md-sys-color-outline-variant);
+  --vn-border-strong: var(--md-sys-color-outline);
+  --vn-accent: var(--md-sys-color-primary);
+  --vn-accent-hover: var(--md-sys-color-primary-container);
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --vn-bg: #f3f4f6;
-  --vn-bg-elevated: #ffffff;
-  --vn-surface: #ffffff;
-  --vn-surface-muted: #eef2f7;
-  --vn-control-bg: #ffffff;
-  --vn-text: #111827;
-  --vn-text-soft: #1f2937;
-  --vn-text-muted: #4b5563;
-  --vn-border: #d1d5db;
-  --vn-border-strong: #9ca3af;
-  --vn-accent: #2563eb;
-  --vn-accent-hover: #1d4ed8;
+}
+
+:root[data-theme-style="windows-11"] {
+  --vn-window-backdrop: linear-gradient(135deg, color-mix(in srgb, var(--md-sys-color-primary-container) 32%, transparent), transparent 42%), var(--md-sys-color-background);
+}
+
+:root[data-theme-style="windows-10"] {
+  --vn-window-backdrop: var(--md-sys-color-background);
+}
+
+.md-card {
+  background: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-large);
+  box-shadow: var(--md-sys-elevation-1);
+}
+
+.md-filled-button,
+.md-tonal-button,
+.md-outlined-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 24px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.md-filled-button {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary) !important;
+  -webkit-text-fill-color: var(--md-sys-color-on-primary) !important;
+  box-shadow: var(--md-sys-elevation-1);
+}
+
+.md-tonal-button {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-surface) !important;
+  -webkit-text-fill-color: var(--md-sys-color-on-surface) !important;
+}
+
+.md-outlined-button {
+  border: 1px solid var(--md-sys-color-outline);
+  color: var(--md-sys-color-primary) !important;
+  -webkit-text-fill-color: var(--md-sys-color-primary) !important;
+}
+
+.md-filled-button:hover,
+.md-tonal-button:hover,
+.md-outlined-button:hover {
+  box-shadow: var(--md-sys-elevation-2);
+  transform: translateY(-1px);
 }
 
 html,
@@ -213,4 +291,221 @@ body {
   height: 100vh;
   overflow: hidden;
   font-family: Gadugi, 'Segoe UI', 'Microsoft YaHei UI', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+/* ===== Material You 3 WebUI bridge =====
+   旧组件仍有大量 VS Code 深色硬编码色值。这里用全局 token 统一覆盖主要 WebUI 面板、弹窗、菜单和输入控件。 */
+#app .app-layout,
+#app .baklava-editor-wrapper,
+#app .baklava-editor,
+#app .editor-page,
+#app .project-settings-page,
+#app .preferences-root {
+  background: var(--vn-window-backdrop, var(--md-sys-color-background)) !important;
+}
+
+#app .app-header,
+#app .app-toolbar,
+#app .app-console,
+#app .console-panel,
+#app .panel,
+#app .project-panel,
+#app .inspector-panel,
+#app .hierarchy-panel,
+#app .modal-content,
+#app .dialog-content,
+#app .window-popup,
+#app .file-explorer,
+#app .new-project-modal,
+#app .project-preferences-modal,
+#app .character-manager-modal,
+#app .expression-manager-modal,
+#app .scene-manager-modal,
+#app .welcome-card,
+#app .resource-picker-modal,
+#app .project-popup {
+  background: var(--md-sys-color-surface-container) !important;
+  border-color: var(--md-sys-color-outline-variant) !important;
+  color: var(--md-sys-color-on-surface) !important;
+}
+
+#app .app-toolbar,
+#app .popup-header,
+#app .panel-header,
+#app .modal-header,
+#app .dialog-header,
+#app .file-explorer-header,
+#app .console-header,
+#app .menu-dropdown,
+#app .dropdown-menu,
+#app .context-menu,
+#app .visunovia-node-context-menu {
+  background: var(--md-sys-color-surface-container-high) !important;
+  border-color: var(--md-sys-color-outline-variant) !important;
+  box-shadow: var(--md-sys-elevation-2) !important;
+}
+
+#app .app-footer,
+#app .status-bar {
+  background: var(--md-sys-color-primary) !important;
+  color: var(--md-sys-color-on-primary) !important;
+  -webkit-text-fill-color: var(--md-sys-color-on-primary) !important;
+}
+
+#app .status-bar *,
+#app .app-footer * {
+  color: var(--md-sys-color-on-primary) !important;
+  -webkit-text-fill-color: var(--md-sys-color-on-primary) !important;
+}
+
+#app .toolbar-button,
+#app .menu-item,
+#app .menu-dropdown-item,
+#app .popup-close-btn,
+#app .modal-close-btn,
+#app .file-item,
+#app .tree-node,
+#app .list-item,
+#app .tab,
+#app .scene-tab,
+#app .visunovia-node-context-item {
+  color: var(--md-sys-color-on-surface-variant) !important;
+  border-radius: var(--md-sys-shape-corner-small) !important;
+}
+
+#app .toolbar-button:hover:not(:disabled),
+#app .menu-item:hover,
+#app .menu-item.active,
+#app .menu-dropdown-item:hover:not(.disabled),
+#app .popup-close-btn:hover,
+#app .modal-close-btn:hover,
+#app .file-item:hover,
+#app .tree-node:hover,
+#app .list-item:hover,
+#app .tab:hover,
+#app .scene-tab:hover,
+#app .visunovia-node-context-item:hover {
+  background: var(--md-sys-color-secondary-container) !important;
+  color: var(--md-sys-color-on-surface) !important;
+  -webkit-text-fill-color: var(--md-sys-color-on-surface) !important;
+}
+
+#app .active,
+#app .selected,
+#app .tab.active,
+#app .scene-tab.active,
+#app .file-item.selected,
+#app .tree-node.selected,
+#app .list-item.selected {
+  border-color: var(--md-sys-color-primary) !important;
+}
+
+#app input,
+#app select,
+#app textarea,
+#app .native-free-select,
+#app .native-free-select__value,
+#app .search-input,
+#app .path-input,
+#app .form-control {
+  background: var(--md-sys-color-surface-container-high) !important;
+  border-color: var(--md-sys-color-outline) !important;
+  border-radius: var(--md-sys-shape-corner-small) !important;
+  color: var(--md-sys-color-on-surface) !important;
+  -webkit-text-fill-color: var(--md-sys-color-on-surface) !important;
+}
+
+#app input:focus,
+#app select:focus,
+#app textarea:focus,
+#app .native-free-select:focus-within,
+#app .form-control:focus {
+  border-color: var(--md-sys-color-primary) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--md-sys-color-primary) 28%, transparent) !important;
+}
+
+#app button:not(.toolbar-button):not(.menu-item):not(.menu-dropdown-item):not(.popup-close-btn):not(.modal-close-btn),
+#app .btn,
+#app .btn-primary,
+#app .btn-confirm,
+#app .accent-btn {
+  border-radius: 999px !important;
+}
+
+#app .btn-primary,
+#app .btn-confirm,
+#app .accent-btn,
+#app .primary-button,
+#app .save-button {
+  background: var(--md-sys-color-primary) !important;
+  color: var(--md-sys-color-on-primary) !important;
+  -webkit-text-fill-color: var(--md-sys-color-on-primary) !important;
+}
+
+#app .btn-cancel,
+#app .secondary-button,
+#app .cancel-button {
+  background: var(--md-sys-color-secondary-container) !important;
+  color: var(--md-sys-color-on-surface) !important;
+  -webkit-text-fill-color: var(--md-sys-color-on-surface) !important;
+}
+
+:root[data-theme-style="windows-11"] #app .app-header,
+:root[data-theme-style="windows-11"] #app .app-toolbar,
+:root[data-theme-style="windows-11"] #app .project-popup,
+:root[data-theme-style="windows-11"] #app .modal-content,
+:root[data-theme-style="windows-11"] #app .dialog-content,
+:root[data-theme-style="windows-11"] #app .wm-window,
+:root[data-theme-style="windows-11"] #app .preferences-container,
+:root[data-theme-style="windows-11"] #app .preferences-root .setting-row {
+  background: color-mix(in srgb, var(--md-sys-color-surface-container) 88%, var(--md-sys-color-primary-container)) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  backdrop-filter: blur(18px) saturate(1.25);
+}
+
+:root[data-theme-style="windows-11"] #app .app-header {
+  z-index: 3000 !important;
+  overflow: visible !important;
+}
+
+:root[data-theme-style="windows-11"] #app .app-toolbar {
+  z-index: 100 !important;
+}
+
+:root[data-theme-style="windows-11"] #app .menu-dropdown {
+  z-index: 3200 !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  backdrop-filter: blur(18px) saturate(1.25);
+}
+
+:root[data-theme-style="windows-10"] #app .app-header,
+:root[data-theme-style="windows-10"] #app .app-toolbar,
+:root[data-theme-style="windows-10"] #app .project-popup,
+:root[data-theme-style="windows-10"] #app .modal-content,
+:root[data-theme-style="windows-10"] #app .dialog-content,
+:root[data-theme-style="windows-10"] #app .wm-window,
+:root[data-theme-style="windows-10"] #app .preferences-container,
+:root[data-theme-style="windows-10"] #app .preferences-root .setting-row,
+:root[data-theme-style="windows-10"] #app button,
+:root[data-theme-style="windows-10"] #app input,
+:root[data-theme-style="windows-10"] #app select,
+:root[data-theme-style="windows-10"] #app textarea {
+  border-radius: var(--md-sys-shape-corner-small) !important;
+}
+
+:root[data-theme-style="windows-10"] #app .md-filled-button,
+:root[data-theme-style="windows-10"] #app .md-tonal-button,
+:root[data-theme-style="windows-10"] #app .md-outlined-button,
+:root[data-theme-style="windows-10"] #app .btn-primary,
+:root[data-theme-style="windows-10"] #app .btn-confirm,
+:root[data-theme-style="windows-10"] #app .accent-btn,
+:root[data-theme-style="windows-10"] #app .console-toggle-btn {
+  border-radius: 2px !important;
+}
+
+#app .menu-divider,
+#app .toolbar-divider,
+#app .divider {
+  background: var(--md-sys-color-outline-variant) !important;
+  border-color: var(--md-sys-color-outline-variant) !important;
 }

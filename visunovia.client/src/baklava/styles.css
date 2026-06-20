@@ -41,7 +41,7 @@
 .baklava-editor {
   width: 100%;
   height: 100%;
-  background-color: #1e1e1e;
+  background-color: var(--md-sys-color-background);
 }
 
 /* 根据 source 节点类型着色连接线 */
@@ -92,10 +92,10 @@
 .vn-sprite-slot6-name {
   width: 100%;
   min-height: 26px;
-  border: 1px solid #3f3f46;
-  border-radius: 4px;
-  background: #1f1f2b;
-  color: #e5e7eb;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
   font-size: 12px;
 }
 
@@ -112,8 +112,8 @@
   width: 100%;
   max-height: 92px;
   object-fit: contain;
-  border-radius: 4px;
-  background: #111827;
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container-lowest);
 }
 
 .vn-sprite-select-grid {
@@ -126,17 +126,17 @@
 
 .vn-sprite-select-option {
   border: 1px solid transparent;
-  border-radius: 4px;
-  background: #27272a;
-  color: #d4d4d8;
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface-variant);
   cursor: pointer;
   padding: 3px;
 }
 
 .vn-sprite-select-option:hover,
 .vn-sprite-select-option.selected {
-  border-color: #a855f7;
-  background: rgba(168, 85, 247, 0.18);
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-secondary-container);
 }
 
 .vn-sprite-select-option img {
@@ -144,8 +144,8 @@
   height: 72px;
   object-fit: contain;
   object-position: center center;
-  border-radius: 3px;
-  background: #111827;
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container-lowest);
 }
 
 .vn-sprite-select-option span {
@@ -160,7 +160,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  color: #c4b5fd;
+  color: var(--md-sys-color-primary);
   font-size: 11px;
 }
 
@@ -179,10 +179,10 @@
 .vn-asset-select-control {
   width: 100%;
   min-height: 26px;
-  border: 1px solid #3f3f46;
-  border-radius: 4px;
-  background: #1f1f2b;
-  color: #e5e7eb;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
   font-size: 12px;
 }
 
@@ -195,8 +195,8 @@
   width: 100%;
   max-height: 92px;
   object-fit: contain;
-  border-radius: 4px;
-  background: #111827;
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container-lowest);
 }
 
 .vn-asset-select-error {

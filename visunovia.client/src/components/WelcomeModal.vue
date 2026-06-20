@@ -167,10 +167,10 @@ function handleKeydown(event: KeyboardEvent) {
   display: flex;
   width: 720px;
   min-height: 400px;
-  background: #1e1e2e;
-  border: 1px solid #333344;
-  border-radius: 12px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  background: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  box-shadow: var(--md-sys-elevation-2);
   overflow: hidden;
 }
 
@@ -178,7 +178,7 @@ function handleKeydown(event: KeyboardEvent) {
 .wm-left {
   width: 240px;
   min-width: 240px;
-  background: #181828;
+  background: var(--md-sys-color-surface-container-low);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -196,7 +196,7 @@ function handleKeydown(event: KeyboardEvent) {
 .wm-app-name {
   font-size: 18px;
   font-weight: 700;
-  color: #e0e0e0;
+  color: var(--md-sys-color-on-surface);
   letter-spacing: 0.5px;
 }
 
@@ -215,7 +215,7 @@ function handleKeydown(event: KeyboardEvent) {
   height: 44px;
   padding: 0 16px;
   border: none;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 14px;
   font-family: inherit;
   cursor: pointer;
@@ -228,34 +228,34 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .wm-btn-primary {
-  background: #3B82F6;
-  color: #ffffff;
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
 }
 
 .wm-btn-primary:hover {
-  background: #2563eb;
+  box-shadow: var(--md-sys-elevation-1);
 }
 
 .wm-btn-primary:active {
-  background: #1d4ed8;
+  background: var(--md-sys-color-primary-container);
 }
 
 .wm-btn-secondary {
   background: transparent;
-  color: #b0b0c0;
-  border: 1px solid #333344;
+  color: var(--md-sys-color-on-surface-variant);
+  border: 1px solid var(--md-sys-color-outline);
 }
 
 .wm-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: #444455;
-  color: #d0d0e0;
+  background: var(--md-sys-color-secondary-container);
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-surface);
 }
 
 /* ========== Divider ========== */
 .wm-divider {
   width: 1px;
-  background: #333344;
+  background: var(--md-sys-color-outline-variant);
   margin: 24px 0;
 }
 
@@ -271,7 +271,7 @@ function handleKeydown(event: KeyboardEvent) {
 .wm-recent-title {
   font-size: 15px;
   font-weight: 600;
-  color: #c0c0d0;
+  color: var(--md-sys-color-on-surface);
   margin: 0 0 16px 0;
 }
 
@@ -279,7 +279,7 @@ function handleKeydown(event: KeyboardEvent) {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #888;
+  color: var(--md-sys-color-on-surface-variant);
   font-size: 13px;
   padding: 20px 0;
 }
@@ -287,8 +287,8 @@ function handleKeydown(event: KeyboardEvent) {
 .wm-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  border-top-color: #3B82F6;
+  border: 2px solid var(--md-sys-color-outline-variant);
+  border-top-color: var(--md-sys-color-primary);
   border-radius: 50%;
   animation: wm-spin 0.6s linear infinite;
 }
@@ -302,7 +302,7 @@ function handleKeydown(event: KeyboardEvent) {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  color: #666;
+  color: var(--md-sys-color-on-surface-variant);
   font-size: 13px;
   padding: 40px 0;
 }

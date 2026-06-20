@@ -79,16 +79,16 @@ function updateValue(name: string, value: any) {
 
 .property-row label {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 .property-row input,
 .property-row select {
   padding: 0.25rem 0.5rem;
-  border: 1px solid #444;
-  border-radius: 4px;
-  background: #2a2a2a;
-  color: #fff;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
   font-size: 0.875rem;
 }
 </style>

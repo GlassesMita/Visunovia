@@ -63,7 +63,7 @@ async function toggleLanguage() {
   align-items: center;
   height: 100%;
   padding: 0 16px;
-  color: #ffffff;
+  color: var(--md-sys-color-on-primary);
   font-size: 12px;
   flex: 1;
 }
@@ -81,21 +81,21 @@ async function toggleLanguage() {
 }
 
 .status-item.modified {
-  color: #e8d4a8;
+  color: var(--md-sys-color-on-primary-container);
 }
 
 .status-item.error {
-  color: #f48771;
+  color: var(--md-sys-color-error-container);
 }
 
 .status-item.clickable {
   cursor: pointer;
   padding: 1px 6px;
-  border-radius: 3px;
+  border-radius: 999px;
   transition: background 0.15s;
 }
 
 .status-item.clickable:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: color-mix(in srgb, var(--md-sys-color-on-primary) 18%, transparent);
 }
 </style>

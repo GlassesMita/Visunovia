@@ -21,6 +21,15 @@ public static class DefaultSettings
     /// <summary>主题设置键名</summary>
     public const string ThemeKey = "Theme";
 
+    /// <summary>Material You 主题种子色键名</summary>
+    public const string SeedColorKey = "SeedColor";
+
+    /// <summary>全局 WebUI 主题风格键名</summary>
+    public const string ThemeStyleKey = "ThemeStyle";
+
+    /// <summary>Material You 主题调色板键名</summary>
+    public const string PaletteKey = "Palette";
+
     /// <summary>编辑器字体大小键名</summary>
     public const string EditorFontSizeKey = "FontSize";
 
@@ -60,6 +69,15 @@ public static class DefaultSettings
 
     /// <summary>默认主题（亮色）</summary>
     public const string DefaultTheme = "light";
+
+    /// <summary>默认 Material You 主题种子色</summary>
+    public const string DefaultSeedColor = "#6750a4";
+
+    /// <summary>默认全局 WebUI 主题风格</summary>
+    public const string DefaultThemeStyle = "material-you";
+
+    /// <summary>默认 Material You 主题调色板</summary>
+    public const string DefaultPalette = "purple";
 
     /// <summary>默认编辑器字体大小（像素）</summary>
     public const int DefaultEditorFontSize = 14;
@@ -144,6 +162,9 @@ public static class DefaultSettings
         {
             LanguageKey => DefaultLanguage,
             ThemeKey => DefaultTheme,
+            SeedColorKey => DefaultSeedColor,
+            ThemeStyleKey => DefaultThemeStyle,
+            PaletteKey => DefaultPalette,
             EditorFontSizeKey => DefaultEditorFontSize,
             AutoSaveIntervalKey => DefaultAutoSaveInterval,
             RecentProjectsLimitKey => DefaultRecentProjectsLimit,
@@ -168,6 +189,9 @@ public static class DefaultSettings
         [
             LanguageKey,
             ThemeKey,
+            SeedColorKey,
+            ThemeStyleKey,
+            PaletteKey,
             EditorFontSizeKey,
             AutoSaveIntervalKey,
             RecentProjectsLimitKey,

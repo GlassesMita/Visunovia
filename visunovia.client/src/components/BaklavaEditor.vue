@@ -275,7 +275,7 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 100%;
-  background-color: #1e1e1e;
+  background-color: var(--md-sys-color-background);
 }
 
 :deep(.visunovia-node-title) {
@@ -292,8 +292,8 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 3px;
-  color: #d4d4d4;
+  border-radius: var(--md-sys-shape-corner-small);
+  color: var(--md-sys-color-on-surface-variant);
   background: transparent;
   cursor: pointer;
   font-size: 18px;
@@ -301,7 +301,7 @@ onUnmounted(() => {
 }
 
 :deep(.visunovia-node-menu-button:hover) {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--md-sys-color-secondary-container);
 }
 
 .visunovia-node-context-menu {
@@ -309,18 +309,18 @@ onUnmounted(() => {
   z-index: 10000;
   min-width: 120px;
   padding: 4px;
-  border: 1px solid #454545;
-  border-radius: 4px;
-  background: #252526;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: var(--md-sys-elevation-2);
 }
 
 .visunovia-node-context-item {
   width: 100%;
   padding: 6px 10px;
   border: 0;
-  border-radius: 3px;
-  color: #f0f0f0;
+  border-radius: var(--md-sys-shape-corner-small);
+  color: var(--md-sys-color-on-surface);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -328,7 +328,7 @@ onUnmounted(() => {
 }
 
 .visunovia-node-context-item:hover {
-  background: #094771;
+  background: var(--md-sys-color-secondary-container);
 }
 
 .visunovia-node-hover-panel {
@@ -340,17 +340,17 @@ onUnmounted(() => {
   max-height: calc(100% - 96px);
   overflow: auto;
   padding: 14px;
-  border: 1px solid rgba(96, 165, 250, 0.35);
-  border-radius: 12px;
-  background: rgba(17, 24, 39, 0.96);
-  color: #e5e7eb;
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-large);
+  background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 94%, transparent);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--md-sys-elevation-2);
   backdrop-filter: blur(10px);
   pointer-events: none;
 }
 
 .visunovia-node-hover-kicker {
-  color: #93c5fd;
+  color: var(--md-sys-color-primary);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -364,7 +364,7 @@ onUnmounted(() => {
 
 .visunovia-node-hover-id {
   margin-top: 3px;
-  color: #94a3b8;
+  color: var(--md-sys-color-on-surface-variant);
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 10px;
   word-break: break-all;
