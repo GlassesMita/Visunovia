@@ -1,6 +1,6 @@
 # Visunovia - Visual Novel Editor
 
-Visunovia 是 Electron 桌面视觉小说编辑器。Vue 渲染器通过 Electron IPC 调用本地 Node.js 后端；项目不再依赖 ASP.NET Core 或 .NET SDK。
+Visunovia 是 Electron 桌面视觉小说工具集。编辑器与播放器使用独立的 Vue + TypeScript 项目，通过同一个 Visual Studio 解决方案管理；项目不依赖 ASP.NET Core 或 .NET SDK。
 
 ## 技术栈
 
@@ -15,7 +15,8 @@ Visunovia 是 Electron 桌面视觉小说编辑器。Vue 渲染器通过 Electro
 Visunovia/
 ├── apps/editor-desktop/      # Electron 主进程、预加载与 Node 后端
 ├── apps/player-desktop/      # Electron 播放器
-├── visunovia.client/         # Vue/Vite 编辑器界面
+├── Visunovia.Editor/         # Vue/TS 编辑器项目（Visunovia.Editor.esproj）
+├── Visunovia.Player/         # Vue/TS 播放器项目（Visunovia.Player.esproj）
 ├── Localizations/            # PO 本地化资源
 ├── tests/                    # Node 与 Electron 回归测试
 └── www_build/                # 前端构建输出
@@ -29,14 +30,22 @@ Visunovia/
 
 ```bash
 npm install
-npm --prefix visunovia.client install
+npm --prefix Visunovia.Editor install
 npm run dev
+```
+
+播放器开发时分别启动播放器前端与 Electron Host：
+
+```bash
+npm run player:client:dev
+npm run player:desktop:dev
 ```
 
 ## 打包与测试
 
 ```bash
 npm run desktop:pack:local
+npm run player:desktop:pack:local
 node --test tests/editor-backend.test.cjs
 npx playwright test tests/editor-electron.spec.ts --project=chromium
 ```
@@ -111,7 +120,7 @@ AppLayout
 
 ### 添加新节点
 
-1. 在 `visunovia.client/src/components/baklava-nodes/` 创建节点文件：
+1. 在 `Visunovia.Editor/src/components/baklava-nodes/` 创建节点文件：
 ```typescript
 // EventNode.ts
 import { defineNode, ExecInterface } from 'baklavajs'

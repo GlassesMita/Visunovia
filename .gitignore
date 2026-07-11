@@ -1,9 +1,11 @@
 # Dependencies
 node_modules/
-visunovia.client/node_modules/
+Visunovia.Editor/node_modules/
+Visunovia.Player/node_modules/
 
 # Frontend and Electron build output
 www_build/
+www_player_build/
 dist-desktop/
 dist-player-desktop/
 release/

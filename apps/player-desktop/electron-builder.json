@@ -14,8 +14,8 @@
       "to": "editor-desktop"
     },
     {
-      "from": "../../www_build",
-      "to": "www_build"
+      "from": "../../www_player_build",
+      "to": "www_player_build"
     },
     {
       "from": "../../LICENSE-PLAYER",

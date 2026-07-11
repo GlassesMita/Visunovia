@@ -17,14 +17,14 @@ function getProjectArg() {
 async function resolvePlayerUrl() {
   const projectPath = getProjectArg()
   if (isDevelopment) {
-    const url = new URL('http://localhost:32423/')
+    const url = new URL('http://localhost:32424/')
     if (projectPath) url.searchParams.set('project', projectPath)
     return url.toString()
   }
 
   frontendServer = await startFrontendServer({
     port: 32524,
-    staticRoot: path.join(repoRoot(), 'www_build'),
+    staticRoot: path.join(repoRoot(), 'www_player_build'),
     app,
   })
   const url = new URL(frontendServer.url)

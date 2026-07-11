@@ -4,17 +4,20 @@
   "description": "Visunovia 是一款基于 Web 的视觉小说编辑器，采用现代化的技术栈，提供直观的节点图编辑器和实时预览功能。",
   "main": "apps/editor-desktop/main.cjs",
   "scripts": {
-    "dev": "concurrently -k -n client,electron -c cyan,green \"npm run client:dev\" \"npm run desktop:dev\"",
-    "client:dev": "npm --prefix visunovia.client run dev",
-    "client:build": "npm --prefix visunovia.client run build",
-    "client:preview": "npm --prefix visunovia.client run preview",
+    "dev": "concurrently -k -n editor,electron -c cyan,green \"npm run editor:dev\" \"npm run desktop:dev\"",
+    "editor:dev": "npm --prefix Visunovia.Editor run dev",
+    "client:dev": "npm --prefix Visunovia.Editor run dev",
+    "client:build": "npm --prefix Visunovia.Editor run build",
+    "client:preview": "npm --prefix Visunovia.Editor run preview",
+    "player:client:dev": "npm --prefix Visunovia.Player run dev",
+    "player:client:build": "npm --prefix Visunovia.Player run build",
     "desktop:dev": "electron apps/editor-desktop/main.cjs --dev",
     "desktop:start": "electron apps/editor-desktop/main.cjs",
     "desktop:pack": "npm run client:build && electron-builder --dir",
     "desktop:pack:local": "npm run client:build && electron-builder --dir --config.electronDist=node_modules/electron/dist",
     "player:desktop:dev": "electron apps/player-desktop/main.cjs --dev",
     "player:desktop:start": "electron apps/player-desktop/main.cjs",
-    "player:desktop:pack:local": "npm run client:build && electron-builder --dir --projectDir apps/player-desktop --config electron-builder.json"
+    "player:desktop:pack:local": "npm run player:client:build && electron-builder --dir --projectDir apps/player-desktop --config electron-builder.json"
   },
   "build": {
     "appId": "com.visunovia.editor",

@@ -1,0 +1,47 @@
+<Solution>
+  <Folder Name="/Documentation/">
+    <File Path="Visunovia_UI_Alpha_Roadmap.md" />
+    <File Path="Visunovia_UI_Modernization_Roadmap.md" />
+  </Folder>
+  <Folder Name="/Electron Hosts/">
+    <File Path="apps/editor-desktop/backend.cjs" />
+    <File Path="apps/editor-desktop/main.cjs" />
+    <File Path="apps/editor-desktop/preload.cjs" />
+    <File Path="apps/player-desktop/main.cjs" />
+    <File Path="apps/player-desktop/package.json" />
+    <File Path="apps/player-desktop/preload.cjs" />
+  </Folder>
+  <Folder Name="/Root/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="package-lock.json" />
+    <File Path="package.json" />
+    <File Path="playwright.config.ts" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <File Path="tests/editor-backend.test.cjs" />
+    <File Path="tests/editor-electron.spec.ts" />
+  </Folder>
+  <Project Path="Visunovia.Editor/Visunovia.Editor.esproj" Type="e53f8fea-eae0-44a6-8774-ffd645390401">
+    <Properties Name="SolutionItems">
+      <Property Name="Visunovia.Editor\index.html" Value="Visunovia.Editor\index.html" />
+      <Property Name="Visunovia.Editor\package.json" Value="Visunovia.Editor\package.json" />
+      <Property Name="Visunovia.Editor\src\App.vue" Value="Visunovia.Editor\src\App.vue" />
+      <Property Name="Visunovia.Editor\src\main.ts" Value="Visunovia.Editor\src\main.ts" />
+      <Property Name="Visunovia.Editor\tsconfig.json" Value="Visunovia.Editor\tsconfig.json" />
+      <Property Name="Visunovia.Editor\tsconfig.node.json" Value="Visunovia.Editor\tsconfig.node.json" />
+      <Property Name="Visunovia.Editor\vite.config.ts" Value="Visunovia.Editor\vite.config.ts" />
+    </Properties>
+  </Project>
+  <Project Path="Visunovia.Player/Visunovia.Player.esproj" Type="e53f8fea-eae0-44a6-8774-ffd645390401">
+    <Properties Name="SolutionItems">
+      <Property Name="Visunovia.Player\index.html" Value="Visunovia.Player\index.html" />
+      <Property Name="Visunovia.Player\package.json" Value="Visunovia.Player\package.json" />
+      <Property Name="Visunovia.Player\src\App.vue" Value="Visunovia.Player\src\App.vue" />
+      <Property Name="Visunovia.Player\src\main.ts" Value="Visunovia.Player\src\main.ts" />
+      <Property Name="Visunovia.Player\tsconfig.json" Value="Visunovia.Player\tsconfig.json" />
+      <Property Name="Visunovia.Player\vite.config.ts" Value="Visunovia.Player\vite.config.ts" />
+    </Properties>
+  </Project>
+</Solution>

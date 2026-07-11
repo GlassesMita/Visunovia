@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <PackageJsonName Condition="$(PackageJsonName) == ''">visunovia-editor</PackageJsonName>
+    <PackageJsonPrivate Condition="$(PackageJsonPrivate) == ''">true</PackageJsonPrivate>
+    <PackageJsonVersion Condition="$(PackageJsonVersion) == ''">0.0.1-alpha</PackageJsonVersion>
+    <PackageJsonType Condition="$(PackageJsonType) == ''">module</PackageJsonType>
+    <PackageJsonScriptsDev Condition="$(PackageJsonScriptsDev) == ''">vite</PackageJsonScriptsDev>
+    <PackageJsonScriptsBuild Condition="$(PackageJsonScriptsBuild) == ''">vite build</PackageJsonScriptsBuild>
+    <PackageJsonScriptsPreview Condition="$(PackageJsonScriptsPreview) == ''">vite preview</PackageJsonScriptsPreview>
+    <PackageJsonScriptsStart Condition="$(PackageJsonScriptsStart) == ''">vite build</PackageJsonScriptsStart>
+    <PackageJsonScriptsStartDev Condition="$(PackageJsonScriptsStartDev) == ''">vite</PackageJsonScriptsStartDev>
+    <PackageJsonScriptsLint Condition="$(PackageJsonScriptsLint) == ''">eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix</PackageJsonScriptsLint>
+    <PackageJsonDependenciesBaklavajsCore Condition="$(PackageJsonDependenciesBaklavajsCore) == ''">^2.8.1</PackageJsonDependenciesBaklavajsCore>
+    <PackageJsonDependenciesBaklavajsEngine Condition="$(PackageJsonDependenciesBaklavajsEngine) == ''">^2.8.1</PackageJsonDependenciesBaklavajsEngine>
+    <PackageJsonDependenciesBaklavajsEvents Condition="$(PackageJsonDependenciesBaklavajsEvents) == ''">^2.8.0</PackageJsonDependenciesBaklavajsEvents>
+    <PackageJsonDependenciesBaklavajsInterfaceTypes Condition="$(PackageJsonDependenciesBaklavajsInterfaceTypes) == ''">^2.8.1</PackageJsonDependenciesBaklavajsInterfaceTypes>
+    <PackageJsonDependenciesBaklavajsRendererVue Condition="$(PackageJsonDependenciesBaklavajsRendererVue) == ''">^2.8.1</PackageJsonDependenciesBaklavajsRendererVue>
+    <PackageJsonDependenciesBaklavajsThemes Condition="$(PackageJsonDependenciesBaklavajsThemes) == ''">^2.8.1</PackageJsonDependenciesBaklavajsThemes>
+    <PackageJsonDependenciesTypesMarkdownIt Condition="$(PackageJsonDependenciesTypesMarkdownIt) == ''">^14.1.2</PackageJsonDependenciesTypesMarkdownIt>
+    <PackageJsonDependenciesVueuseCore Condition="$(PackageJsonDependenciesVueuseCore) == ''">^10.7.0</PackageJsonDependenciesVueuseCore>
+    <PackageJsonDependenciesAceBuilds Condition="$(PackageJsonDependenciesAceBuilds) == ''">^1.44.0</PackageJsonDependenciesAceBuilds>
+    <PackageJsonDependenciesAxios Condition="$(PackageJsonDependenciesAxios) == ''">^1.6.0</PackageJsonDependenciesAxios>
+    <PackageJsonDependenciesBaklavajs Condition="$(PackageJsonDependenciesBaklavajs) == ''">^2.8.1</PackageJsonDependenciesBaklavajs>
+    <PackageJsonDependenciesChiptune3 Condition="$(PackageJsonDependenciesChiptune3) == ''">^0.8.7</PackageJsonDependenciesChiptune3>
+    <PackageJsonDependenciesClsx Condition="$(PackageJsonDependenciesClsx) == ''">^2.1.1</PackageJsonDependenciesClsx>
+    <PackageJsonDependenciesDompurify Condition="$(PackageJsonDependenciesDompurify) == ''">^3.4.9</PackageJsonDependenciesDompurify>
+    <PackageJsonDependenciesLucideVueNext Condition="$(PackageJsonDependenciesLucideVueNext) == ''">^0.300.0</PackageJsonDependenciesLucideVueNext>
+    <PackageJsonDependenciesMarkdownIt Condition="$(PackageJsonDependenciesMarkdownIt) == ''">^14.2.0</PackageJsonDependenciesMarkdownIt>
+    <PackageJsonDependenciesPinia Condition="$(PackageJsonDependenciesPinia) == ''">^2.1.0</PackageJsonDependenciesPinia>
+    <PackageJsonDependenciesPixiJs Condition="$(PackageJsonDependenciesPixiJs) == ''">^8.19.0</PackageJsonDependenciesPixiJs>
+    <PackageJsonDependenciesTailwindMerge Condition="$(PackageJsonDependenciesTailwindMerge) == ''">^3.6.0</PackageJsonDependenciesTailwindMerge>
+    <PackageJsonDependenciesVue Condition="$(PackageJsonDependenciesVue) == ''">^3.4.0</PackageJsonDependenciesVue>
+    <PackageJsonDependenciesVueRouter Condition="$(PackageJsonDependenciesVueRouter) == ''">^4.2.0</PackageJsonDependenciesVueRouter>
+    <PackageJsonDevdependenciesVitejsPluginVue Condition="$(PackageJsonDevdependenciesVitejsPluginVue) == ''">^5.0.0</PackageJsonDevdependenciesVitejsPluginVue>
+    <PackageJsonDevdependenciesVueTsconfig Condition="$(PackageJsonDevdependenciesVueTsconfig) == ''">^0.5.0</PackageJsonDevdependenciesVueTsconfig>
+    <PackageJsonDevdependenciesAutoprefixer Condition="$(PackageJsonDevdependenciesAutoprefixer) == ''">^10.4.16</PackageJsonDevdependenciesAutoprefixer>
+    <PackageJsonDevdependenciesPostcss Condition="$(PackageJsonDevdependenciesPostcss) == ''">^8.4.32</PackageJsonDevdependenciesPostcss>
+    <PackageJsonDevdependenciesTailwindcss Condition="$(PackageJsonDevdependenciesTailwindcss) == ''">^3.4.0</PackageJsonDevdependenciesTailwindcss>
+    <PackageJsonDevdependenciesTypescript Condition="$(PackageJsonDevdependenciesTypescript) == ''">~5.3.0</PackageJsonDevdependenciesTypescript>
+    <PackageJsonDevdependenciesVite Condition="$(PackageJsonDevdependenciesVite) == ''">^5.0.0</PackageJsonDevdependenciesVite>
+    <PackageJsonDevdependenciesVueTsc Condition="$(PackageJsonDevdependenciesVueTsc) == ''">^1.8.0</PackageJsonDevdependenciesVueTsc>
+  </PropertyGroup>
+</Project>
