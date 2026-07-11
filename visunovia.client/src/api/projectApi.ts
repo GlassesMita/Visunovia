@@ -75,6 +75,7 @@ export async function createProject(
     throw new Error('项目创建失败')
   }
 
+  window.dispatchEvent(new CustomEvent('visunovia:project-changed'))
   return response.data.data
 }
 
@@ -95,6 +96,7 @@ export async function importProject(projectPath: string): Promise<ProjectParseRe
     throw new Error(response.data?.error || response.data?.message || '项目导入失败')
   }
 
+  window.dispatchEvent(new CustomEvent('visunovia:project-changed'))
   return response.data.data
 }
 

@@ -1,0 +1,29 @@
+{
+  "productName": "VisunoviaPlayer",
+  "electronVersion": "43.1.0",
+  "directories": {
+    "output": "../../dist-player-desktop"
+  },
+  "electronDist": "../../node_modules/electron/dist",
+  "files": [
+    "**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "../editor-desktop",
+      "to": "editor-desktop"
+    },
+    {
+      "from": "../../www_build",
+      "to": "www_build"
+    },
+    {
+      "from": "../../LICENSE-PLAYER",
+      "to": "LICENSE-PLAYER.txt"
+    }
+  ],
+  "asar": true,
+  "win": {
+    "target": ["dir"]
+  }
+}

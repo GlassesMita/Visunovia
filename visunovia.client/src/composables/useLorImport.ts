@@ -3,7 +3,7 @@ import { useLorToBlueprint } from './useLorToBlueprint'
 import { useNodeOperations } from './useNodeOperations'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
-import { fileBrowserApi } from '@/api'
+import { readTextFile } from '@/api/fileBrowser'
 
 /**
  * Lor 文件导入 composable
@@ -90,13 +90,13 @@ export function useLorImport() {
     
     try {
       // 读取文件内容
-      const response = await fileBrowserApi.read(lorFilePath)
-      
-      if (!response.data?.content) {
+      const file = await readTextFile(lorFilePath)
+
+      if (!file.content) {
         throw new Error(`无法读取文件: ${lorFilePath}`)
       }
-      
-      return await importFromContent(response.data.content, sceneId, options)
+
+      return await importFromContent(file.content, sceneId, options)
     } catch (error) {
       importError.value = error instanceof Error ? error.message : '文件读取失败'
       return false

@@ -1,3 +1,5 @@
+import { resolveBackendUrl } from './backendUrl'
+
 export type AssetFolder = 'Backgrounds' | 'Characters' | 'Musics' | 'Sfx' | 'Voices' | 'Emoji'
 
 const ASSET_FOLDER_ALIASES: Record<AssetFolder, string[]> = {
@@ -50,15 +52,15 @@ export function resolveAssetUrl(path: string, folder: AssetFolder) {
 
   const assetPath = toAssetPath(rawPath)
   if (assetPath.toLowerCase().startsWith('assets/')) {
-    return `/api/resources/file/${assetPath.split('/').map(encodeURIComponent).join('/')}`
+    return resolveBackendUrl(`/api/resources/file/${assetPath.split('/').map(encodeURIComponent).join('/')}`)
   }
 
   if (isAbsoluteFilePath(rawPath)) {
-    return `/api/FileBrowser/preview?path=${encodeURIComponent(rawPath)}`
+    return resolveBackendUrl(`/api/FileBrowser/preview?path=${encodeURIComponent(rawPath)}`)
   }
 
   const folderRelativePath = toFolderRelativeAssetPath(rawPath, folder)
-  return `/api/resources/file/Assets/${folder}/${folderRelativePath.split('/').map(encodeURIComponent).join('/')}`
+  return resolveBackendUrl(`/api/resources/file/Assets/${folder}/${folderRelativePath.split('/').map(encodeURIComponent).join('/')}`)
 }
 
 export function normalizeKnownAssetProperty(key: string, value: unknown, parentKey = '') {

@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "vite build",
-    "start:dev": "dotnet run --project ../Visunovia.csproj --no-newtab",
+    "start:dev": "vite",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix"
   },
   "dependencies": {
@@ -20,13 +20,16 @@
     "@baklavajs/themes": "^2.8.1",
     "@types/markdown-it": "^14.1.2",
     "@vueuse/core": "^10.7.0",
+    "ace-builds": "^1.44.0",
     "axios": "^1.6.0",
     "baklavajs": "^2.8.1",
+    "chiptune3": "^0.8.7",
     "clsx": "^2.1.1",
     "dompurify": "^3.4.9",
     "lucide-vue-next": "^0.300.0",
     "markdown-it": "^14.2.0",
     "pinia": "^2.1.0",
+    "pixi.js": "^8.19.0",
     "tailwind-merge": "^3.6.0",
     "vue": "^3.4.0",
     "vue-router": "^4.2.0"

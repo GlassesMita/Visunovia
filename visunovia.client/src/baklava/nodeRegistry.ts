@@ -2,6 +2,7 @@ import { Editor } from '@baklavajs/core'
 import StartNode from '@/components/baklava-nodes/StartNode'
 import EndNode from '@/components/baklava-nodes/EndNode'
 import EventNode from '@/components/baklava-nodes/EventNode'
+import CustomEventNode from '@/components/baklava-nodes/CustomEventNode'
 import DialogueNode from '@/components/baklava-nodes/DialogueNode'
 import BranchNode from '@/components/baklava-nodes/BranchNode'
 import LogicNode from '@/components/baklava-nodes/LogicNode'
@@ -24,7 +25,7 @@ export const nodeCategories: NodeCategory[] = [
   {
     name: 'event',
     labelKey: 'Events',
-    nodes: [EventNode],
+    nodes: [EventNode, CustomEventNode],
   },
   {
     name: 'dialogue',

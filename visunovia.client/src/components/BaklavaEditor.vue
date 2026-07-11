@@ -74,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, reactive, shallowRef } from 'vue'
+import { onMounted, onUnmounted, reactive, shallowRef, watch } from 'vue'
 import { BaklavaEditor, Components, useBaklava } from '@baklavajs/renderer-vue'
 import { registerAllNodes } from '@/baklava/nodeRegistry'
 import { characterSelectOptions } from '@/services/characterOptions'
@@ -105,6 +105,39 @@ const hoverPanel = reactive({
   visible: false,
   node: null as any,
 })
+
+watch(
+  () => {
+    const graph = baklava.value?.displayedGraph
+    if (!graph) return []
+
+    return graph.nodes.map((node: any) => ({
+      id: node.id,
+      x: node.position.x,
+      y: node.position.y,
+    }))
+  },
+  (positions, previousPositions) => {
+    if (!isInitialized.value || positions.length !== previousPositions.length) return
+
+    const previousById = new Map(
+      previousPositions.map(position => [position.id, position])
+    )
+    const hasSameNodes = positions.every(position => previousById.has(position.id))
+    if (!hasSameNodes) return
+
+    const positionChanged = positions.some((position) => {
+      const previousPosition = previousById.get(position.id)
+      return previousPosition &&
+        (position.x !== previousPosition.x || position.y !== previousPosition.y)
+    })
+    if (!positionChanged) return
+
+    nodeGraphStore.syncNodes()
+    nodeGraphStore.markDirty()
+  },
+  { flush: 'post' }
+)
 
 function handleNodeTitlePointerDown(ev: PointerEvent, onSelect: (event?: any) => void, onStartDrag: (event: PointerEvent) => void) {
   closeNodeMenu()

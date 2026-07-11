@@ -1,5 +1,6 @@
 import { defineDynamicNode, NodeInterface } from '@baklavajs/core'
 import { TextInputInterface } from '@baklavajs/renderer-vue'
+import { tSync } from '@/services/translationService'
 import {
   ARROW_SYMBOL,
   createExecInPort,
@@ -58,7 +59,10 @@ export default defineDynamicNode({
     for (let i = 1; i <= count; i++) {
       // 每个选项对应一个 TextInput（选项文本）和一个 execOut 端口
       inputs[`choiceText_${i}`] = () =>
-        new TextInputInterface(`Option ${i}`, '')
+        new TextInputInterface(`${tSync('choice.option', 'Option')} ${i}`, '')
+
+      inputs[`choiceText_${i}Key`] = () =>
+        new TextInputInterface(`${tSync('props.localizationKey', 'Localization Key')} ${i}`, '')
 
       outputs[`execOut_${i}`] = () =>
         new NodeInterface(ARROW_SYMBOL, undefined).setPort(true)

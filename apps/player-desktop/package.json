@@ -1,0 +1,8 @@
+{
+  "name": "visunovia-player",
+  "version": "1.0.0",
+  "description": "Standalone runtime player for Visunovia projects",
+  "main": "main.cjs",
+  "type": "commonjs",
+  "license": "BSD-3-Clause"
+}

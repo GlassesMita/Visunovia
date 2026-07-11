@@ -1,32 +1,57 @@
-import axios, { AxiosInstance, AxiosError } from 'axios'
+import type { AxiosResponse } from 'axios'
 import type { ApiResponse, VNSceneGraph, VNNode, VNEdge } from '@/types'
-import { reportBackendRequestFailure, reportBackendRequestSuccess } from '@/composables/useBackendConnectionMonitor'
+import { createBackendProvider, toAxiosLikeResponse } from './backendProvider'
+import { resolveBackendUrl } from '@/utils/backendUrl'
 
-const apiClient: AxiosInstance = axios.create({
-  baseURL: '/api',
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
+const backendProvider = createBackendProvider()
 
-apiClient.interceptors.response.use(
-  (response) => {
-    reportBackendRequestSuccess(response.status)
-    return response
+export function isDesktopBackend(): boolean {
+  return window.visunoviaDesktop?.platform === 'electron'
+}
+
+const apiClient = {
+  async get<T = unknown>(url: string, config?: { params?: unknown; headers?: Record<string, string> }): Promise<AxiosResponse<T>> {
+    const response = await backendProvider.request<T>({
+      method: 'GET',
+      url,
+      params: config?.params,
+      headers: config?.headers,
+    })
+    return toAxiosLikeResponse(response)
   },
-  (error: AxiosError) => {
-    const message = (error.response?.data as { message?: string })?.message || error.message
-    console.error('API Error:', message)
-    const status = error.response?.status
-    if (!status || status >= 500) {
-      reportBackendRequestFailure(error)
-    } else {
-      reportBackendRequestSuccess(status)
-    }
-    return Promise.reject(error)
-  }
-)
+
+  async post<T = unknown>(url: string, data?: unknown, config?: { params?: unknown; headers?: Record<string, string> }): Promise<AxiosResponse<T>> {
+    const response = await backendProvider.request<T>({
+      method: 'POST',
+      url,
+      data,
+      params: config?.params,
+      headers: config?.headers,
+    })
+    return toAxiosLikeResponse(response)
+  },
+
+  async put<T = unknown>(url: string, data?: unknown, config?: { params?: unknown; headers?: Record<string, string> }): Promise<AxiosResponse<T>> {
+    const response = await backendProvider.request<T>({
+      method: 'PUT',
+      url,
+      data,
+      params: config?.params,
+      headers: config?.headers,
+    })
+    return toAxiosLikeResponse(response)
+  },
+
+  async delete<T = unknown>(url: string, config?: { params?: unknown; headers?: Record<string, string> }): Promise<AxiosResponse<T>> {
+    const response = await backendProvider.request<T>({
+      method: 'DELETE',
+      url,
+      params: config?.params,
+      headers: config?.headers,
+    })
+    return toAxiosLikeResponse(response)
+  },
+}
 
 export async function getSceneGraph(id: string): Promise<ApiResponse<VNSceneGraph>> {
   const response = await apiClient.get(`/scenegraphs/${id}`)
@@ -316,7 +341,7 @@ export const jsonConversionApi = {
     if (options?.description) params.set('description', options.description)
     if (options?.author) params.set('author', options.author)
     const qs = params.toString() ? `?${params.toString()}` : ''
-    return `/api/json/download/${sceneId}${qs}`
+    return resolveBackendUrl(`/api/json/download/${sceneId}${qs}`)
   },
 
   /** 从 JSON 内容导入蓝图 */

@@ -117,6 +117,24 @@ msgstr "匯入成功！"
 msgid "lorImport.processing"
 msgstr "處理中..."
 
+msgid "props.localizationKey"
+msgstr "本地化鍵"
+
+msgid "dialogue.speakerKey"
+msgstr "說話人本地化鍵"
+
+msgid "choice.option"
+msgstr "選項"
+
+msgid "runtime.branch.yes"
+msgstr "是"
+
+msgid "runtime.branch.no"
+msgstr "否"
+
+msgid "runtime.choice.fallback"
+msgstr "選項"
+
 msgid "lorImport.importAndConvert"
 msgstr "匯入並轉換"
 
@@ -823,6 +841,9 @@ msgstr "深色"
 msgid "settings.theme.system"
 msgstr "跟隨系統"
 
+msgid "settings.system"
+msgstr "跟隨系統"
+
 msgid "preferences.title"
 msgstr "偏好設定"
 
@@ -1472,6 +1493,24 @@ msgstr "播放音樂"
 msgid "eventTypes.stopBgm"
 msgstr "停止音樂"
 
+msgid "eventTypes.playMod"
+msgstr "播放 MOD 音樂"
+
+msgid "eventTypes.stopMod"
+msgstr "停止 MOD 音樂"
+
+msgid "eventTypes.pauseMod"
+msgstr "暫停 MOD 音樂"
+
+msgid "eventTypes.resumeMod"
+msgstr "繼續 MOD 音樂"
+
+msgid "eventTypes.seekMod"
+msgstr "跳轉 MOD 播放位置"
+
+msgid "eventTypes.setModVolume"
+msgstr "設定 MOD 音量"
+
 msgid "eventTypes.playSfx"
 msgstr "播放音效"
 
@@ -1496,6 +1535,12 @@ msgstr "螢幕淡入淡出"
 # Event Properties
 msgid "eventProps.bgmPath"
 msgstr "音樂路徑"
+
+msgid "eventProps.modPath"
+msgstr "MOD 檔案路徑"
+
+msgid "eventProps.position"
+msgstr "播放位置（秒）"
 
 msgid "eventProps.volume"
 msgstr "音量"

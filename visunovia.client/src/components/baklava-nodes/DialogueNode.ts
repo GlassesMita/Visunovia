@@ -38,6 +38,8 @@ export default defineNode({
     voice4: createVoiceInput(4),
     voice5: createVoiceInput(5),
     text: () => new TextInputInterface(tSync('props.text', 'Text'), ''),
+    textKey: () => new TextInputInterface(tSync('props.localizationKey', 'Localization Key'), ''),
+    speakerKey: () => new TextInputInterface(tSync('dialogue.speakerKey', 'Speaker Localization Key'), ''),
   },
   outputs: {
     execOut: createExecOutPort(ARROW_SYMBOL),

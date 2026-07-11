@@ -419,8 +419,12 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
   }
 
   function updateNodeProperty(_nodeId: string, _propertyName: string, _value: any) {
-    isDirty.value = true
+    markDirty()
     captureUndoState('Update Property')
+  }
+
+  function markDirty() {
+    isDirty.value = true
     scheduleAutoSave()
   }
 
@@ -575,6 +579,7 @@ export const useNodeGraphStore = defineStore('nodeGraph', () => {
     addNode,
     removeNode,
     updateNodeProperty,
+    markDirty,
     alignNodesToGrid,
     serializeGraph,
     deserializeGraph,

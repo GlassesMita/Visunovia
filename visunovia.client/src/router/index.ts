@@ -1,7 +1,11 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 import { useLocalizationStore } from '@/stores/useLocalizationStore'
 
 function normalizeLegacyHashRoute() {
+  if (window.location.protocol === 'visunovia:') {
+    return
+  }
+
   const { pathname, search, hash } = window.location
 
   if (!hash.startsWith('#/')) return
@@ -16,12 +20,17 @@ function normalizeLegacyHashRoute() {
 normalizeLegacyHashRoute()
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: window.location.protocol === 'visunovia:' ? createWebHashHistory() : createWebHistory(),
   routes: [
     {
       path: '/',
       name: 'editor',
       component: () => import('@/pages/EditorPage.vue')
+    },
+    {
+      path: '/Welcome',
+      name: 'welcome',
+      component: () => import('@/pages/WelcomePage.vue')
     },
     {
       path: '/Preferences',
@@ -34,18 +43,27 @@ const router = createRouter({
       name: 'project-settings',
       alias: '/project-settings',
       component: () => import('@/pages/ProjectSettingsPage.vue')
+    },
+    {
+      path: '/About',
+      name: 'about',
+      alias: '/about',
+      component: () => import('@/pages/AboutPage.vue')
+    },
+    {
+      path: '/Console',
+      name: 'console',
+      alias: '/console',
+      component: () => import('@/pages/ConsolePage.vue')
     }
   ]
 })
 
-router.beforeEach(async (to, _from, next) => {
-  // 仅编辑器主页面需要等待本地化初始化
-  // Preferences/About 等 Popup 页面使用内置 i18n 兜底，无需等待后端
-  if (to.name === 'editor' || to.path === '/') {
-    const localizationStore = useLocalizationStore()
-    if (!localizationStore.isReady && !localizationStore.isLoading) {
-      await localizationStore.initialize()
-    }
+router.beforeEach(async (_to, _from, next) => {
+  // 所有页面（包括 Preferences/About 弹窗）都需要等待本地化初始化完成
+  const localizationStore = useLocalizationStore()
+  if (!localizationStore.isReady && !localizationStore.isLoading) {
+    await localizationStore.initialize()
   }
   next()
 })

@@ -16,6 +16,7 @@ export interface LorScene {
   dialogues: LorDialogue[]
   nodes?: SerializedNode[]
   connections?: SerializedConnection[]
+  edges?: SerializedConnection[]
 }
 
 export interface LorDialogue {
@@ -525,8 +526,9 @@ export function useLorToBlueprint() {
         return nodeId
       }
 
-      const connections = Array.isArray(scene.connections)
-        ? scene.connections.map((connection) => ({
+      const savedConnections = Array.isArray(scene.connections) ? scene.connections : scene.edges
+      const connections = Array.isArray(savedConnections)
+        ? savedConnections.map((connection) => ({
             ...connection,
             uuid: connection.uuid || connection.id,
             id: connection.id || connection.uuid,

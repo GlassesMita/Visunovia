@@ -43,6 +43,7 @@ import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
 import { useNodeOperations } from '@/composables/useNodeOperations'
 import { getCurrentProject } from '@/api/projectApi'
 import { quitApplication } from '@/api/systemApi'
+import { resolveAppRoute } from '@/utils/appRoutes'
 
 interface MenuItem {
   key: string
@@ -69,7 +70,8 @@ const { saveSceneGraph, loadSceneGraph, newGraph } = useNodeOperations()
 const activeMenu = ref<string | null>(null)
 const projectName = ref('Visunovia')
 const sceneName = computed(() => nodeGraphStore.currentSceneId || editorStore.currentFileName.replace(/\.lor$/i, '') || 'Untitled')
-const windowTitle = computed(() => `${projectName.value} - ${sceneName.value}`)
+const sceneTitle = computed(() => `${sceneName.value}${nodeGraphStore.isDirty ? ' [*]' : ''}`)
+const windowTitle = computed(() => `${projectName.value} - ${sceneTitle.value} - Visunovia`)
 
 const menus = computed<Menu[]>(() => [
   {
@@ -112,6 +114,7 @@ const menus = computed<Menu[]>(() => [
         action: 'toggleConsole',
         checked: uiStore.showConsolePanel 
       },
+      { key: 'consoleWindow', labelKey: 'Console Window', action: 'openConsoleWindow' },
       { key: 'divider1', labelKey: '', divider: true },
       { key: 'fullscreen', labelKey: '全屏', action: 'toggleFullscreen', shortcut: 'F11', checked: Boolean(document.fullscreenElement) },
       { key: 'divider2', labelKey: '', divider: true },
@@ -191,18 +194,21 @@ function executeAction(action: string) {
     case 'toggleConsole':
       uiStore.togglePanel('console')
       break
+    case 'openConsoleWindow':
+      window.open(resolveAppRoute('/Console'), 'VisunoviaConsole', 'width=960,height=600,scrollbars=no,resizable=yes')
+      break
     case 'toggleFullscreen':
       toggleFullscreen()
       break
     case 'openPreferences':
       // 使用 window.open 打开独立的 Preferences 窗口（Popup）
       // 使用 hash 路径以确保在构建后也能正确路由
-        window.open('/Preferences', 'Preferences', 'width=800,height=600,scrollbars=yes,resizable=yes')
+        window.open(resolveAppRoute('/Preferences'), 'Preferences', 'width=800,height=600,scrollbars=yes,resizable=no')
       break
     case 'showAbout':
       // 使用 window.open 打开独立的 About 窗口（Popup）
       // 使用 hash 路径以确保在构建后也能正确路由
-        window.open('/About', 'About', 'width=600,height=500,scrollbars=yes,resizable=yes')
+        window.open(resolveAppRoute('/About'), 'About', 'width=720,height=560,scrollbars=yes,resizable=no')
       break
     default:
       console.log('Action not implemented:', action)
@@ -240,13 +246,31 @@ watch(
   }
 )
 
+watch(
+  () => uiStore.projectInfoRefreshToken,
+  () => {
+    refreshProjectName()
+  }
+)
+
+watch(
+  windowTitle,
+  (title) => {
+    document.title = title
+    window.visunoviaDesktop?.setWindowTitle?.(title)
+  },
+  { immediate: true }
+)
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  window.addEventListener('visunovia:project-changed', refreshProjectName)
   refreshProjectName()
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('visunovia:project-changed', refreshProjectName)
 })
 </script>
 
@@ -262,14 +286,13 @@ onUnmounted(() => {
 
 .menu-title {
   position: absolute;
-  left: 50%;
+  right: 12px;
   top: 50%;
-  max-width: 52vw;
-  transform: translate(-50%, -50%);
-  color: #d6d6d6;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
+  max-width: 34vw;
+  transform: translateY(-50%);
+  color: #a8a8a8;
+  font-size: 12px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

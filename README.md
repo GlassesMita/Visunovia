@@ -1,123 +1,44 @@
 # Visunovia - Visual Novel Editor
 
-## 📖 项目介绍
+Visunovia 是 Electron 桌面视觉小说编辑器。Vue 渲染器通过 Electron IPC 调用本地 Node.js 后端；项目不再依赖 ASP.NET Core 或 .NET SDK。
 
-Visunovia 是一款基于 Web 的视觉小说编辑器，采用现代化的技术栈，提供直观的节点图编辑器和实时预览功能。
+## 技术栈
 
-### 核心特性
+- Electron 43：桌面进程、窗口与安全 IPC。
+- Node.js：项目、资源、场景图和本地化文件操作。
+- Vue 3、Vite、Pinia、BaklavaJS：编辑器与节点图。
+- ACE：自定义事件脚本的 C# 语法高亮编辑器，使用 `Cascadia Code`，并回退到 `Microsoft YaHei UI`、`Noto Sans CJK SC`。
 
-- 🎨 **节点图编辑器**：使用 BaklavaJS 构建的可视化节点编辑器
-- 🌐 **多语言支持**：内置中英文国际化支持
-- ⚡ **实时预览**：支持实时预览视觉小说内容
-- 📦 **模块化架构**：基于 Vue 3 + Pinia 的现代化前端架构
-- 🔧 **跨平台**：基于 ASP.NET Core 的后端服务
-
-## 🛠 技术栈
-
-### 前端技术
-- **框架**：Vue 3.5+ (Composition API)
-- **构建工具**：Vite 5.4+
-- **节点图引擎**：BaklavaJS 2.8+
-- **状态管理**：Pinia 2.3+
-- **路由**：Vue Router 4.2+
-- **国际化**：vue-i18n 9.14+
-- **样式**：Tailwind CSS 3.4+
-- **图标**：Lucide Vue Next
-
-### 后端技术
-- **框架**：ASP.NET Core 10.0
-- **本地化**：自定义 PO 文件解析器
-- **配置**：JSON 配置管理
-
-## 📁 目录结构
+## 目录
 
 ```
 Visunovia/
-├── Controllers/              # API 控制器
-├── Localizations/           # 本地化资源文件（.po）
-├── Middleware/              # 自定义中间件
-├── Models/                  # 数据模型
-├── Pages/                   # Razor Pages
-├── Properties/              # 项目属性
-├── Services/                # 业务服务层
-├── visunovia.client/        # Vue/Vite 独立客户端项目
-│   ├── src/
-│   │   ├── components/     # Vue 组件
-│   │   │   ├── baklava-nodes/  # BaklavaJS 节点定义
-│   │   │   ├── dialogs/    # 对话框组件
-│   │   │   ├── layout/     # 布局组件
-│   │   │   └── panels/     # 面板组件
-│   │   ├── composables/    # Vue Composables
-│   │   ├── i18n/          # 国际化配置
-│   │   ├── pages/         # 页面组件
-│   │   ├── router/        # 路由配置
-│   │   ├── stores/        # Pinia 状态管理
-│   │   └── types/         # TypeScript 类型定义
-│   ├── index.html
-│   ├── package.json
-│   └── vite.config.ts
-├── wwwroot/                 # Razor Pages 静态资源
-│   ├── css/               # 样式文件
-│   ├── fonts/              # 字体文件
-│   ├── js/                # JavaScript 文件
-│   └── lib/               # 第三方库
-├── www_build/              # Vue 前端构建产物
-├── scripts/                # 构建脚本
-├── Program.cs              # 程序入口
-├── Visunovia.csproj        # 项目文件
-└── Visunovia.sln           # 解决方案文件
+├── apps/editor-desktop/      # Electron 主进程、预加载与 Node 后端
+├── apps/player-desktop/      # Electron 播放器
+├── visunovia.client/         # Vue/Vite 编辑器界面
+├── Localizations/            # PO 本地化资源
+├── tests/                    # Node 与 Electron 回归测试
+└── www_build/                # 前端构建输出
 ```
 
-## 🚀 快速开始
+项目中的自定义事件脚本会保存为 `Assets/CustomScripts/<node-id>.csx`。场景图只保存 `scriptRef`，读取时 Electron 后端回填源代码给 ACE 编辑器。
 
-### 环境要求
+## 开发
 
-- **Node.js**: 18.0+ 
-- **.NET SDK**: 10.0+
-- **操作系统**: Windows 10/11
-
-### 安装依赖
+需要 Node.js 18+ 与 Windows/macOS/Linux 支持的 Electron 环境。
 
 ```bash
-# 安装前端依赖
-cd visunovia.client
 npm install
-```
-
-### 开发模式
-
-#### 方式 1：前端独立开发
-```bash
-cd visunovia.client
+npm --prefix visunovia.client install
 npm run dev
 ```
 
-#### 方式 2：完整开发（推荐）
-```bash
-# 终端 1：启动前端开发服务器
-cd visunovia.client
-npm run dev
-
-# 终端 2：启动后端服务
-cd ..
-dotnet run
-```
-
-服务器将在 `http://127.0.0.1:32523` 启动，并自动打开浏览器。
-
-### 生产构建
+## 打包与测试
 
 ```bash
-# 1. 构建前端
-cd visunovia.client
-npm run build
-
-# 2. 编译后端（自动复制前端构建产物）
-cd ..
-dotnet build
-
-# 3. 发布
-dotnet publish -c Release
+npm run desktop:pack:local
+node --test tests/editor-backend.test.cjs
+npx playwright test tests/editor-electron.spec.ts --project=chromium
 ```
 
 ## 🎯 项目架构
@@ -246,65 +167,22 @@ const routes = [
 ]
 ```
 
-### 添加 API 接口
+### 添加本地化文本
 
-1. 创建控制器：
-```csharp
-// Controllers/NewController.cs
-[ApiController]
-[Route("api/[controller]")]
-public class NewController : ControllerBase
-{
-    [HttpGet]
-    public IActionResult Get()
-    {
-        return Ok(new { message = "Hello" });
-    }
-}
-```
-
-2. 添加本地化文本（可选）：
+在 `Localizations` 中添加 PO 条目：
 ```po
-msgid "NewController.Message"
-msgstr "你好"
+msgid "nodes.customEvent"
+msgstr "自定义事件"
 ```
 
 ## 📦 构建产物
 
-### 目录结构
-
-```
-bin/
-└── Debug/
-    └── net10.0/
-        ├── Visunovia.dll          # 主程序集
-        ├── Visunovia.exe          # 可执行文件
-        └── wwwroot/              # 前端构建产物
-            ├── index.html
-            ├── assets/
-            │   ├── index-*.js
-            │   ├── baklavajs-*.js
-            │   └── vue-vendor-*.js
-            ├── css/
-            ├── js/
-            └── ...
-```
-
-### 部署
-
-发布后的 `wwwroot` 目录包含所有前端资源，无需额外配置即可部署。
+`npm run desktop:pack:local` 在 `dist-desktop/win-unpacked` 生成可运行的 Electron 编辑器。
 
 ## 🐛 调试
 
-### 前端调试
-- 启动开发服务器：`npm run dev`
-- 打开浏览器 DevTools
-- 使用 Vue DevTools 监控状态
-
-### 后端调试
-- 使用 Visual Studio 或 VS Code
-- 设置断点
-- 使用 `dotnet watch run` 启用热重载
+- 使用 `npm run dev` 启动 Vite 与 Electron。
+- 从 Electron DevTools 检查渲染器，使用终端输出检查 Node 后端。
 
 ## 📚 相关文档
 
@@ -317,4 +195,10 @@ bin/
 
 ## 📄 许可证
 
-本项目采用专有许可证。
+本仓库采用分组件授权：
+
+- **Visunovia 编辑器及开发工具**：采用 [GNU GPL version 3 only](./LICENSE)。分发修改版本时须遵守 GPLv3 的源代码开放要求。
+- **面向最终用户分发的独立播放器**：其第一方播放器组件采用 [BSD 3-Clause License](./LICENSE-PLAYER)，允许商业使用、闭源分发和二次修改，但未经书面许可不得使用“Visunovia”或贡献者名称为衍生产品背书或宣传。
+- 第三方组件仍分别适用其自身许可证。
+
+独立播放器许可证不适用于编辑器、编辑器专用源代码或开发工具。

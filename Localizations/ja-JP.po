@@ -16,6 +16,24 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+msgid "props.localizationKey"
+msgstr "ローカライズキー"
+
+msgid "dialogue.speakerKey"
+msgstr "話者ローカライズキー"
+
+msgid "choice.option"
+msgstr "選択肢"
+
+msgid "runtime.branch.yes"
+msgstr "はい"
+
+msgid "runtime.branch.no"
+msgstr "いいえ"
+
+msgid "runtime.choice.fallback"
+msgstr "選択肢"
+
 #. Display Language
 msgid "Common.LanguageDisplayName"
 msgstr "日本語"
@@ -823,6 +841,9 @@ msgstr "ダーク"
 msgid "settings.theme.system"
 msgstr "システムに従う"
 
+msgid "settings.system"
+msgstr "システムに従う"
+
 msgid "preferences.title"
 msgstr "設定"
 
@@ -1472,6 +1493,24 @@ msgstr "BGM再生"
 msgid "eventTypes.stopBgm"
 msgstr "BGM停止"
 
+msgid "eventTypes.playMod"
+msgstr "MOD音楽を再生"
+
+msgid "eventTypes.stopMod"
+msgstr "MOD音楽を停止"
+
+msgid "eventTypes.pauseMod"
+msgstr "MOD音楽を一時停止"
+
+msgid "eventTypes.resumeMod"
+msgstr "MOD音楽を再開"
+
+msgid "eventTypes.seekMod"
+msgstr "MOD音楽の再生位置を変更"
+
+msgid "eventTypes.setModVolume"
+msgstr "MOD音楽の音量を設定"
+
 msgid "eventTypes.playSfx"
 msgstr "効果音再生"
 
@@ -1496,6 +1535,12 @@ msgstr "フェード"
 # Event Properties
 msgid "eventProps.bgmPath"
 msgstr "BGMパス"
+
+msgid "eventProps.modPath"
+msgstr "MODファイルパス"
+
+msgid "eventProps.position"
+msgstr "再生位置（秒）"
 
 msgid "eventProps.volume"
 msgstr "音量"

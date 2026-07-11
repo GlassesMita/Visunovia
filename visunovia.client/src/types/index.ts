@@ -113,6 +113,7 @@ export enum NodeType {
   Start = 'StartNode',
   End = 'EndNode',
   Event = 'EventNode',
+  CustomEvent = 'CustomEventNode',
   Dialogue = 'DialogueNode',
   CharacterControl = 'CharacterControlNode',
   Branch = 'BranchNode',
@@ -123,6 +124,12 @@ export enum NodeType {
 export enum EventType {
   PlayBGM = 'playBgm',
   StopBGM = 'stopBgm',
+  PlayMod = 'playMod',
+  StopMod = 'stopMod',
+  PauseMod = 'pauseMod',
+  ResumeMod = 'resumeMod',
+  SeekMod = 'seekMod',
+  SetModVolume = 'setModVolume',
   PlaySFX = 'playSfx',
   PlayVoice = 'playVoice',
   ChangeBackground = 'changeBackground',
@@ -130,6 +137,13 @@ export enum EventType {
   HideCharacter = 'hideCharacter',
   CameraShake = 'cameraShake',
   FadeScreen = 'fadeScreen',
+  CreateWindow = 'createWindow',
+  CloseWindow = 'closeWindow',
+  ShowWindow = 'showWindow',
+  HideWindow = 'hideWindow',
+  MoveWindow = 'moveWindow',
+  ResizeWindow = 'resizeWindow',
+  SetWindowAlwaysOnTop = 'setWindowAlwaysOnTop',
 }
 
 // LogicNode 子类型
@@ -143,6 +157,12 @@ export enum LogicType {
 export const eventTypeLabels: Record<EventType, string> = {
   [EventType.PlayBGM]: 'eventTypes.playBgm',
   [EventType.StopBGM]: 'eventTypes.stopBgm',
+  [EventType.PlayMod]: 'eventTypes.playMod',
+  [EventType.StopMod]: 'eventTypes.stopMod',
+  [EventType.PauseMod]: 'eventTypes.pauseMod',
+  [EventType.ResumeMod]: 'eventTypes.resumeMod',
+  [EventType.SeekMod]: 'eventTypes.seekMod',
+  [EventType.SetModVolume]: 'eventTypes.setModVolume',
   [EventType.PlaySFX]: 'eventTypes.playSfx',
   [EventType.PlayVoice]: 'eventTypes.playVoice',
   [EventType.ChangeBackground]: 'eventTypes.changeBackground',
@@ -150,6 +170,13 @@ export const eventTypeLabels: Record<EventType, string> = {
   [EventType.HideCharacter]: 'eventTypes.hideCharacter',
   [EventType.CameraShake]: 'eventTypes.cameraShake',
   [EventType.FadeScreen]: 'eventTypes.fadeScreen',
+  [EventType.CreateWindow]: 'Create Window',
+  [EventType.CloseWindow]: 'Close Window',
+  [EventType.ShowWindow]: 'Show Window',
+  [EventType.HideWindow]: 'Hide Window',
+  [EventType.MoveWindow]: 'Move Window',
+  [EventType.ResizeWindow]: 'Resize Window',
+  [EventType.SetWindowAlwaysOnTop]: 'Set Window Always On Top',
 }
 
 export const logicTypeLabels: Record<LogicType, string> = {
@@ -207,6 +234,64 @@ export const eventTypeConfig: Record<EventType, SubTypeConfig> = {
     properties: [
       { name: 'fadeOutDuration', type: 'number', defaultValue: 0.5, options: [] }
     ],
+    ports: {
+      inputs: [{ id: 'exec_in', label: 'exec_in', type: 'exec', direction: 'input' }],
+      outputs: [{ id: 'exec_out', label: 'exec_out', type: 'exec', direction: 'output' }]
+    }
+  },
+  [EventType.PlayMod]: {
+    type: EventType.PlayMod,
+    labelKey: 'eventTypes.playMod',
+    properties: [
+      { name: 'modPath', type: 'resource', defaultValue: '', options: [] },
+      { name: 'volume', type: 'number', defaultValue: 1.0, options: [] },
+      { name: 'loop', type: 'boolean', defaultValue: true, options: [] }
+    ],
+    ports: {
+      inputs: [{ id: 'exec_in', label: 'exec_in', type: 'exec', direction: 'input' }],
+      outputs: [{ id: 'exec_out', label: 'exec_out', type: 'exec', direction: 'output' }]
+    }
+  },
+  [EventType.StopMod]: {
+    type: EventType.StopMod,
+    labelKey: 'eventTypes.stopMod',
+    properties: [],
+    ports: {
+      inputs: [{ id: 'exec_in', label: 'exec_in', type: 'exec', direction: 'input' }],
+      outputs: [{ id: 'exec_out', label: 'exec_out', type: 'exec', direction: 'output' }]
+    }
+  },
+  [EventType.PauseMod]: {
+    type: EventType.PauseMod,
+    labelKey: 'eventTypes.pauseMod',
+    properties: [],
+    ports: {
+      inputs: [{ id: 'exec_in', label: 'exec_in', type: 'exec', direction: 'input' }],
+      outputs: [{ id: 'exec_out', label: 'exec_out', type: 'exec', direction: 'output' }]
+    }
+  },
+  [EventType.ResumeMod]: {
+    type: EventType.ResumeMod,
+    labelKey: 'eventTypes.resumeMod',
+    properties: [],
+    ports: {
+      inputs: [{ id: 'exec_in', label: 'exec_in', type: 'exec', direction: 'input' }],
+      outputs: [{ id: 'exec_out', label: 'exec_out', type: 'exec', direction: 'output' }]
+    }
+  },
+  [EventType.SeekMod]: {
+    type: EventType.SeekMod,
+    labelKey: 'eventTypes.seekMod',
+    properties: [{ name: 'position', type: 'number', defaultValue: 0, options: [] }],
+    ports: {
+      inputs: [{ id: 'exec_in', label: 'exec_in', type: 'exec', direction: 'input' }],
+      outputs: [{ id: 'exec_out', label: 'exec_out', type: 'exec', direction: 'output' }]
+    }
+  },
+  [EventType.SetModVolume]: {
+    type: EventType.SetModVolume,
+    labelKey: 'eventTypes.setModVolume',
+    properties: [{ name: 'volume', type: 'number', defaultValue: 1.0, options: [] }],
     ports: {
       inputs: [{ id: 'exec_in', label: 'exec_in', type: 'exec', direction: 'input' }],
       outputs: [{ id: 'exec_out', label: 'exec_out', type: 'exec', direction: 'output' }]
@@ -315,7 +400,83 @@ export const eventTypeConfig: Record<EventType, SubTypeConfig> = {
       inputs: [{ id: 'exec_in', label: 'exec_in', type: 'exec', direction: 'input' }],
       outputs: [{ id: 'exec_out', label: 'exec_out', type: 'exec', direction: 'output' }]
     }
+  },
+  [EventType.CreateWindow]: {
+    type: EventType.CreateWindow,
+    labelKey: 'Create Window',
+    properties: [
+      { name: 'targetWindow', type: 'select', defaultValue: '1', options: windowTargetOptions(false) },
+      { name: 'x', type: 'number', defaultValue: 100, options: [] },
+      { name: 'y', type: 'number', defaultValue: 100, options: [] },
+      { name: 'width', type: 'number', defaultValue: 1280, options: [] },
+      { name: 'height', type: 'number', defaultValue: 720, options: [] },
+    ],
+    ports: standardEventPorts()
+  },
+  [EventType.CloseWindow]: {
+    type: EventType.CloseWindow,
+    labelKey: 'Close Window',
+    properties: [{ name: 'targetWindow', type: 'select', defaultValue: '1', options: windowTargetOptions(false) }],
+    ports: standardEventPorts()
+  },
+  [EventType.ShowWindow]: {
+    type: EventType.ShowWindow,
+    labelKey: 'Show Window',
+    properties: [{ name: 'targetWindow', type: 'select', defaultValue: '1', options: windowTargetOptions(false) }],
+    ports: standardEventPorts()
+  },
+  [EventType.HideWindow]: {
+    type: EventType.HideWindow,
+    labelKey: 'Hide Window',
+    properties: [{ name: 'targetWindow', type: 'select', defaultValue: '1', options: windowTargetOptions(false) }],
+    ports: standardEventPorts()
+  },
+  [EventType.MoveWindow]: {
+    type: EventType.MoveWindow,
+    labelKey: 'Move Window',
+    properties: [
+      { name: 'targetWindow', type: 'select', defaultValue: '1', options: windowTargetOptions(false) },
+      { name: 'x', type: 'number', defaultValue: 100, options: [] },
+      { name: 'y', type: 'number', defaultValue: 100, options: [] },
+      { name: 'duration', type: 'number', defaultValue: 0, options: [] },
+    ],
+    ports: standardEventPorts()
+  },
+  [EventType.ResizeWindow]: {
+    type: EventType.ResizeWindow,
+    labelKey: 'Resize Window',
+    properties: [
+      { name: 'targetWindow', type: 'select', defaultValue: '1', options: windowTargetOptions(false) },
+      { name: 'width', type: 'number', defaultValue: 1280, options: [] },
+      { name: 'height', type: 'number', defaultValue: 720, options: [] },
+      { name: 'duration', type: 'number', defaultValue: 0, options: [] },
+    ],
+    ports: standardEventPorts()
+  },
+  [EventType.SetWindowAlwaysOnTop]: {
+    type: EventType.SetWindowAlwaysOnTop,
+    labelKey: 'Set Window Always On Top',
+    properties: [
+      { name: 'targetWindow', type: 'select', defaultValue: '1', options: windowTargetOptions(false) },
+      { name: 'alwaysOnTop', type: 'boolean', defaultValue: true, options: [] },
+    ],
+    ports: standardEventPorts()
   }
+}
+
+function standardEventPorts() {
+  return {
+    inputs: [{ id: 'exec_in', label: 'exec_in', type: 'exec' as const, direction: 'input' as const }],
+    outputs: [{ id: 'exec_out', label: 'exec_out', type: 'exec' as const, direction: 'output' as const }],
+  }
+}
+
+function windowTargetOptions(includeStage: boolean) {
+  const windows = Array.from({ length: 8 }, (_, index) => ({
+    value: String(index + 1),
+    label: `Window ${index + 1}`,
+  }))
+  return includeStage ? [{ value: 'stage', label: 'Editor Stage' }, ...windows] : windows
 }
 
 // 完整的 LogicNode 子类型配置

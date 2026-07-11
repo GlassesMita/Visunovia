@@ -288,8 +288,13 @@
           </label>
           
           <!-- String 类型 → 文本输入框 -->
+          <CSharpScriptEditor
+            v-if="prop.type === 'string' && selectedNode.type === 'CustomEventNode' && prop.name === 'code'"
+            :model-value="getPropertyValue(prop.name) || ''"
+            @update:model-value="updateProperty(prop.name, $event)"
+          />
           <input 
-            v-if="prop.type === 'string'"
+            v-else-if="prop.type === 'string'"
             type="text"
             :value="getPropertyValue(prop.name)"
             :placeholder="getPlaceholder(prop.name)"
@@ -297,7 +302,7 @@
             class="prop-input"
           />
           <div
-            v-if="prop.type === 'string' && getPropertyValue(prop.name)"
+            v-if="prop.type === 'string' && selectedNode.type !== 'CustomEventNode' && getPropertyValue(prop.name)"
             class="markdown-preview"
             v-html="renderSafeMarkdown(getPropertyValue(prop.name))"
           />
@@ -432,6 +437,7 @@ import {
   PropertyConfig 
 } from '@/types'
 import ResourcePickerModal from '@/components/modals/ResourcePickerModal.vue'
+import CSharpScriptEditor from '@/components/CSharpScriptEditor.vue'
 import { RESOURCE_TYPE_EXTENSIONS, type ResourceType } from '@/stores/useResourceRegistry'
 import { getEntries, type DirEntry } from '@/api/fileBrowser'
 import { getCurrentProject } from '@/api/projectApi'
@@ -667,6 +673,9 @@ const dynamicProperties = computed((): PropertyConfig[] => {
     BranchNode: [
       { name: 'condition', type: 'string', defaultValue: '' },
       { name: 'options', type: 'string', defaultValue: '' },
+    ],
+    CustomEventNode: [
+      { name: 'code', type: 'string', defaultValue: '', label: 'Code' },
     ],
   }
   

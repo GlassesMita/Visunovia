@@ -5,8 +5,8 @@ import { useUIStore } from '@/stores/useUIStore'
 import { createProject } from '@/api/projectApi'
 import { settingsApi } from '@/api'
 import type { FolderNode } from '@/api/projectApi'
-import FileExplorer from '@/components/FileExplorer.vue'
 import FolderTreeNode from '@/components/FolderTreeNode.vue'
+import { openNativeDialog } from '@/utils/nativeDialog'
 
 const { t } = useLocalization()
 const uiStore = useUIStore()
@@ -19,7 +19,6 @@ const versionCode = ref('1')
 const isCreating = ref(false)
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
-const showFolderBrowser = ref(false)
 const projectNameInputRef = ref<HTMLInputElement | null>(null)
 const createdFolderTree = ref<FolderNode | null>(null)
 const showStructurePreview = ref(false)
@@ -37,19 +36,17 @@ const fullProjectPath = computed(() => {
   return `${projectPath.value}\\${projectName.value.trim()}`
 })
 
-function openFolderBrowser() {
-  showFolderBrowser.value = true
-}
-
-function handleFolderSelect(path: string, isDir: boolean) {
-  showFolderBrowser.value = false
-  if (path && isDir) {
-    projectPath.value = path
+async function openFolderBrowser() {
+  try {
+    const selectedPath = await openNativeDialog({
+      kind: 'directory',
+      title: t('Project.SelectFolder', '选择项目文件夹').value,
+      defaultPath: projectPath.value || undefined,
+    })
+    if (selectedPath) projectPath.value = selectedPath
+  } catch (dialogError) {
+    error.value = dialogError instanceof Error ? dialogError.message : '无法打开系统文件选择器'
   }
-}
-
-function handleFolderBrowserClose() {
-  showFolderBrowser.value = false
 }
 
 async function handleCreate() {
@@ -139,7 +136,6 @@ watch(() => uiStore.showNewProjectModal, async (visible) => {
     versionCode.value = '1'
     error.value = null
     success.value = null
-    showFolderBrowser.value = false
     createdFolderTree.value = null
     showStructurePreview.value = false
     await loadPlaceholderFromConfig()
@@ -305,14 +301,6 @@ watch(() => uiStore.showNewProjectModal, async (visible) => {
       </div>
     </Transition>
 
-    <!-- Folder Browser Modal -->
-    <FileExplorer
-      :visible="showFolderBrowser"
-      :title="t('Project.SelectFolder', '选择项目文件夹')"
-      :allow-select-directory="true"
-      @close="handleFolderBrowserClose"
-      @select="handleFolderSelect"
-    />
   </Teleport>
 </template>
 

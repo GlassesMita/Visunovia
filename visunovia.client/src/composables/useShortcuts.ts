@@ -297,6 +297,7 @@ export function useShortcuts() {
 
   function handleKeyDown(event: KeyboardEvent) {
     if (isInInputElement()) return
+    if ((event.ctrlKey || event.metaKey) && ['c', 'x'].includes(event.key.toLowerCase()) && !window.getSelection()?.isCollapsed) return
 
     for (const shortcut of shortcuts) {
       if (matchesShortcut(event, shortcut)) {

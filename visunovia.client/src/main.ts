@@ -1,15 +1,27 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import * as PIXI from 'pixi.js'
 import App from './App.vue'
 import router from './router'
+import { initializeBackendBaseUrl } from './utils/backendUrl'
+import { installEditorConsole } from './services/editorConsole'
 import './style.css'
 import './baklava/styles.css'
 
-const app = createApp(App)
+async function bootstrap() {
+	await installEditorConsole()
+	await initializeBackendBaseUrl()
 
-const pinia = createPinia()
-app.use(pinia)
+	const app = createApp(App)
+	app.config.globalProperties.$pixi = PIXI
+	window.PIXI = PIXI
 
-app.use(router)
+	const pinia = createPinia()
+	app.use(pinia)
 
-app.mount('#app')
+	app.use(router)
+
+	app.mount('#app')
+}
+
+bootstrap()

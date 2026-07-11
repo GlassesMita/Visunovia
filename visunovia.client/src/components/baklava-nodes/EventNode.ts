@@ -19,7 +19,7 @@ export const NODE_COLOR = '#FF9800'
 
 function getAssetKind(subType: EventType, propName: string): AssetSelectKind {
   if (subType === EventType.ChangeBackground || propName === 'imagePath') return 'background'
-  if (subType === EventType.PlayBGM || propName === 'bgmPath') return 'bgm'
+  if (subType === EventType.PlayBGM || subType === EventType.PlayMod || propName === 'bgmPath' || propName === 'modPath') return 'bgm'
   if (subType === EventType.PlayVoice || propName === 'voicePath') return 'voice'
   return 'sfx'
 }

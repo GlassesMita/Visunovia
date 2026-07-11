@@ -544,6 +544,7 @@ export function useNodeOperations() {
   async function saveSceneGraph(sceneId: string): Promise<boolean> {
     const normalizedSceneId = normalizeSceneId(sceneId)
     const editor = getEditorInstance()
+    editorStore.error = null
     
     if (!editor) {
       console.error('[useNodeOperations] Editor instance not found, cannot save')
@@ -559,12 +560,14 @@ export function useNodeOperations() {
       nodeGraphStore.currentSceneId = normalizedSceneId
       editorStore.currentFileName = `${normalizedSceneId}.lor`
       nodeGraphStore.markClean()
+      editorStore.error = null
       
       console.log('[useNodeOperations] Scene graph saved successfully:', normalizedSceneId)
       return true
-    } catch (error) {
+    } catch (error: any) {
       // 异常可能来源：网络请求失败、后端服务不可用、数据格式校验不通过
       console.error('[useNodeOperations] Failed to save scene graph:', error)
+      editorStore.error = error?.message || 'Failed to save scene graph'
       return false
     }
   }

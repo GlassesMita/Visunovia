@@ -259,6 +259,24 @@ msgstr "界面语言"
 msgid "Settings.Theme"
 msgstr "界面主题"
 
+msgid "props.localizationKey"
+msgstr "本地化键"
+
+msgid "dialogue.speakerKey"
+msgstr "说话人本地化键"
+
+msgid "choice.option"
+msgstr "选项"
+
+msgid "runtime.branch.yes"
+msgstr "是"
+
+msgid "runtime.branch.no"
+msgstr "否"
+
+msgid "runtime.choice.fallback"
+msgstr "选项"
+
 msgid "Settings.EditorFontSize"
 msgstr "编辑器字体大小"
 
@@ -396,7 +414,7 @@ msgstr "版本"
 
 # About Page - Description
 msgid "About.Description"
-msgstr "一款基于 Vue 3 和 ASP.NET Core 的跨平台视觉小说编辑器。通过直观的节点图编辑器创建互动式视觉小说，支持多语言功能和实时预览。"
+msgstr "一款基于 Vue 3、TypeScript、Electron 和本地 JavaScript 后端的视觉小说编辑器。通过直观的节点图编辑器创建互动式视觉小说，支持多语言功能和实时预览。"
 
 # About Page - License intro
 msgid "About.LicenseIntro"
@@ -721,6 +739,9 @@ msgid "settings.theme.dark"
 msgstr "深色"
 
 msgid "settings.theme.system"
+msgstr "跟随系统"
+
+msgid "settings.system"
 msgstr "跟随系统"
 
 msgid "preferences.title"
@@ -1372,6 +1393,24 @@ msgstr "播放音乐"
 msgid "eventTypes.stopBgm"
 msgstr "停止音乐"
 
+msgid "eventTypes.playMod"
+msgstr "播放 MOD 音乐"
+
+msgid "eventTypes.stopMod"
+msgstr "停止 MOD 音乐"
+
+msgid "eventTypes.pauseMod"
+msgstr "暂停 MOD 音乐"
+
+msgid "eventTypes.resumeMod"
+msgstr "继续 MOD 音乐"
+
+msgid "eventTypes.seekMod"
+msgstr "跳转 MOD 播放位置"
+
+msgid "eventTypes.setModVolume"
+msgstr "设置 MOD 音量"
+
 msgid "eventTypes.playSfx"
 msgstr "播放音效"
 
@@ -1396,6 +1435,12 @@ msgstr "屏幕淡入淡出"
 # Event Properties
 msgid "eventProps.bgmPath"
 msgstr "音乐路径"
+
+msgid "eventProps.modPath"
+msgstr "MOD 文件路径"
+
+msgid "eventProps.position"
+msgstr "播放位置（秒）"
 
 msgid "eventProps.volume"
 msgstr "音量"

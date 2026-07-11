@@ -220,6 +220,24 @@ msgstr "Sprites"
 msgid "Resource.Backgrounds"
 msgstr "Backgrounds"
 
+msgid "props.localizationKey"
+msgstr "Localization Key"
+
+msgid "dialogue.speakerKey"
+msgstr "Speaker Localization Key"
+
+msgid "choice.option"
+msgstr "Option"
+
+msgid "runtime.branch.yes"
+msgstr "Yes"
+
+msgid "runtime.branch.no"
+msgstr "No"
+
+msgid "runtime.choice.fallback"
+msgstr "Option"
+
 msgid "Resource.BGM"
 msgstr "BGM"
 
@@ -396,7 +414,7 @@ msgstr "Version"
 
 # About Page - Description
 msgid "About.Description"
-msgstr "A cross-platform visual novel editor built with Vue 3 and ASP.NET Core. Create interactive visual novels with an intuitive node-based editor, multi-language support, and real-time preview."
+msgstr "A visual novel editor built with Vue 3, TypeScript, Electron, and a local JavaScript backend. Create interactive visual novels with an intuitive node-based editor, multi-language support, and real-time preview."
 
 # About Page - License intro
 msgid "About.LicenseIntro"
@@ -722,6 +740,9 @@ msgid "settings.theme.dark"
 msgstr "Dark"
 
 msgid "settings.theme.system"
+msgstr "System"
+
+msgid "settings.system"
 msgstr "System"
 
 msgid "preferences.title"
@@ -1292,6 +1313,24 @@ msgstr "Play BGM"
 msgid "eventTypes.stopBgm"
 msgstr "Stop BGM"
 
+msgid "eventTypes.playMod"
+msgstr "Play MOD Music"
+
+msgid "eventTypes.stopMod"
+msgstr "Stop MOD Music"
+
+msgid "eventTypes.pauseMod"
+msgstr "Pause MOD Music"
+
+msgid "eventTypes.resumeMod"
+msgstr "Resume MOD Music"
+
+msgid "eventTypes.seekMod"
+msgstr "Seek MOD Music"
+
+msgid "eventTypes.setModVolume"
+msgstr "Set MOD Volume"
+
 msgid "eventTypes.playSfx"
 msgstr "Play SFX"
 
@@ -1316,6 +1355,12 @@ msgstr "Fade Screen"
 # Event Properties
 msgid "eventProps.bgmPath"
 msgstr "BGM Path"
+
+msgid "eventProps.modPath"
+msgstr "MOD File Path"
+
+msgid "eventProps.position"
+msgstr "Position (seconds)"
 
 msgid "eventProps.volume"
 msgstr "Volume"

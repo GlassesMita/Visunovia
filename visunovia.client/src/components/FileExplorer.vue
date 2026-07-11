@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { getDrives, getEntries, getSpecialFolders, createFolder } from '@/api/fileBrowser'
 import type { DriveInfo, DirEntry, SpecialFolder } from '@/api/fileBrowser'
+import { resolveBackendUrl } from '@/utils/backendUrl'
 
 const props = defineProps<{
   visible: boolean
@@ -262,7 +263,7 @@ function cancelCreateFolder() {
 }
 
 function formatSize(bytes: number): string {
-  if (bytes === 0) return ''
+  if (!Number.isFinite(bytes) || bytes <= 0) return '未知'
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
   let unitIndex = 0
   let size = bytes
@@ -271,6 +272,18 @@ function formatSize(bytes: number): string {
     unitIndex++
   }
   return `${size.toFixed(unitIndex > 0 ? 1 : 0)} ${units[unitIndex]}`
+}
+
+function getDriveDisplayName(drive: DriveInfo): string {
+  const name = drive.name.trim()
+  return !name || name.toUpperCase() === drive.letter.toUpperCase()
+    ? drive.letter
+    : `${name} (${drive.letter})`
+}
+
+function getDriveSpaceText(drive: DriveInfo): string {
+  const capacity = `${formatSize(drive.freeSpace)} 可用，共 ${formatSize(drive.totalSpace)}`
+  return drive.fileSystem ? `${drive.fileSystem} - ${capacity}` : capacity
 }
 
 function formatDate(dateStr: string): string {
@@ -332,7 +345,7 @@ function handlePreviewLeave() {
 
 function getPreviewUrl(entry: DirEntry): string {
   // Convert file path to a URL that can be served by the backend
-  return `/api/FileBrowser/preview?path=${encodeURIComponent(entry.path)}`
+  return resolveBackendUrl(`/api/FileBrowser/preview?path=${encodeURIComponent(entry.path)}`)
 }
 
 function handleKeydown(event: KeyboardEvent) {
@@ -495,7 +508,7 @@ watch(() => props.visible, (newVal) => {
                     <rect x="12" y="10" width="1" height="1" rx="0.3" fill="#4CAF50"/>
                   </svg>
                   <div class="fb-navpane-item-info">
-                    <span class="fb-navpane-item-name">{{ drive.name }} ({{ drive.letter }})</span>
+                    <span class="fb-navpane-item-name">{{ getDriveDisplayName(drive) }}</span>
                     <div class="fb-drive-bar">
                       <div class="fb-drive-bar-fill" :style="{ width: getDriveUsagePercent(drive) + '%' }"></div>
                     </div>
@@ -562,11 +575,11 @@ watch(() => props.visible, (newVal) => {
                       <rect x="15" y="12" width="1.5" height="1.5" rx="0.3" fill="#4CAF50"/>
                     </svg>
                     <div class="fb-computer-item-info">
-                      <span class="fb-computer-item-name">{{ drive.name }} ({{ drive.letter }})</span>
+                      <span class="fb-computer-item-name">{{ getDriveDisplayName(drive) }}</span>
                       <div class="fb-computer-drive-bar">
                         <div class="fb-computer-drive-bar-fill" :style="{ width: getDriveUsagePercent(drive) + '%' }"></div>
                       </div>
-                      <span class="fb-computer-drive-space">{{ drive.fileSystem }} - {{ formatSize(drive.freeSpace) }} 可用，共 {{ formatSize(drive.totalSpace) }}</span>
+                      <span class="fb-computer-drive-space">{{ getDriveSpaceText(drive) }}</span>
                     </div>
                   </div>
                 </div>

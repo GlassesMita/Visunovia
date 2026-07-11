@@ -9,6 +9,7 @@ export const NODE_TYPE_COLORS: Record<string, string> = {
   StartNode: '#2E7D32',
   EndNode: '#C62828',
   EventNode: '#E65100',
+  CustomEventNode: '#455A64',
   DialogueNode: '#1565C0',
   BranchNode: '#6A1B9A',
   LogicNode: '#00838F',

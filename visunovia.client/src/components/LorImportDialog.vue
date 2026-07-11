@@ -2,8 +2,8 @@
 import { ref, computed, watch } from 'vue'
 import { useLorImport } from '@/composables/useLorImport'
 import { useLocalization } from '@/composables/useLocalization'
-import FileExplorer from './FileExplorer.vue'
 import { getEntries, readTextFile } from '@/api/fileBrowser'
+import { openNativeDialog } from '@/utils/nativeDialog'
 
 const props = defineProps<{
   visible: boolean
@@ -36,11 +36,6 @@ const availableScenes = ref<string[]>([])
 const selectedSceneId = ref('')
 const isScanningProject = ref(false)
 
-// 文件选择器
-const showFileExplorer = ref(false)
-const fileExplorerTitle = ref(t('lorImport.selectFile', 'Select file'))
-const fileExplorerFilter = ref<string[]>([])
-
 const isLoading = computed(() => lorImport.isImporting.value || isScanningProject.value)
 const hasError = computed(() => lorImport.importError.value !== null)
 const hasSuccess = computed(() => lorImport.importSuccess.value)
@@ -51,30 +46,39 @@ const characterSlotOptions = computed(() => [1, 2, 3, 4, 5, 6].map(slot => ({
 })))
 
 /** 打开文件选择器选择项目目录 */
-function openProjectExplorer() {
-  fileExplorerTitle.value = t('lorImport.selectProjectDirectory', 'Select project directory')
-  fileExplorerFilter.value = []
-  showFileExplorer.value = true
+async function openProjectExplorer() {
+  const selectedPath = await openNativeDialog({
+    kind: 'directory',
+    title: t('lorImport.selectProjectDirectory', 'Select project directory'),
+    defaultPath: selectedProjectPath.value || undefined,
+  })
+  if (selectedPath) await handleFileSelect(selectedPath, true)
 }
 
 /** 打开文件选择器选择 .tlor 文件 */
-function openTlorExplorer() {
-  fileExplorerTitle.value = t('lorImport.selectTlorFile', 'Select project file (.tlor)')
-  fileExplorerFilter.value = ['.tlor']
-  showFileExplorer.value = true
+async function openTlorExplorer() {
+  const selectedPath = await openNativeDialog({
+    kind: 'file',
+    title: t('lorImport.selectTlorFile', 'Select project file (.tlor)'),
+    extensions: ['tlor'],
+    filterName: 'Visunovia Project',
+  })
+  if (selectedPath) await handleFileSelect(selectedPath, false)
 }
 
 /** 打开文件选择器选择 .lrc 文件 */
-function openLrcExplorer() {
-  fileExplorerTitle.value = t('lorImport.selectLrcFile', 'Select LRC lyrics file (.lrc)')
-  fileExplorerFilter.value = ['.lrc']
-  showFileExplorer.value = true
+async function openLrcExplorer() {
+  const selectedPath = await openNativeDialog({
+    kind: 'file',
+    title: t('lorImport.selectLrcFile', 'Select LRC lyrics file (.lrc)'),
+    extensions: ['lrc'],
+    filterName: 'LRC Lyrics',
+  })
+  if (selectedPath) await handleFileSelect(selectedPath, false)
 }
 
 /** 处理文件选择结果 */
 async function handleFileSelect(path: string, isDirectory: boolean) {
-  showFileExplorer.value = false
-
   if (isDirectory) {
     // 选择了目录，扫描项目
     selectedProjectPath.value = path
@@ -423,14 +427,6 @@ watch(() => props.visible, (newVal) => {
       </div>
     </div>
 
-    <!-- 文件选择器 -->
-    <FileExplorer
-      :visible="showFileExplorer"
-      :title="fileExplorerTitle"
-      :file-filter="fileExplorerFilter"
-      @close="showFileExplorer = false"
-      @select="handleFileSelect"
-    />
   </Teleport>
 </template>
 

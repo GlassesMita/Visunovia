@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import axios from 'axios'
+import { localizationApi } from '@/api'
 import * as translationService from '@/services/translationService'
 import type { LanguageInfo } from '@/types'
 
@@ -43,7 +43,7 @@ export const useLocalizationStore = defineStore('localization', () => {
   /** 从后端获取可用语言列表 */
   async function fetchAvailableLanguages() {
     try {
-      const response = await axios.get('/api/localization/languages', { timeout: 5000 })
+      const response = await localizationApi.getLanguages()
       if (response.data?.success && Array.isArray(response.data?.data)) {
         availableLanguages.value = response.data.data
       }
@@ -62,7 +62,7 @@ export const useLocalizationStore = defineStore('localization', () => {
     try {
       // 通知后端切换语言（持久化偏好）
       try {
-        await axios.post('/api/localization/language', { language: lang }, { timeout: 5000 })
+        await localizationApi.setLanguage(lang)
       } catch {
         // 后端不可用时继续
       }

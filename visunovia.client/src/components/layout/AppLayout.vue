@@ -34,15 +34,6 @@
       <ConsolePanel />
     </div>
 
-    <!-- 文件浏览器模态框 -->
-    <FileExplorer
-      :visible="uiStore.showFileExplorer"
-      title="打开项目"
-      :file-filter="['.tlor']"
-      @close="uiStore.closeFileExplorer()"
-      @select="handleProjectSelected"
-    />
-
     <div v-if="projectOpenError" class="project-open-error" role="alert">
       <span>{{ projectOpenError }}</span>
       <button type="button" @click="projectOpenError = ''">✕</button>
@@ -99,12 +90,6 @@
       </div>
     </Transition>
 
-    <!-- Welcome Modal (shown when no project is open) -->
-    <WelcomeModal
-      v-if="uiStore.showWelcomeModal"
-      @project-opened="handleRecentProjectOpened"
-      @project-open-failed="handleRecentProjectOpenFailed"
-    />
   </div>
 </template>
 
@@ -113,16 +98,19 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useUIStore } from '@/stores/useUIStore'
 import { useShortcuts } from '@/composables/useShortcuts'
+import { resolveBackendUrl } from '@/utils/backendUrl'
 import { useProjectImport } from '@/composables/useProjectImport'
 import { useLorImport } from '@/composables/useLorImport'
 import { useNodeOperations } from '@/composables/useNodeOperations'
+import { useNodeGraphStore } from '@/stores/useNodeGraphStore'
+import { useLocalizationStore } from '@/stores/useLocalizationStore'
+import { useTheme, type ThemeMode } from '@/composables/useTheme'
 import MenuBar from './MenuBar.vue'
 import Toolbar from './Toolbar.vue'
 import StatusBar from './StatusBar.vue'
 import ProjectPanel from '@/components/panels/ProjectPanel.vue'
 import ConsolePanel from '@/components/panels/ConsolePanel.vue'
 import BaklavaEditor from '@/components/BaklavaEditor.vue'
-import FileExplorer from '@/components/FileExplorer.vue'
 import NewProjectModal from '@/components/NewProjectModal.vue'
 import ProjectPreferencesModal from '@/components/ProjectPreferencesModal.vue'
 import CharacterManagerModal from '@/components/CharacterManagerModal.vue'
@@ -131,15 +119,43 @@ import SceneManagerModal from '@/components/SceneManagerModal.vue'
 import LorImportDialog from '@/components/LorImportDialog.vue'
 import PreviewPopup from '@/components/PreviewPopup.vue'
 import NodeDetailsModal from '@/components/NodeDetailsModal.vue'
-import WelcomeModal from '@/components/WelcomeModal.vue'
 import { getCurrentProject, getProjectFileContent } from '@/api/projectApi'
 
 const { t } = useLocalization()
 const uiStore = useUIStore()
+const nodeGraphStore = useNodeGraphStore()
+const localizationStore = useLocalizationStore()
+const { setTheme } = useTheme()
 const projectImport = useProjectImport()
 const lorImport = useLorImport()
 const { loadSceneGraph, newGraph } = useNodeOperations()
 const editorReady = ref(false)
+
+type SavedEditorSettings = {
+  language?: string
+  theme?: ThemeMode
+  autoSave?: boolean
+  autoSaveInterval?: number
+  [key: string]: unknown
+}
+
+function handleSettingsSaved(event: MessageEvent) {
+  if (event.origin !== window.location.origin) return
+  if (event.data?.type !== 'visunovia:settings-saved') return
+  const settings = event.data.settings as SavedEditorSettings | undefined
+  if (!settings || typeof settings !== 'object') return
+
+  if (settings.theme) {
+    void setTheme({ theme: settings.theme })
+  }
+  if (settings.language && localizationStore.currentLanguage !== settings.language) {
+    void localizationStore.setLanguage(settings.language)
+  }
+
+  const autoSaveIntervalSeconds = Math.max(10, Number(settings.autoSaveInterval) || 60)
+  nodeGraphStore.setAutoSave(Boolean(settings.autoSave), autoSaveIntervalSeconds * 1000)
+  window.dispatchEvent(new CustomEvent('visunovia:settings-changed', { detail: settings }))
+}
 
 // Track whether a project is currently open
 const hasOpenProject = ref(false)
@@ -168,9 +184,13 @@ async function checkHasOpenProject(): Promise<boolean> {
  * When the backend becomes unreachable, auto-close the frontend.
  */
 function startShutdownDetection() {
+  if ((window as any).visunoviaDesktop?.platform === 'electron') {
+    return
+  }
+
   shutdownCheckInterval = setInterval(async () => {
     try {
-      const response = await fetch('/api/system/health', { cache: 'no-store' })
+      const response = await fetch(resolveBackendUrl('/api/system/health'), { cache: 'no-store' })
       if (!response.ok) {
         throw new Error(`Backend health check failed: ${response.status}`)
       }
@@ -194,6 +214,7 @@ function startShutdownDetection() {
 }
 
 onMounted(async () => {
+  window.addEventListener('message', handleSettingsSaved)
   // Wait for editor to be ready, then check for project
   const checkEditorReady = async () => {
     if ((window as any).__editor) {
@@ -202,11 +223,8 @@ onMounted(async () => {
       // First try to import from URL
       const imported = await importProjectIfNeeded()
 
-      // 如果没有 URL 项目参数，不再自动打开最近项目。
-      // 启动时保持未打开项目状态，等待用户在欢迎页手动选择项目。
       if (!imported) {
         hasOpenProject.value = false
-        uiStore.openWelcomeModal()
       } else {
         hasOpenProject.value = true
       }
@@ -234,29 +252,10 @@ watch(
       } else {
         await loadSceneGraph(filePath)
       }
-      uiStore.openingFilePath.value = null
+      uiStore.openingFilePath = null
       // A project has been opened — close the welcome modal
       hasOpenProject.value = true
       uiStore.closeWelcomeModal()
-    }
-  }
-)
-
-// When the file explorer selects a .tlor file, close the welcome modal
-watch(
-  () => uiStore.showFileExplorer,
-  (visible) => {
-    // If the file explorer was closed and we had the welcome modal open,
-    // check if a project was opened
-    if (!visible && uiStore.showWelcomeModal) {
-      // Give a moment for the project to load, then check
-      setTimeout(async () => {
-        const hasProject = await checkHasOpenProject()
-        if (hasProject) {
-          hasOpenProject.value = true
-          uiStore.closeWelcomeModal()
-        }
-      }, 500)
     }
   }
 )
@@ -272,39 +271,8 @@ async function importProjectIfNeeded(): Promise<boolean> {
   return false
 }
 
-async function handleProjectSelected(path: string, isDir: boolean) {
-  uiStore.closeFileExplorer()
-  if (!path) return
-  projectOpenError.value = ''
-
-  const normalizedProjectPath = isDir
-    ? path
-    : path.toLowerCase().endsWith('.tlor')
-      ? path.replace(/[\\/][^\\/]*$/, '')
-      : path
-
-  const success = await projectImport.importProjectPath(normalizedProjectPath)
-  if (success) {
-    hasOpenProject.value = true
-    uiStore.closeWelcomeModal()
-  } else {
-    projectOpenError.value = projectImport.error.value || '项目打开失败，请检查 Project.tlor 和 Scripts/Main 目录。'
-    console.error('[AppLayout] Failed to open project:', projectOpenError.value)
-  }
-}
-
 function closeProjectPanel() {
   uiStore.closeProjectPopup()
-}
-
-function handleRecentProjectOpened() {
-  hasOpenProject.value = true
-  projectOpenError.value = ''
-}
-
-function handleRecentProjectOpenFailed(message: string) {
-  hasOpenProject.value = false
-  projectOpenError.value = message
 }
 
 function handleLorImported(sceneId: string) {
@@ -314,6 +282,7 @@ function handleLorImported(sceneId: string) {
 }
 
 onUnmounted(() => {
+  window.removeEventListener('message', handleSettingsSaved)
   if (shutdownCheckInterval) {
     clearInterval(shutdownCheckInterval)
     shutdownCheckInterval = null
@@ -332,11 +301,14 @@ onUnmounted(() => {
 }
 
 .app-header {
+  position: relative;
+  z-index: 10001;
   height: 32px;
   min-height: 32px;
   background: #252526;
   border-bottom: 1px solid #3e3e42;
   flex-shrink: 0;
+  overflow: visible;
 }
 
 .app-toolbar {

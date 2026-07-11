@@ -215,6 +215,7 @@ import type { VNode } from 'vue'
 import { deleteProjectAsset, getCurrentProject, getProjectFileContent, getProjectFolderTree, importProjectAsset, renameProjectAsset } from '@/api/projectApi'
 import type { FolderNode } from '@/api/projectApi'
 import { useUIStore } from '@/stores/useUIStore'
+import { resolveBackendUrl } from '@/utils/backendUrl'
 
 const uiStore = useUIStore()
 
@@ -668,7 +669,7 @@ function getPreviewKind(node: DisplayNode): 'image' | 'audio' | 'text' | 'none' 
 function getAssetFileUrl(node: DisplayNode): string {
   const relativePath = getRelativeProjectPath(getPrimaryPath(node.path))
   if (!relativePath) return ''
-  return `/api/resources/file/${relativePath.split('/').map(encodeURIComponent).join('/')}`
+  return resolveBackendUrl(`/api/resources/file/${relativePath.split('/').map(encodeURIComponent).join('/')}`)
 }
 
 function getRelativeProjectPath(path: string): string {

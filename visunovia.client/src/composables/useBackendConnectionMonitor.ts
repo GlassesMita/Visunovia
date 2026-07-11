@@ -1,5 +1,7 @@
 import { computed, onUnmounted, ref } from 'vue'
 import axios from 'axios'
+import { apiClient, isDesktopBackend } from '@/api'
+import { resolveBackendUrl } from '@/utils/backendUrl'
 
 const CHECK_INTERVAL_MS = 30_000
 const ERROR_MODAL_INTERVAL_MS = 10_000
@@ -72,11 +74,13 @@ async function checkBackendHealth() {
   checkInFlight = true
 
   try {
-    const response = await axios.get(HEALTH_URL, {
-      timeout: 5_000,
-      headers: { 'Cache-Control': 'no-store' },
-      validateStatus: () => true,
-    })
+    const response = isDesktopBackend()
+      ? await apiClient.get<{ success: boolean; status: string }>('/system/health')
+      : await axios.get(resolveBackendUrl(HEALTH_URL), {
+        timeout: 5_000,
+        headers: { 'Cache-Control': 'no-store' },
+        validateStatus: () => true,
+      })
     lastCheckedAt.value = new Date()
 
     if (response.status >= 200 && response.status < 300) {

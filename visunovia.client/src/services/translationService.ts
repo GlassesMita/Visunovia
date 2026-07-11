@@ -1,5 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { apiClient } from '@/api'
+import { createCoreRTLocalization } from '@/runtime/core'
 
 /**
  * 前端翻译服务 — 完全替代 vue-i18n
@@ -18,6 +19,8 @@ let cache: TranslationCache = new Map()
 let currentLang = 'zh-CN'
 let isReady = false
 let initPromise: Promise<void> | null = null
+
+export const coreRTLocalization = createCoreRTLocalization({ language: currentLang, fallbackLanguage: 'en-US' })
 
 /**
  * 翻译版本号 — 每次缓存更新时递增
@@ -60,6 +63,9 @@ export async function t(msgId: string): Promise<string> {
  * @param fallback - 缓存未命中时的回退文本，默认返回 msgId 本身
  */
 export function tSync(msgId: string, fallback?: string): string {
+  // 读取 translationVersion 使 Vue 追踪此响应式依赖
+  // 缓存更新时 translationVersion 递增，触发所有使用 tSync 的组件重新渲染
+  void translationVersion.value
   if (cache.has(msgId)) {
     return cache.get(msgId)!
   }
@@ -87,6 +93,8 @@ export async function preloadTranslations(lang: string): Promise<void> {
       for (const [key, value] of Object.entries(translations)) {
         cache.set(key, value)
       }
+      coreRTLocalization.setLanguage(lang)
+      coreRTLocalization.setTranslations(cache)
       // 触发 Vue 响应式更新
       translationVersion.value++
       console.log(`[TranslationService] Loaded ${cache.size} translations, version: ${translationVersion.value}`)
@@ -108,6 +116,7 @@ export async function preloadTranslations(lang: string): Promise<void> {
  */
 export async function setLanguage(lang: string): Promise<void> {
   currentLang = lang
+  coreRTLocalization.setLanguage(lang)
   localStorage.setItem('language', lang)
   await preloadTranslations(lang)
   isReady = true

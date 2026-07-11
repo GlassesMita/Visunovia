@@ -85,7 +85,7 @@ export const useEditorStore = defineStore('editor', () => {
       const { saveSceneGraph } = useNodeOperations()
       const saved = await saveSceneGraph(sceneId)
       if (!saved) {
-        throw new Error('Failed to save scene graph')
+        throw new Error(error.value || 'Failed to save scene graph')
       }
       
       nodeGraphStore.currentSceneId = sceneId

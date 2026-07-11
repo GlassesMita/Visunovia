@@ -291,6 +291,16 @@ body {
   height: 100vh;
   overflow: hidden;
   font-family: Gadugi, 'Segoe UI', 'Microsoft YaHei UI', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#app input,
+#app textarea,
+#app select,
+#app [contenteditable]:not([contenteditable="false"]) {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* ===== Material You 3 WebUI bridge =====
@@ -464,7 +474,7 @@ body {
 }
 
 :root[data-theme-style="windows-11"] #app .app-header {
-  z-index: 3000 !important;
+  z-index: 10001 !important;
   overflow: visible !important;
 }
 

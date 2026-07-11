@@ -2,16 +2,16 @@
   <div id="app">
     <BackendConnectionModal />
     <ExtensionInterferenceModal />
-    <div v-if="!isReady && isEditorRoute" class="loading-screen">
+    <div v-if="localizationStore.isLoading && isEditorRoute" class="loading-screen">
       <div class="loading-spinner"></div>
       <p>{{ t('app.loading') }}</p>
     </div>
-    <RouterView v-else-if="isReady || !isEditorRoute" />
+    <RouterView v-else />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLocalization } from '@/composables/useLocalization'
 import { useLocalizationStore } from '@/stores/useLocalizationStore'
@@ -22,7 +22,6 @@ import ExtensionInterferenceModal from '@/components/ExtensionInterferenceModal.
 const { t } = useLocalization()
 const localizationStore = useLocalizationStore()
 const route = useRoute()
-const isReady = ref(false)
 const { startBackendHealthMonitor } = useBackendConnectionMonitor()
 const { loadTheme } = useTheme()
 
@@ -35,10 +34,10 @@ onMounted(async () => {
 
   try {
     await localizationStore.initialize()
-    isReady.value = true
   } catch (error) {
     console.error('Failed to initialize:', error)
-    isReady.value = true
+  } finally {
+    window.visunoviaDesktop?.notifyReady?.()
   }
 })
 </script>

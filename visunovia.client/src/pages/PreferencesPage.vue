@@ -45,7 +45,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <label>{{ t('settings.theme') || 'Theme' }}</label>
-            <p class="setting-desc">{{ t('settings.theme.desc') || 'Choose the Material You appearance used by the entire app.' }}</p>
+            <p class="setting-desc">{{ t('settings.theme.desc') || 'Choose the appearance used by the entire app.' }}</p>
           </div>
           <div class="setting-control">
             <select v-model="settings.theme" @change="onThemeChange">
@@ -53,71 +53,6 @@
               <option value="dark">{{ t('settings.dark') || 'Dark' }}</option>
               <option value="system">{{ t('settings.system') || 'System' }}</option>
             </select>
-          </div>
-        </div>
-
-        <div class="setting-row material-theme-row">
-          <div class="setting-label">
-            <label>{{ t('settings.materialYouPalette') || 'Material You Color' }}</label>
-            <p class="setting-desc">{{ t('settings.materialYouPalette.desc') || 'Pick a dynamic color palette or customize the seed color.' }}</p>
-          </div>
-          <div class="setting-control theme-control">
-            <div class="theme-preview md-card">
-              <div class="theme-preview-surface">
-                <span class="preview-dot primary"></span>
-                <span class="preview-dot secondary"></span>
-                <span class="preview-dot tertiary"></span>
-              </div>
-              <div class="theme-preview-label">
-                Material You 3
-                <small>{{ resolvedTheme }}</small>
-              </div>
-            </div>
-            <div class="palette-grid" aria-label="Material You palettes">
-              <button
-                v-for="option in paletteOptions"
-                :key="option.value"
-                type="button"
-                class="palette-chip"
-                :class="{ active: settings.palette === option.value }"
-                :style="{ '--chip-color': option.seedColor }"
-                :title="option.label"
-                @click="selectPalette(option.value)"
-              >
-                <span></span>
-              </button>
-            </div>
-            <label class="color-picker-label">
-              <span>{{ t('settings.seedColor') || 'Seed Color' }}</span>
-              <input v-model="settings.seedColor" type="color" @input="onSeedColorChange" />
-            </label>
-          </div>
-        </div>
-
-        <div class="setting-row theme-style-row">
-          <div class="setting-label">
-            <label>{{ t('settings.themeStyle') || 'Theme Style' }}</label>
-            <p class="setting-desc">{{ t('settings.themeStyle.desc') || 'Switch the whole WebUI between Material You, Windows 11, and Windows 10 styles.' }}</p>
-          </div>
-          <div class="setting-control style-control">
-            <button
-              v-for="option in themeStyleOptions"
-              :key="option.value"
-              type="button"
-              class="style-card"
-              :class="[{ active: settings.themeStyle === option.value }, option.value]"
-              @click="selectThemeStyle(option.value)"
-            >
-              <span class="style-preview">
-                <span class="style-titlebar"></span>
-                <span class="style-pane"></span>
-                <span class="style-content"></span>
-              </span>
-              <span class="style-copy">
-                <strong>{{ option.label }}</strong>
-                <small>{{ option.description }}</small>
-              </span>
-            </button>
           </div>
         </div>
 
@@ -314,14 +249,12 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, markRaw } from 'vue'
+import { reactive, ref, onMounted, markRaw, computed } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useLocalizationStore } from '@/stores/useLocalizationStore'
 import {
   useTheme,
   type ThemeMode,
-  type ThemeStyle,
-  type MaterialYouPalette,
 } from '@/composables/useTheme'
 import { settingsApi } from '@/api'
 import {
@@ -334,7 +267,7 @@ import type { Component } from 'vue'
 
 const { t, changeLanguage, availableLanguages } = useLocalization()
 const localizationStore = useLocalizationStore()
-const { loadTheme, setTheme, paletteOptions, themeStyleOptions, resolvedTheme, getPaletteSeedColor } = useTheme()
+const { loadTheme, setTheme } = useTheme()
 
 const SETTINGS_STORAGE_KEY = 'visunovia-settings'
 
@@ -345,21 +278,19 @@ interface Category {
   icon: Component
 }
 
-const categories: Category[] = [
+// 使用 computed 使分类标签在翻译加载后自动更新
+const categories = computed<Category[]>(() => [
   { key: 'general', label: t('settings.general') || 'General', icon: markRaw(Settings2) },
   { key: 'editor', label: t('settings.editor') || 'Editor', icon: markRaw(Palette) },
   { key: 'preview', label: t('settings.preview') || 'Preview', icon: markRaw(Eye) },
   { key: 'network', label: t('settings.network') || 'Network', icon: markRaw(Wifi) },
-]
+])
 
 const activeCategory = ref('general')
 
 const settings = reactive({
   language: 'zh-CN',
   theme: 'dark' as ThemeMode,
-  themeStyle: 'material-you' as ThemeStyle,
-  seedColor: '#6750a4',
-  palette: 'purple' as MaterialYouPalette,
   placeholderCompanyName: '',
   placeholderProductName: '',
   autoSave: false,
@@ -381,43 +312,52 @@ const saveError = ref(false)
 
 // 同步加载设置（无异步等待，立即渲染）
 onMounted(async () => {
-  loadSettings()
+  await loadSettings()
   const themeSettings = await loadTheme()
   settings.theme = themeSettings.theme
-  settings.themeStyle = themeSettings.themeStyle
-  settings.seedColor = themeSettings.seedColor
-  settings.palette = themeSettings.palette
 })
 
-function loadSettings() {
-  const saved = localStorage.getItem(SETTINGS_STORAGE_KEY)
-  if (!saved) return
+async function loadSettings() {
+  let loadedSettings: Record<string, any> | null = null
   try {
-    const parsed = JSON.parse(saved)
-    Object.assign(settings, {
-      language: parsed.language || settings.language,
-      theme: parsed.theme || parsed.Theme || settings.theme,
-      themeStyle: parsed.themeStyle || parsed.ThemeStyle || settings.themeStyle,
-      seedColor: parsed.seedColor || parsed.SeedColor || settings.seedColor,
-      palette: parsed.palette || parsed.Palette || settings.palette,
-      placeholderCompanyName: parsed.placeholderCompanyName ?? settings.placeholderCompanyName,
-      placeholderProductName: parsed.placeholderProductName ?? settings.placeholderProductName,
-      autoSave: parsed.autoSave ?? settings.autoSave,
-      autoSaveInterval: parsed.autoSaveInterval ?? settings.autoSaveInterval,
-      gridSize: parsed.gridSize ?? settings.gridSize,
-      showGrid: parsed.showGrid ?? settings.showGrid,
-      snapToGrid: parsed.snapToGrid ?? settings.snapToGrid,
-      defaultZoom: parsed.defaultZoom || settings.defaultZoom,
-      defaultNodeSize: parsed.defaultNodeSize ?? settings.defaultNodeSize,
-      previewWidth: parsed.previewWidth ?? settings.previewWidth,
-      previewHeight: parsed.previewHeight ?? settings.previewHeight,
-      fullscreenPreview: parsed.fullscreenPreview ?? settings.fullscreenPreview,
-      apiBaseUrl: parsed.apiBaseUrl || settings.apiBaseUrl,
-      requestTimeout: parsed.requestTimeout ?? settings.requestTimeout,
-    })
+    const response = await settingsApi.get()
+    if (response.data?.success && response.data?.data?.settings) {
+      loadedSettings = response.data.data.settings
+    }
+  } catch {
+    // Fall back to the local cache below.
+  }
+
+  const saved = localStorage.getItem(SETTINGS_STORAGE_KEY)
+  if (!loadedSettings && !saved) return
+  try {
+    const parsed = loadedSettings || JSON.parse(saved || '{}')
+    applyLoadedSettings(parsed)
   } catch (e) {
     console.error('[Preferences] Failed to parse settings:', e)
   }
+}
+
+function applyLoadedSettings(parsed: Record<string, any>) {
+  Object.assign(settings, {
+    language: parsed.language || parsed.Language || settings.language,
+    theme: parsed.theme || parsed.Theme || settings.theme,
+    placeholderCompanyName: parsed.placeholderCompanyName ?? parsed.PlaceholderCompanyName ?? settings.placeholderCompanyName,
+    placeholderProductName: parsed.placeholderProductName ?? parsed.PlaceholderProductName ?? settings.placeholderProductName,
+    autoSave: parsed.autoSave ?? (Number(parsed.AutoSaveInterval) > 0 ? true : settings.autoSave),
+    autoSaveInterval: parsed.autoSaveInterval ?? parsed.AutoSaveInterval ?? settings.autoSaveInterval,
+    gridSize: parsed.gridSize ?? settings.gridSize,
+    showGrid: parsed.showGrid ?? settings.showGrid,
+    snapToGrid: parsed.snapToGrid ?? settings.snapToGrid,
+    defaultZoom: parsed.defaultZoom || settings.defaultZoom,
+    defaultNodeSize: parsed.defaultNodeSize ?? settings.defaultNodeSize,
+    previewWidth: parsed.previewWidth ?? parsed.PreviewWidth ?? settings.previewWidth,
+    previewHeight: parsed.previewHeight ?? parsed.PreviewHeight ?? settings.previewHeight,
+    fullscreenPreview: parsed.fullscreenPreview ?? settings.fullscreenPreview,
+    apiBaseUrl: parsed.apiBaseUrl || settings.apiBaseUrl,
+    requestTimeout: parsed.requestTimeout ?? settings.requestTimeout,
+  })
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ ...settings }))
 }
 
 async function onLanguageChange() {
@@ -435,38 +375,18 @@ async function onLanguageChange() {
 function onThemeChange() {
   setTheme({
     theme: settings.theme as ThemeMode,
-    themeStyle: settings.themeStyle,
-    seedColor: settings.seedColor,
-    palette: settings.palette,
   }).catch(() => {})
 }
 
-function selectThemeStyle(themeStyle: ThemeStyle) {
-  settings.themeStyle = themeStyle
-  onThemeChange()
-}
-
-function selectPalette(palette: MaterialYouPalette) {
-  settings.palette = palette
-  settings.seedColor = getPaletteSeedColor(palette)
-  onThemeChange()
-}
-
-function onSeedColorChange() {
-  onThemeChange()
-}
-
 async function saveSettings() {
-  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ ...settings }))
+  const savedSettings = { ...settings }
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(savedSettings))
 
   try {
     await settingsApi.saveSettings({
       ...settings,
       Language: settings.language,
       Theme: settings.theme,
-      ThemeStyle: settings.themeStyle,
-      SeedColor: settings.seedColor,
-      Palette: settings.palette,
       PlaceholderCompanyName: settings.placeholderCompanyName,
       PlaceholderProductName: settings.placeholderProductName,
       PreviewWidth: settings.previewWidth,
@@ -481,10 +401,11 @@ async function saveSettings() {
   }
 
   if (window.opener) {
-    setTimeout(() => {
-      try { window.opener.location.reload() } catch {}
-      window.close()
-    }, 800)
+    window.opener.postMessage({
+      type: 'visunovia:settings-saved',
+      settings: savedSettings,
+    }, window.location.origin)
+    window.close()
   }
 
   setTimeout(() => { saveMessage.value = '' }, 3000)
@@ -725,206 +646,6 @@ function resetSettings() {
 .toggle-switch input:checked + .toggle-slider::before {
   background: var(--md-sys-color-on-primary);
   transform: translateX(20px);
-}
-
-.theme-control {
-  width: min(100%, 360px);
-  flex-direction: column;
-  align-items: stretch;
-  gap: 12px;
-}
-
-.theme-preview {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 86px;
-  padding: 14px;
-  width: 100%;
-}
-
-.theme-preview-surface {
-  display: flex;
-  align-items: end;
-  gap: 8px;
-}
-
-.preview-dot {
-  display: block;
-  width: 38px;
-  height: 38px;
-  border-radius: 999px;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-sys-color-outline) 42%, transparent);
-}
-
-.preview-dot.primary {
-  background: var(--md-sys-color-primary);
-}
-
-.preview-dot.secondary {
-  width: 30px;
-  height: 30px;
-  background: var(--md-sys-color-secondary);
-}
-
-.preview-dot.tertiary {
-  width: 24px;
-  height: 24px;
-  background: var(--md-sys-color-tertiary);
-}
-
-.theme-preview-label {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  font-weight: 700;
-  color: var(--md-sys-color-on-surface);
-}
-
-.theme-preview-label small {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--md-sys-color-on-surface-variant);
-  text-transform: uppercase;
-}
-
-.palette-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
-}
-
-.palette-chip {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  aspect-ratio: 1;
-  border: 2px solid transparent;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--chip-color) 16%, var(--md-sys-color-surface-container-high));
-}
-
-.palette-chip span {
-  width: 22px;
-  height: 22px;
-  border-radius: inherit;
-  background: var(--chip-color);
-}
-
-.palette-chip.active {
-  border-color: var(--md-sys-color-primary);
-  background: var(--md-sys-color-primary-container);
-}
-
-.color-picker-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--md-sys-color-on-surface-variant);
-  font-size: 12px;
-}
-
-.color-picker-label input[type="color"] {
-  width: 58px;
-  height: 38px;
-  padding: 3px;
-  border-radius: var(--md-sys-shape-corner-small);
-  border: 1px solid var(--md-sys-color-outline);
-  background: var(--md-sys-color-surface-container-high);
-}
-
-.style-control {
-  width: min(100%, 520px);
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
-}
-
-.style-card {
-  display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
-  gap: 14px;
-  align-items: center;
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: var(--md-sys-shape-corner-large);
-  background: var(--md-sys-color-surface-container-low);
-  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
-}
-
-.style-card:hover {
-  border-color: var(--md-sys-color-primary);
-  background: var(--md-sys-color-surface-container-high);
-}
-
-.style-card.active {
-  border-color: var(--md-sys-color-primary);
-  background: var(--md-sys-color-secondary-container);
-}
-
-.style-preview {
-  display: grid;
-  grid-template-columns: 28px 1fr;
-  grid-template-rows: 14px 44px;
-  overflow: hidden;
-  min-height: 58px;
-  border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: 14px;
-  background: var(--md-sys-color-surface-container);
-  box-shadow: var(--md-sys-elevation-1);
-}
-
-.style-titlebar {
-  grid-column: 1 / -1;
-  background: var(--md-sys-color-primary);
-}
-
-.style-pane {
-  background: var(--md-sys-color-surface-container-highest);
-}
-
-.style-content {
-  margin: 8px;
-  border-radius: 10px;
-  background: var(--md-sys-color-surface-container-high);
-}
-
-.style-card.windows-11 .style-preview {
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--md-sys-color-surface-container) 84%, var(--md-sys-color-primary-container));
-}
-
-.style-card.windows-11 .style-content {
-  border-radius: 7px;
-}
-
-.style-card.windows-10 .style-preview,
-.style-card.windows-10 .style-content {
-  border-radius: 2px;
-}
-
-.style-card.windows-10 .style-preview {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
-}
-
-.style-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  text-align: left;
-}
-
-.style-copy strong {
-  font-size: 13px;
-  color: var(--md-sys-color-on-surface);
-}
-
-.style-copy small {
-  color: var(--md-sys-color-on-surface-variant);
-  font-size: 11px;
-  line-height: 1.35;
 }
 
 /* ========== Footer ========== */

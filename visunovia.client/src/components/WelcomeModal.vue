@@ -4,10 +4,16 @@ import { useUIStore } from '@/stores/useUIStore'
 import { useLocalization } from '@/composables/useLocalization'
 import { useProjectImport } from '@/composables/useProjectImport'
 import { getRecentProjects, type RecentProject } from '@/api/systemApi'
+import { openNativeDialog } from '@/utils/nativeDialog'
 
 const { t } = useLocalization()
-const uiStore = useUIStore()
 const projectImport = useProjectImport()
+
+const props = withDefaults(defineProps<{
+  standalone?: boolean
+}>(), {
+  standalone: false,
+})
 
 const emit = defineEmits<{
   projectOpened: [projectPath: string]
@@ -30,19 +36,46 @@ onMounted(async () => {
 })
 
 function handleNewProject() {
+  if (props.standalone) {
+    void window.visunoviaDesktop?.openEditorFromWelcome()
+    return
+  }
+  const uiStore = useUIStore()
   uiStore.closeWelcomeModal()
   uiStore.openNewProjectModal()
 }
 
-function handleOpenProject() {
-  uiStore.closeWelcomeModal()
-  uiStore.openFileExplorer()
+async function handleOpenProject() {
+  try {
+    const projectPath = await openNativeDialog({
+      kind: 'file',
+      title: t('Startup.OpenProject'),
+      extensions: ['tlor'],
+      filterName: 'Visunovia Project',
+    })
+    if (!projectPath) return
+    await handleOpenRecent(projectPath)
+  } catch (error) {
+    emit('projectOpenFailed', error instanceof Error ? error.message : '无法打开系统文件选择器')
+  }
 }
 
 async function handleOpenRecent(projectPath: string) {
   if (openingRecentPath.value) return
 
   openingRecentPath.value = projectPath
+  if (props.standalone && window.visunoviaDesktop?.openProjectFromWelcome) {
+    try {
+      await window.visunoviaDesktop.openProjectFromWelcome(projectPath)
+      emit('projectOpened', projectPath)
+    } catch (error) {
+      emit('projectOpenFailed', error instanceof Error ? error.message : '项目打开失败')
+    } finally {
+      openingRecentPath.value = null
+    }
+    return
+  }
+
   const success = await projectImport.importProjectPath(projectPath)
   openingRecentPath.value = null
 
@@ -65,7 +98,7 @@ function handleKeydown(event: KeyboardEvent) {
 
 <template>
   <Teleport to="body">
-    <div class="wm-overlay" @keydown="handleKeydown" tabindex="-1">
+    <div class="wm-overlay" :class="{ 'wm-overlay-standalone': standalone }" @keydown="handleKeydown" tabindex="-1">
       <div class="wm-window">
         <!-- Left: Actions -->
         <div class="wm-left">
@@ -160,6 +193,10 @@ function handleKeydown(event: KeyboardEvent) {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.wm-overlay-standalone {
+  top: 0;
 }
 
 /* ========== Window ========== */

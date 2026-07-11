@@ -1,173 +1,40 @@
-## .NET 构建输出
-bin/
-obj/
-[Dd]ebug/
-[Rr]elease/
-x64/
-x86/
-bld/
-[Bb]in/
-[Oo]bj/
-[Ll]og/
-[Ll]ogs/
-dist/
-out/
-www_build/
-[Pp]ublish/
-# 发布/验证产物目录（包含 artifacts/publish-verify-refactor-clean/）
-artifacts/
-publish*/
-
-## Visual Studio 用户特定文件
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-*.userprefs
-
-## Visual Studio 自动生成的目录
-.vs/
-
-## Rider
-.idea/
-*.sln.iml
-
-## VS Code
-.vscode/
-
-## Trae IDE
-.trae/
-
-## NuGet 包
-**/[Pp]ackages/*
-*.nupkg
-**/[Pp]ackages/**
-!**/[Pp]ackages/build/
-*.snupkg
-*.symbols.nupkg
-*.nuget.props
-*.nuget.targets
-
-## MSBuild 二进制和结构化日志
-*.binlog
-
-## Visual Studio 自动生成的文件
-*_i.c
-*_p.c
-*_h.h
-*.ilk
-*.meta
-*.obj
-*.iobj
-*.pch
-*.pdb
-*.ipdb
-*.pgc
-*.pgd
-*.rsp
-*.sbr
-*.tlb
-*.tli
-*.tlh
-*.tmp
-*.tmp_proj
-*_wpftmp.csproj
-*.log
-*.tlog
-*.vspscc
-*.vssscc
-.builds
-*.pidb
-*.svclog
-*.scc
-
-## Windows 系统文件
-Thumbs.db
-Thumbs.db.gz
-ehthumbs.db
-ehthumbs_vista.db
-*.stackdump
-[Dd]esktop.ini
-$RECYCLE.BIN/
-*.cab
-*.msi
-*.msix
-*.msm
-*.msp
-*.lnk
-
-## macOS 系统文件
-.DS_Store
-.AppleDouble
-.LSOverride
-._*
-
-## 发布配置文件
-PublishProfiles/
-*.pubxml
-*.publishproj
-*.pubxml.user
-
-## Azure
-*.azurePubxml
-
-## SQL Server 文件
-*.mdf
-*.ldf
-*.ndf
-
-## Business Intelligence 项目
-*.rdl.data
-*.bim.layout
-*.bim_*.settings
-
-## 依赖目录
+# Dependencies
 node_modules/
 visunovia.client/node_modules/
-vendor/
 
-## 环境配置文件
+# Frontend and Electron build output
+www_build/
+dist-desktop/
+dist-player-desktop/
+release/
+out/
+artifacts/
+
+# Test output
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+playwright/.auth/
+
+# Local configuration and runtime data
 .env
 .env.local
 .env.*.local
-
-## 缓存文件
-.cache/
-*.cache
-
-## 项目运行时数据（VN 引擎工作目录）
 _Visunovia/
 _Visunovia_backup/
 
-## Git 克隆的第三方资源目录
-Git Cloned/
-
-## 压缩的静态资源（构建时自动生成）
-*.css.gz
-*.js.gz
-*.html.gz
-*.map.gz
-*.ico.gz
-*.ttf.gz
-*.woff.gz
-*.woff2.gz
-*.svg.gz
-
-## 压缩包
-*.zip
-*.rar
-*.7z
-
-## 临时文件
+# Tool caches and temporary files
+.cache/
+*.cache
 tmp/
 temp/
+*.log
 *.swp
 *.swo
 *~
 
-# Playwright
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-/playwright/.auth/
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini

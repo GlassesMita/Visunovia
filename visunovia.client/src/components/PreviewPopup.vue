@@ -145,6 +145,10 @@ import type { GraphConnection, GraphNode } from '@/stores/useNodeGraphStore'
 import { useCharacterStore } from '@/stores/useCharacterStore'
 import { useExpressionStore } from '@/stores/useExpressionStore'
 import { resolveAssetUrl } from '@/utils/assetPaths'
+import { normalizeRuntimeSceneGraph } from '@/runtime/core'
+import { ModPlayer } from '@/runtime/modPlayer'
+import { parseCustomEventScript, type CustomEventCommand } from '@/runtime/customEventScript'
+import { coreRTLocalization } from '@/services/translationService'
 import {
   countDialogueVisibleCharacters,
   normalizeDialogueEscapes,
@@ -279,6 +283,7 @@ const activeExpressions = ref<CharacterExpressionState[]>([])
 const resourceTraceByUrl = ref<Record<string, PreviewResourceTrace>>({})
 let typewriterTimer: number | null = null
 const expressionTimers = new Map<string, number>()
+const modPlayer = new ModPlayer()
 
 const visibleCharacters = computed(() => Object.values(characterSlots.value).sort((a, b) => Number(a.slot) - Number(b.slot)))
 const renderableCharacters = computed(() => visibleCharacters.value.filter(character => character.slot !== '6' && Boolean(character.sprite && character.spriteUrl)))
@@ -335,6 +340,7 @@ watch(
       window.removeEventListener('keydown', handlePreviewKeydown)
       window.removeEventListener('contextmenu', handlePreviewContextMenu)
       stopAudio()
+      modPlayer.stop()
     }
   }
 )
@@ -353,6 +359,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('contextmenu', handlePreviewContextMenu)
   stopTypewriter()
   stopAudio()
+  modPlayer.stop()
   closeStageModal()
 })
 
@@ -440,8 +447,9 @@ function restartPreview() {
   resetPlaybackState()
 
   const serialized = nodeGraphStore.serializeGraph()
-  graphNodes.value = normalizePreviewNodes(serialized?.nodes || [])
-  graphConnections.value = normalizePreviewConnections(serialized?.connections || [])
+  const runtimeScene = normalizeRuntimeSceneGraph(serialized)
+  graphNodes.value = runtimeScene.nodes
+  graphConnections.value = runtimeScene.connections
 
   console.groupCollapsed('[PreviewPopup] 预览执行图')
   console.log('nodes:', graphNodes.value.map((node) => ({ id: node.id, type: node.type, data: node.data, nextNodeUuids: node.nextNodeUuids })))
@@ -454,13 +462,12 @@ function restartPreview() {
     return
   }
 
-  const startNode = graphNodes.value.find((node) => node.type === 'StartNode') || graphNodes.value[0]
-  currentNodeId.value = startNode.id
-
-  runFromNode(startNode.id, 'restart')
+  const startNode = graphNodes.value.find(node => node.type === 'StartNode') || graphNodes.value[0]
+  runFromNode(startNode?.id || null, 'restart')
 }
 
 function resetPlaybackState() {
+  stopTypewriter()
   currentNodeId.value = null
   currentBackground.value = { url: '', type: 'image' }
   speaker.value = ''
@@ -479,9 +486,32 @@ function resetPlaybackState() {
   clearExpressions()
   resourceTraceByUrl.value = {}
   stopAudio()
+  modPlayer.stop()
 }
 
-function runFromNode(nodeId: string | null, reason = 'advance') {
+function scheduleExpressionLifecycle(expression: CharacterExpressionState) {
+  const fadeTimer = window.setTimeout(() => {
+    const activeExpression = activeExpressions.value.find(candidate => candidate.id === expression.id)
+    if (activeExpression) activeExpression.fading = true
+    const removeTimer = window.setTimeout(() => {
+      activeExpressions.value = activeExpressions.value.filter(candidate => candidate.id !== expression.id)
+      expressionTimers.delete(expression.id)
+    }, 350)
+    expressionTimers.set(expression.id, removeTimer)
+  }, expression.duration * 1000)
+  expressionTimers.set(expression.id, fadeTimer)
+}
+
+function playOneShotAudio(type: string, path: string, url: string, volume: number) {
+  if (!path) return
+  const audio = new Audio(url)
+  audio.volume = Math.max(0, Math.min(1, volume))
+  audio.play().catch((error) => {
+    reportAudioPlaybackError(type, path, audio.src, error)
+  })
+}
+
+async function runFromNode(nodeId: string | null, reason = 'advance') {
   if (!nodeId) {
     pauseWithError('无法继续预览：下一个节点为空', { reason, currentNodeId: currentNodeId.value })
     return
@@ -516,7 +546,13 @@ function runFromNode(nodeId: string | null, reason = 'advance') {
     }
 
     if (node.type === 'EventNode') {
-      processEventNode(node)
+      await processEventNode(node)
+      nextNodeId = getNextNodeId(node.id)
+      continue
+    }
+
+    if (node.type === 'CustomEventNode') {
+      await processCustomEventNode(node)
       nextNodeId = getNextNodeId(node.id)
       continue
     }
@@ -677,9 +713,14 @@ function renderChoiceNode(node: PreviewNode) {
   }
 }
 
-function processEventNode(node: PreviewNode) {
+async function processEventNode(node: PreviewNode) {
   const subType = inferEventSubType(node.data)
   const resourcePath = getEventResourcePath(node.data, subType)
+
+  if (isStageWindowEvent(subType)) {
+    await executeStageWindowCommand(subType, node.data)
+    return
+  }
 
   if (subType === 'changeBackground') {
     setBackground(resourcePath.value, createResourceTrace(node, 'background', '背景', resourcePath.field, resourcePath.value, resolveAssetUrl(resourcePath.value, 'Backgrounds')))
@@ -687,6 +728,23 @@ function processEventNode(node: PreviewNode) {
     playBgm(resourcePath.value, Number(node.data.volume ?? 1), toBoolean(node.data.loop, true), createResourceTrace(node, 'bgm', 'BGM', resourcePath.field, resourcePath.value, resolveAssetUrl(resourcePath.value, 'Musics')))
   } else if (subType === 'stopBgm') {
     stopAudio()
+  } else if (subType === 'playMod') {
+    const url = resolveAssetUrl(resourcePath.value, 'Musics')
+    const trace = createResourceTrace(node, 'bgm', 'MOD', resourcePath.field, resourcePath.value, url)
+    registerResourceTrace(trace)
+    modPlayer.play(url, Number(node.data.volume ?? 1), toBoolean(node.data.loop, true)).catch((error) => {
+      reportAudioPlaybackError('MOD', resourcePath.value, url, error)
+    })
+  } else if (subType === 'stopMod') {
+    modPlayer.stop()
+  } else if (subType === 'pauseMod') {
+    modPlayer.pause()
+  } else if (subType === 'resumeMod') {
+    modPlayer.resume()
+  } else if (subType === 'seekMod') {
+    modPlayer.seek(Number(node.data.position ?? 0))
+  } else if (subType === 'setModVolume') {
+    modPlayer.setVolume(Number(node.data.volume ?? 1))
   } else if (subType === 'playSfx') {
     playSfx(resourcePath.value, Number(node.data.volume ?? 1), createResourceTrace(node, 'sfx', '音效', resourcePath.field, resourcePath.value, resolveAssetUrl(resourcePath.value, 'Sfx')))
   } else if (subType === 'playVoice') {
@@ -708,12 +766,118 @@ function processEventNode(node: PreviewNode) {
   }
 }
 
+function isStageWindowEvent(subType: string) {
+  return [
+    'createWindow',
+    'closeWindow',
+    'showWindow',
+    'hideWindow',
+    'moveWindow',
+    'resizeWindow',
+    'setWindowAlwaysOnTop',
+  ].includes(subType)
+}
+
+async function executeStageWindowCommand(type: string, data: Record<string, any>) {
+  const targetWindow = Number(data.targetWindow)
+  if (!Number.isInteger(targetWindow) || targetWindow < 1 || targetWindow > 8) {
+    throw new Error(`辅助窗口编号必须是 1 到 8：${data.targetWindow}`)
+  }
+  if (!window.visunoviaDesktop?.executeStageCommand) {
+    throw new Error('窗口控制只能在 Electron 编辑器中运行')
+  }
+  await window.visunoviaDesktop.executeStageCommand({
+    type,
+    targetWindow,
+    x: data.x,
+    y: data.y,
+    width: data.width,
+    height: data.height,
+    duration: data.duration,
+    alwaysOnTop: data.alwaysOnTop,
+  })
+}
+
+async function processCustomEventNode(node: PreviewNode) {
+  const commands = parseCustomEventScript(node.data.code)
+  for (const command of commands) {
+    await executeCustomEventCommand(command, node)
+  }
+}
+
+async function executeCustomEventCommand(command: CustomEventCommand, node: PreviewNode) {
+  if (command.target === 'extension') {
+    await window.visunoviaDesktop?.emitExtensionEvent?.({
+      name: command.name,
+      args: command.args,
+      nodeId: node.id,
+    })
+    return
+  }
+
+  const [targetWindow, ...args] = command.args
+  const data: Record<string, any> = {}
+
+  switch (command.name) {
+    case 'CreateWindow':
+      Object.assign(data, { targetWindow, x: args[0], y: args[1], width: args[2], height: args[3] })
+      break
+    case 'CloseWindow':
+    case 'ShowWindow':
+    case 'HideWindow':
+      data.targetWindow = targetWindow
+      break
+    case 'MoveWindow':
+      Object.assign(data, { targetWindow, x: args[0], y: args[1], duration: args[2] })
+      break
+    case 'ResizeWindow':
+      Object.assign(data, { targetWindow, width: args[0], height: args[1], duration: args[2] })
+      break
+    case 'SetWindowAlwaysOnTop':
+      Object.assign(data, { targetWindow, alwaysOnTop: args[0] })
+      break
+    case 'ChangeBackground':
+      await processEventNode({ ...node, data: { subType: 'changeBackground', imagePath: targetWindow, transition: args[0], duration: args[1] } })
+      return
+    case 'PlayBgm':
+      await processEventNode({ ...node, data: { subType: 'playBgm', bgmPath: targetWindow, volume: args[0], loop: args[1] } })
+      return
+    case 'StopBgm':
+      await processEventNode({ ...node, data: { subType: 'stopBgm' } })
+      return
+    case 'PlaySfx':
+      await processEventNode({ ...node, data: { subType: 'playSfx', sfxPath: targetWindow, volume: args[0] } })
+      return
+    case 'PlayVoice':
+      await processEventNode({ ...node, data: { subType: 'playVoice', voicePath: targetWindow } })
+      return
+    case 'ShowCharacter':
+      await processEventNode({ ...node, data: { subType: 'showCharacter', characterId: targetWindow, position: args[0] } })
+      return
+    case 'HideCharacter':
+      await processEventNode({ ...node, data: { subType: 'hideCharacter', characterId: targetWindow } })
+      return
+    case 'FadeScreen':
+      await processEventNode({ ...node, data: { subType: 'fadeScreen', duration: targetWindow, fadeType: args[0], color: args[1] } })
+      return
+    default:
+      throw new Error(`Unsupported Event call: ${command.name}`)
+  }
+
+  await executeStageWindowCommand(toStageWindowEventType(command.name), data)
+}
+
+function toStageWindowEventType(name: string) {
+  return name.charAt(0).toLowerCase() + name.slice(1)
+}
+
 function inferEventSubType(data: Record<string, any>) {
   const explicitType = normalizeEventSubType(data.subType || data.eventType || data.eventName)
   if (explicitType) return explicitType
 
   if (hasAnyResourceField(data, ['imagePath', 'background', 'bgFile', 'bg'])) return 'changeBackground'
   if (hasAnyResourceField(data, ['bgmPath', 'bgmFile', 'bgm', 'musicFile'])) return 'playBgm'
+  if (hasAnyResourceField(data, ['modPath', 'moduleFile'])) return 'playMod'
   if (hasAnyResourceField(data, ['sfxPath', 'soundFile', 'sfx'])) return 'playSfx'
   if (hasAnyResourceField(data, ['voicePath', 'voiceFile', 'voice'])) return 'playVoice'
   if (hasAnyResourceField(data, ['sprite', 'spritePath', 'characterSprite']) || data.characterId) return 'showCharacter'
@@ -732,6 +896,10 @@ function getEventResourcePath(data: Record<string, any>, subType: string) {
 
   if (subType === 'playBgm') {
     return pickResourceField(data, ['bgmPath', 'bgmFile', 'bgm', 'musicFile', 'resource', 'path', 'file', 'filePath'])
+  }
+
+  if (subType === 'playMod') {
+    return pickResourceField(data, ['modPath', 'moduleFile', 'resource', 'path', 'file', 'filePath'])
   }
 
   if (subType === 'playSfx') {
@@ -767,6 +935,12 @@ function normalizeEventSubType(value: unknown) {
     PlayBGM: 'playBgm',
     StopBGM: 'stopBgm',
     StopBgm: 'stopBgm',
+    PlayMod: 'playMod',
+    StopMod: 'stopMod',
+    PauseMod: 'pauseMod',
+    ResumeMod: 'resumeMod',
+    SeekMod: 'seekMod',
+    SetModVolume: 'setModVolume',
     PlaySFX: 'playSfx',
     PlayVoice: 'playVoice',
     ChangeBackground: 'changeBackground',
